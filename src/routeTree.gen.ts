@@ -10,14 +10,21 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
+import { Route as MovementsRouteImport } from './routes/movements'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as DamsRouteImport } from './routes/dams'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as MovementsNewRouteImport } from './routes/movements.new'
 
 const OnboardingRoute = OnboardingRouteImport.update({
   id: '/onboarding',
   path: '/onboarding',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MovementsRoute = MovementsRouteImport.update({
+  id: '/movements',
+  path: '/movements',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardRoute = DashboardRouteImport.update({
@@ -40,20 +47,29 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MovementsNewRoute = MovementsNewRouteImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => MovementsRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/dams': typeof DamsRoute
   '/dashboard': typeof DashboardRoute
+  '/movements': typeof MovementsRouteWithChildren
   '/onboarding': typeof OnboardingRoute
+  '/movements/new': typeof MovementsNewRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/dams': typeof DamsRoute
   '/dashboard': typeof DashboardRoute
+  '/movements': typeof MovementsRouteWithChildren
   '/onboarding': typeof OnboardingRoute
+  '/movements/new': typeof MovementsNewRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -61,14 +77,38 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/dams': typeof DamsRoute
   '/dashboard': typeof DashboardRoute
+  '/movements': typeof MovementsRouteWithChildren
   '/onboarding': typeof OnboardingRoute
+  '/movements/new': typeof MovementsNewRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/dams' | '/dashboard' | '/onboarding'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/dams'
+    | '/dashboard'
+    | '/movements'
+    | '/onboarding'
+    | '/movements/new'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/dams' | '/dashboard' | '/onboarding'
-  id: '__root__' | '/' | '/auth' | '/dams' | '/dashboard' | '/onboarding'
+  to:
+    | '/'
+    | '/auth'
+    | '/dams'
+    | '/dashboard'
+    | '/movements'
+    | '/onboarding'
+    | '/movements/new'
+  id:
+    | '__root__'
+    | '/'
+    | '/auth'
+    | '/dams'
+    | '/dashboard'
+    | '/movements'
+    | '/onboarding'
+    | '/movements/new'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -76,6 +116,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   DamsRoute: typeof DamsRoute
   DashboardRoute: typeof DashboardRoute
+  MovementsRoute: typeof MovementsRouteWithChildren
   OnboardingRoute: typeof OnboardingRoute
 }
 
@@ -86,6 +127,13 @@ declare module '@tanstack/react-router' {
       path: '/onboarding'
       fullPath: '/onboarding'
       preLoaderRoute: typeof OnboardingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/movements': {
+      id: '/movements'
+      path: '/movements'
+      fullPath: '/movements'
+      preLoaderRoute: typeof MovementsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboard': {
@@ -116,16 +164,45 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/movements/new': {
+      id: '/movements/new'
+      path: '/new'
+      fullPath: '/movements/new'
+      preLoaderRoute: typeof MovementsNewRouteImport
+      parentRoute: typeof MovementsRoute
+    }
   }
 }
+
+interface MovementsRouteChildren {
+  MovementsNewRoute: typeof MovementsNewRoute
+}
+
+const MovementsRouteChildren: MovementsRouteChildren = {
+  MovementsNewRoute: MovementsNewRoute,
+}
+
+const MovementsRouteWithChildren = MovementsRoute._addFileChildren(
+  MovementsRouteChildren,
+)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthRoute: AuthRoute,
   DamsRoute: DamsRoute,
   DashboardRoute: DashboardRoute,
+  MovementsRoute: MovementsRouteWithChildren,
   OnboardingRoute: OnboardingRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
