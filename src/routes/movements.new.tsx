@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { useState, useMemo } from "react";
+import { useState, useMemo, type FormEvent } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -23,12 +23,13 @@ export const Route = createFileRoute("/movements/new")({
 });
 
 function NewMovementPage() {
-  const { type = "incoming" } = Route.useSearch();
+  const { type: searchType = "incoming" } = Route.useSearch();
   const { canEntry, user } = useAuth();
   const { data: dams = [] } = useDams();
   const navigate = useNavigate();
   const qc = useQueryClient();
   const [saving, setSaving] = useState(false);
+  const [movementType, setMovementType] = useState<"incoming" | "outgoing">(searchType);
 
   const nowIso = new Date().toISOString();
   const today = nowIso.slice(0, 10);
@@ -40,7 +41,6 @@ function NewMovementPage() {
     driver_or_company: "",
     quantity_tons: "",
     notes: "",
-    // source mill
     src_date_of_departure: today,
     src_time: nowTime,
     src_vehicle_registration: "",
@@ -53,7 +53,6 @@ function NewMovementPage() {
     src_net_mass: "",
     src_molasses_temperature: "",
     src_sample_number: "",
-    // FGC
     fgc_date_of_arrival: today,
     fgc_time: nowTime,
     fgc_vehicle_registration: "",
@@ -64,14 +63,18 @@ function NewMovementPage() {
     fgc_tare_mass: "",
     fgc_net_mass: "",
     fgc_brix: "",
-    fgc_in_out: type === "incoming" ? "In" : "Out",
+    fgc_in_out: searchType === "incoming" ? "In" : "Out",
     fgc_zsm_operator: "",
     fgc_if_out_haulier: "",
   });
 
   const set = (k: string, v: string) => setForm((f) => ({ ...f, [k]: v }));
 
-  // Auto-calc nets and variance
+  const setType = (nextType: "incoming" | "outgoing") => {
+    setMovementType(nextType);
+    set("fgc_in_out", nextType === "incoming" ? "In" : "Out");
+  };
+
   const srcNet = useMemo(() => {
     if (form.src_net_mass) return parseFloat(form.src_net_mass);
     const g = parseFloat(form.src_gross_mass), t = parseFloat(form.src_tare_mass);
@@ -90,25 +93,28 @@ function NewMovementPage() {
     return <div className="text-center py-16 text-muted-foreground">You don't have permission to add entries.</div>;
   }
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
     if (!user) { toast.error("You must be signed in"); return; }
     if (dams.length === 0) { toast.error("No dams available — ask an admin to add one"); return; }
     if (!form.dam_id) { toast.error("Please select a dam"); return; }
-    const qty = parseFloat(form.quantity_tons);
-    if (!qty || qty <= 0) { toast.error("Quantity (tons) must be greater than 0"); return; }
     if (!form.occurred_at) { toast.error("Date & time is required"); return; }
+
+    const qty = parseFloat(form.quantity_tons);
+    if (isNaN(qty) || qty <= 0) { toast.error("Volume must be greater than 0"); return; }
+
     setSaving(true);
     try {
       const numOrNull = (s: string) => s === "" ? null : parseFloat(s);
       const strOrNull = (s: string) => s.trim() === "" ? null : s.trim();
-      const payload: any = {
+      const payload = {
         dam_id: form.dam_id,
-        movement_type: type,
+        movement_type: movementType,
         occurred_at: new Date(form.occurred_at).toISOString(),
         quantity_tons: qty,
         driver_or_company: strOrNull(form.driver_or_company),
         notes: strOrNull(form.notes),
-        created_by: user!.id,
+        created_by: user.id,
         src_date_of_departure: strOrNull(form.src_date_of_departure),
         src_time: strOrNull(form.src_time),
         src_vehicle_registration: strOrNull(form.src_vehicle_registration),
@@ -135,51 +141,66 @@ function NewMovementPage() {
         fgc_in_out: strOrNull(form.fgc_in_out),
         fgc_zsm_operator: strOrNull(form.fgc_zsm_operator),
         fgc_if_out_haulier: strOrNull(form.fgc_if_out_haulier),
-        fgc_in: type === "incoming" && !isNaN(fgcNet) ? fgcNet : null,
-        fgc_out: type === "outgoing" && !isNaN(fgcNet) ? fgcNet : null,
+        fgc_in: movementType === "incoming" && !isNaN(fgcNet) ? fgcNet : null,
+        fgc_out: movementType === "outgoing" && !isNaN(fgcNet) ? fgcNet : null,
         fgc_net: !isNaN(fgcNet) ? fgcNet : null,
       };
+
       const { error } = await supabase.from("movements").insert(payload);
       if (error) throw error;
-      await qc.invalidateQueries();
-      toast.success(`${type === "incoming" ? "Incoming delivery" : "Outgoing dispatch"} recorded`);
+
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["movements"] }),
+        qc.invalidateQueries({ queryKey: ["dams"] }),
+        qc.invalidateQueries({ queryKey: ["settings"] }),
+      ]);
+
+      toast.success(`${movementType === "incoming" ? "Incoming delivery" : "Outgoing dispatch"} recorded`);
       navigate({ to: "/movements" });
     } catch (e: any) {
       console.error("Movement save failed:", e);
       toast.error(e?.message ?? "Failed to save movement");
-    } finally { setSaving(false); }
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const Icon = type === "incoming" ? ArrowDownToLine : ArrowUpFromLine;
-  const accentColor = type === "incoming" ? "text-success" : "text-purple";
+  const Icon = movementType === "incoming" ? ArrowDownToLine : ArrowUpFromLine;
+  const accentColor = movementType === "incoming" ? "text-success" : "text-purple";
 
   return (
-    <div className="space-y-6 max-w-5xl">
+    <form onSubmit={handleSubmit} className="space-y-6 max-w-5xl">
       <div className="flex items-center gap-3">
-        <div className={`h-10 w-10 rounded-lg flex items-center justify-center ${type === "incoming" ? "bg-success/10" : "bg-purple/10"} ${accentColor}`}>
+        <div className={`h-10 w-10 rounded-lg flex items-center justify-center ${movementType === "incoming" ? "bg-success/10" : "bg-purple/10"} ${accentColor}`}>
           <Icon className="h-5 w-5" />
         </div>
         <div>
-          <h1 className="text-2xl lg:text-3xl font-bold">{type === "incoming" ? "New incoming delivery" : "New outgoing dispatch"}</h1>
-          <p className="text-sm text-muted-foreground">All Source Mill + FGC fields. Net masses & variance auto-calculate.</p>
+          <h1 className="text-2xl lg:text-3xl font-bold">{movementType === "incoming" ? "New incoming delivery" : "New outgoing dispatch"}</h1>
+          <p className="text-sm text-muted-foreground">Save truck movements and update dam stock instantly.</p>
         </div>
       </div>
 
       <Card className="p-5 space-y-4">
-        <h2 className="font-semibold">Core</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <h2 className="font-semibold">Core movement details</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Field label="Movement type *">
+            <select className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm" value={movementType} onChange={(e) => setType(e.target.value as "incoming" | "outgoing")}>
+              <option value="incoming">Incoming</option>
+              <option value="outgoing">Outgoing</option>
+            </select>
+          </Field>
           <Field label="Dam *">
             <select required className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm" value={form.dam_id} onChange={(e) => set("dam_id", e.target.value)}>
               <option value="">— Select —</option>
               {dams.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
             </select>
           </Field>
-          <Field label="Date & time *"><Input type="datetime-local" value={form.occurred_at} onChange={(e) => set("occurred_at", e.target.value)} /></Field>
-          <Field label="Quantity (tons) *"><Input type="number" step="0.001" min="0" value={form.quantity_tons} onChange={(e) => set("quantity_tons", e.target.value)} /></Field>
-          <Field label={type === "incoming" ? "Truck/Driver" : "Company/Driver"}><Input value={form.driver_or_company} onChange={(e) => set("driver_or_company", e.target.value)} /></Field>
-          <div className="sm:col-span-2 lg:col-span-2">
-            <Label>Notes</Label>
-            <Textarea rows={2} value={form.notes} onChange={(e) => set("notes", e.target.value)} />
+          <Field label="Date & time *"><Input required type="datetime-local" value={form.occurred_at} onChange={(e) => set("occurred_at", e.target.value)} /></Field>
+          <Field label="Volume (tons) *"><Input required type="number" step="0.001" min="0.001" value={form.quantity_tons} onChange={(e) => set("quantity_tons", e.target.value)} /></Field>
+          <Field label={movementType === "incoming" ? "Truck / Driver" : "Company / Driver"}><Input value={form.driver_or_company} onChange={(e) => set("driver_or_company", e.target.value)} /></Field>
+          <div className="sm:col-span-2 lg:col-span-3">
+            <Label>Reference / notes</Label>
+            <Textarea rows={2} value={form.notes} onChange={(e) => set("notes", e.target.value)} placeholder="Optional reference, note, or explanation" />
           </div>
         </div>
       </Card>
@@ -228,12 +249,12 @@ function NewMovementPage() {
       </Card>
 
       <div className="flex gap-3 sticky bottom-0 lg:static bg-background pb-4 lg:pb-0 -mx-4 px-4 lg:mx-0 lg:px-0 pt-2 border-t border-border lg:border-0">
-        <Button variant="outline" onClick={() => navigate({ to: "/movements" })} className="flex-1 lg:flex-none">Cancel</Button>
-        <Button onClick={handleSubmit} disabled={saving} className="flex-1 lg:flex-none">
-          {saving ? "Saving…" : "Save movement"}
+        <Button type="button" variant="outline" onClick={() => navigate({ to: "/movements" })} className="flex-1 lg:flex-none">Cancel</Button>
+        <Button type="submit" disabled={saving || dams.length === 0} className="flex-1 lg:flex-none">
+          {saving ? "Saving…" : `Save ${movementType === "incoming" ? "incoming" : "outgoing"} movement`}
         </Button>
       </div>
-    </div>
+    </form>
   );
 }
 
