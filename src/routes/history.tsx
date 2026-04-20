@@ -50,12 +50,12 @@ function HistoryPage() {
         const dam = dams.find((d) => d.id === damId);
         if (!dam) { toast.error("Dam not found"); return; }
         await exportMovementsToExcel({
-          dams: [dam], movements: filtered, perDamSheets: false,
+          dams: [dam], movements: filtered, perDamSheets: false, allDams: dams,
           filename: `FGC_${dam.name.replace(/\s+/g, "")}_${new Date().toISOString().slice(0,10)}.xlsx`,
         });
       } else {
         await exportMovementsToExcel({
-          dams, movements: filtered, perDamSheets: true,
+          dams, movements: filtered, perDamSheets: true, allDams: dams,
           filename: `FGC_AllDams_${new Date().toISOString().slice(0,10)}.xlsx`,
         });
       }
