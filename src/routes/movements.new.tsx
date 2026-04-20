@@ -1,5 +1,4 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { ProtectedLayout } from "@/components/protected-layout";
 import { useAuth } from "@/lib/auth-context";
 import { useDams } from "@/lib/queries";
 import { Card } from "@/components/ui/card";
@@ -19,7 +18,7 @@ export const Route = createFileRoute("/movements/new")({
   validateSearch: (s: Record<string, unknown>): SearchParams => ({
     type: s.type === "outgoing" ? "outgoing" : "incoming",
   }),
-  component: () => <ProtectedLayout><NewMovementPage /></ProtectedLayout>,
+  component: NewMovementPage,
 });
 
 function NewMovementPage() {
