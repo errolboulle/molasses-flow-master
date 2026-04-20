@@ -43,20 +43,26 @@ function HistoryPage() {
   const damName = (id: string) => dams.find((d) => d.id === id)?.name ?? "—";
 
   const handleExport = async (mode: "single" | "all") => {
-    if (filtered.length === 0) { return; }
-    if (mode === "single") {
-      if (!damId) return;
-      const dam = dams.find((d) => d.id === damId);
-      if (!dam) return;
-      await exportMovementsToExcel({
-        dams: [dam], movements: filtered, perDamSheets: false,
-        filename: `FGC_${dam.name.replace(/\s+/g, "")}_${new Date().toISOString().slice(0,10)}.xlsx`,
-      });
-    } else {
-      await exportMovementsToExcel({
-        dams, movements: filtered, perDamSheets: true,
-        filename: `FGC_AllDams_${new Date().toISOString().slice(0,10)}.xlsx`,
-      });
+    try {
+      if (filtered.length === 0) { toast.error("No movements to export"); return; }
+      if (mode === "single") {
+        if (!damId) { toast.error("Select a dam first"); return; }
+        const dam = dams.find((d) => d.id === damId);
+        if (!dam) { toast.error("Dam not found"); return; }
+        await exportMovementsToExcel({
+          dams: [dam], movements: filtered, perDamSheets: false,
+          filename: `FGC_${dam.name.replace(/\s+/g, "")}_${new Date().toISOString().slice(0,10)}.xlsx`,
+        });
+      } else {
+        await exportMovementsToExcel({
+          dams, movements: filtered, perDamSheets: true,
+          filename: `FGC_AllDams_${new Date().toISOString().slice(0,10)}.xlsx`,
+        });
+      }
+      toast.success("Excel file exported");
+    } catch (e: any) {
+      console.error("Excel export failed:", e);
+      toast.error(`Export failed: ${e?.message ?? "unknown error"}`);
     }
   };
 
