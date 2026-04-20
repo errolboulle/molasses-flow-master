@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ProtectedLayout } from "@/components/protected-layout";
 import { useAuth } from "@/lib/auth-context";
 import { Card } from "@/components/ui/card";
@@ -16,7 +16,12 @@ function MovementsPage() {
   const { canEntry } = useAuth();
   const { data: movements = [] } = useMovements();
   const { data: dams = [] } = useDams();
+  const navigate = useNavigate();
   const damName = (id: string) => dams.find((d) => d.id === id)?.name ?? "—";
+
+  const openNewMovement = (type: "incoming" | "outgoing") => {
+    navigate({ to: "/movements/new", search: { type } });
+  };
 
   return (
     <div className="space-y-6">
@@ -27,28 +32,46 @@ function MovementsPage() {
 
       {canEntry && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Link to="/movements/new" search={{ type: "incoming" }}>
-            <Card className="p-5 hover:border-success/50 transition-colors cursor-pointer h-full">
-              <div className="flex items-center gap-4">
-                <div className="h-12 w-12 rounded-lg bg-success/10 text-success flex items-center justify-center"><ArrowDownToLine className="h-6 w-6" /></div>
-                <div>
-                  <h3 className="font-semibold">New incoming delivery</h3>
-                  <p className="text-xs text-muted-foreground">Log a truck arrival from source mill.</p>
-                </div>
+          <Card
+            className="p-5 hover:border-success/50 transition-colors cursor-pointer h-full"
+            role="button"
+            tabIndex={0}
+            onClick={() => openNewMovement("incoming")}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                openNewMovement("incoming");
+              }
+            }}
+          >
+            <div className="flex items-center gap-4">
+              <div className="h-12 w-12 rounded-lg bg-success/10 text-success flex items-center justify-center"><ArrowDownToLine className="h-6 w-6" /></div>
+              <div>
+                <h3 className="font-semibold">New incoming delivery</h3>
+                <p className="text-xs text-muted-foreground">Log a truck arrival from source mill.</p>
               </div>
-            </Card>
-          </Link>
-          <Link to="/movements/new" search={{ type: "outgoing" }}>
-            <Card className="p-5 hover:border-purple/50 transition-colors cursor-pointer h-full">
-              <div className="flex items-center gap-4">
-                <div className="h-12 w-12 rounded-lg bg-purple/10 text-purple flex items-center justify-center"><ArrowUpFromLine className="h-6 w-6" /></div>
-                <div>
-                  <h3 className="font-semibold">New outgoing dispatch</h3>
-                  <p className="text-xs text-muted-foreground">Log a truck collecting from a dam.</p>
-                </div>
+            </div>
+          </Card>
+          <Card
+            className="p-5 hover:border-purple/50 transition-colors cursor-pointer h-full"
+            role="button"
+            tabIndex={0}
+            onClick={() => openNewMovement("outgoing")}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                openNewMovement("outgoing");
+              }
+            }}
+          >
+            <div className="flex items-center gap-4">
+              <div className="h-12 w-12 rounded-lg bg-purple/10 text-purple flex items-center justify-center"><ArrowUpFromLine className="h-6 w-6" /></div>
+              <div>
+                <h3 className="font-semibold">New outgoing dispatch</h3>
+                <p className="text-xs text-muted-foreground">Log a truck collecting from a dam.</p>
               </div>
-            </Card>
-          </Link>
+            </div>
+          </Card>
         </div>
       )}
 
@@ -84,3 +107,4 @@ function MovementsPage() {
     </div>
   );
 }
+
