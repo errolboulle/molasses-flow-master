@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useLocation, useNavigate } from "@tanstack/react-router";
 import { ProtectedLayout } from "@/components/protected-layout";
 import { useAuth } from "@/lib/auth-context";
 import { Card } from "@/components/ui/card";
@@ -9,8 +9,18 @@ import { fmtTons, fmtDateTime } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
 
 export const Route = createFileRoute("/movements")({
-  component: () => <ProtectedLayout><MovementsPage /></ProtectedLayout>,
+  component: MovementsRoute,
 });
+
+function MovementsRoute() {
+  const location = useLocation();
+
+  return (
+    <ProtectedLayout>
+      {location.pathname === "/movements" ? <MovementsPage /> : <Outlet />}
+    </ProtectedLayout>
+  );
+}
 
 function MovementsPage() {
   const { canEntry } = useAuth();
