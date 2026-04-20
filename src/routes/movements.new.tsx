@@ -91,9 +91,12 @@ function NewMovementPage() {
   }
 
   const handleSubmit = async () => {
-    if (!form.dam_id) { toast.error("Select a dam"); return; }
+    if (!user) { toast.error("You must be signed in"); return; }
+    if (dams.length === 0) { toast.error("No dams available — ask an admin to add one"); return; }
+    if (!form.dam_id) { toast.error("Please select a dam"); return; }
     const qty = parseFloat(form.quantity_tons);
-    if (!qty || qty <= 0) { toast.error("Quantity must be > 0"); return; }
+    if (!qty || qty <= 0) { toast.error("Quantity (tons) must be greater than 0"); return; }
+    if (!form.occurred_at) { toast.error("Date & time is required"); return; }
     setSaving(true);
     try {
       const numOrNull = (s: string) => s === "" ? null : parseFloat(s);
@@ -139,10 +142,11 @@ function NewMovementPage() {
       const { error } = await supabase.from("movements").insert(payload);
       if (error) throw error;
       await qc.invalidateQueries();
-      toast.success("Movement recorded");
+      toast.success(`${type === "incoming" ? "Incoming delivery" : "Outgoing dispatch"} recorded`);
       navigate({ to: "/movements" });
     } catch (e: any) {
-      toast.error(e.message ?? "Failed to save");
+      console.error("Movement save failed:", e);
+      toast.error(e?.message ?? "Failed to save movement");
     } finally { setSaving(false); }
   };
 
