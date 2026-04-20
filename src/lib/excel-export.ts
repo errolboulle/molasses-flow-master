@@ -1,5 +1,4 @@
 import * as XLSX from "xlsx";
-import { saveAs } from "file-saver";
 import type { Movement, Dam } from "./types";
 
 const HEADERS: { key: keyof Movement | "fgc_variance_calc"; header: string }[] = [
