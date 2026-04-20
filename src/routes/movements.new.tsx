@@ -142,10 +142,11 @@ function NewMovementPage() {
       const { error } = await supabase.from("movements").insert(payload);
       if (error) throw error;
       await qc.invalidateQueries();
-      toast.success("Movement recorded");
+      toast.success(`${type === "incoming" ? "Incoming delivery" : "Outgoing dispatch"} recorded`);
       navigate({ to: "/movements" });
     } catch (e: any) {
-      toast.error(e.message ?? "Failed to save");
+      console.error("Movement save failed:", e);
+      toast.error(e?.message ?? "Failed to save movement");
     } finally { setSaving(false); }
   };
 
