@@ -1,9 +1,10 @@
 import { useAuth } from "@/lib/auth-context";
-import { Navigate, Outlet } from "@tanstack/react-router";
+import { Navigate } from "@tanstack/react-router";
 import { useSettings } from "@/lib/queries";
 import { AppShell } from "./app-shell";
+import type { ReactNode } from "react";
 
-export function ProtectedLayout({ requireAdmin = false }: { requireAdmin?: boolean }) {
+export function ProtectedLayout({ requireAdmin = false, children }: { requireAdmin?: boolean; children: ReactNode }) {
   const { user, loading, isAdmin, roles } = useAuth();
   const { data: settings, isLoading: settingsLoading } = useSettings();
 
@@ -44,5 +45,5 @@ export function ProtectedLayout({ requireAdmin = false }: { requireAdmin?: boole
     );
   }
 
-  return <AppShell><Outlet /></AppShell>;
+  return <AppShell>{children}</AppShell>;
 }
