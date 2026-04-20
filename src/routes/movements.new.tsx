@@ -91,9 +91,12 @@ function NewMovementPage() {
   }
 
   const handleSubmit = async () => {
-    if (!form.dam_id) { toast.error("Select a dam"); return; }
+    if (!user) { toast.error("You must be signed in"); return; }
+    if (dams.length === 0) { toast.error("No dams available — ask an admin to add one"); return; }
+    if (!form.dam_id) { toast.error("Please select a dam"); return; }
     const qty = parseFloat(form.quantity_tons);
-    if (!qty || qty <= 0) { toast.error("Quantity must be > 0"); return; }
+    if (!qty || qty <= 0) { toast.error("Quantity (tons) must be greater than 0"); return; }
+    if (!form.occurred_at) { toast.error("Date & time is required"); return; }
     setSaving(true);
     try {
       const numOrNull = (s: string) => s === "" ? null : parseFloat(s);
