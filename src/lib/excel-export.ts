@@ -1,9 +1,8 @@
-import ExcelJS from "exceljs";
+import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 import type { Movement, Dam } from "./types";
 
-const HEADERS = [
-  // Source mill (left)
+const HEADERS: { key: keyof Movement | "fgc_variance_calc"; header: string }[] = [
   { key: "src_date_of_departure", header: "Date of Departure" },
   { key: "src_time", header: "Time" },
   { key: "src_vehicle_registration", header: "Vehicle Registration" },
@@ -16,7 +15,6 @@ const HEADERS = [
   { key: "src_net_mass", header: "Source Net Mass" },
   { key: "src_molasses_temperature", header: "Molasses Temperature" },
   { key: "src_sample_number", header: "Sample Number" },
-  // FGC (right)
   { key: "fgc_date_of_arrival", header: "Date of Arrival" },
   { key: "fgc_time", header: "Time" },
   { key: "fgc_vehicle_registration", header: "Vehicle Registration" },
@@ -45,29 +43,24 @@ function calcNet(gross: any, tare: any, fallback: any): number | null {
   return null;
 }
 
-function buildRow(m: Movement) {
+function buildRow(m: Movement): Record<string, any> {
   const srcNet = calcNet(m.src_gross_mass, m.src_tare_mass, m.src_net_mass);
   const fgcNet = calcNet(m.fgc_gross_mass, m.fgc_tare_mass, m.fgc_net_mass);
   const variance = m.fgc_variance ?? (srcNet != null && fgcNet != null ? srcNet - fgcNet : null);
-  return {
-    ...m,
-    src_net_mass: srcNet,
-    fgc_net_mass: fgcNet,
-    fgc_variance: variance,
-  };
+  const enriched: any = { ...m, src_net_mass: srcNet, fgc_net_mass: fgcNet, fgc_variance: variance };
+  const row: Record<string, any> = {};
+  for (const h of HEADERS) {
+    const v = enriched[h.key as string];
+    row[h.header] = v ?? "";
+  }
+  return row;
 }
 
-function addSheet(wb: ExcelJS.Workbook, dam: Dam, rows: Movement[]) {
-  const ws = wb.addWorksheet(sanitizeSheet(dam.name));
-  ws.columns = HEADERS.map((h) => ({ header: h.header, key: h.key, width: 18 }));
-  rows.forEach((m) => ws.addRow(buildRow(m)));
-  // Style header
-  ws.getRow(1).eachCell((c) => {
-    c.font = { bold: true, color: { argb: "FFFFFFFF" } };
-    c.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF1E293B" } };
-    c.alignment = { vertical: "middle", horizontal: "center" };
-  });
-  ws.views = [{ state: "frozen", ySplit: 1 }];
+function addSheet(wb: XLSX.WorkBook, dam: Dam, rows: Movement[]) {
+  const data = rows.map(buildRow);
+  const ws = XLSX.utils.json_to_sheet(data, { header: HEADERS.map((h) => h.header) });
+  ws["!cols"] = HEADERS.map(() => ({ wch: 18 }));
+  XLSX.utils.book_append_sheet(wb, ws, sanitizeSheet(dam.name));
 }
 
 export async function exportMovementsToExcel(opts: {
@@ -76,23 +69,27 @@ export async function exportMovementsToExcel(opts: {
   filename: string;
   perDamSheets: boolean;
 }) {
-  const wb = new ExcelJS.Workbook();
-  wb.creator = "FGC Molasses Storage Manager";
-  wb.created = new Date();
+  const wb = XLSX.utils.book_new();
 
   if (opts.perDamSheets) {
     for (const dam of opts.dams) {
       const rows = opts.movements.filter((m) => m.dam_id === dam.id);
       addSheet(wb, dam, rows);
     }
+    if (opts.dams.length === 0) {
+      const ws = XLSX.utils.json_to_sheet([], { header: HEADERS.map((h) => h.header) });
+      XLSX.utils.book_append_sheet(wb, ws, "Movements");
+    }
   } else {
-    // single dam expected
     const dam = opts.dams[0];
-    if (!dam) return;
+    if (!dam) throw new Error("No dam selected");
     const rows = opts.movements.filter((m) => m.dam_id === dam.id);
     addSheet(wb, dam, rows);
   }
 
-  const buf = await wb.xlsx.writeBuffer();
-  saveAs(new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }), opts.filename);
+  const buf = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+  saveAs(
+    new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }),
+    opts.filename,
+  );
 }
