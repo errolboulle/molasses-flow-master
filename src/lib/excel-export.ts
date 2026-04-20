@@ -87,8 +87,15 @@ export async function exportMovementsToExcel(opts: {
   }
 
   const buf = XLSX.write(wb, { bookType: "xlsx", type: "array" });
-  saveAs(
-    new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }),
-    opts.filename,
-  );
+  const blob = new Blob([buf], {
+    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = opts.filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
 }
