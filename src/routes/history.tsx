@@ -7,10 +7,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useMemo, useState } from "react";
-import { fmtTons, fmtDateTime } from "@/lib/types";
+import { fmtTons, fmtDateTime, type Movement } from "@/lib/types";
 import { ArrowDownToLine, ArrowUpFromLine, FileSpreadsheet } from "lucide-react";
 import { exportMovementsToExcel } from "@/lib/excel-export";
 import { toast } from "sonner";
+import { MovementEditDialog } from "@/components/movement-edit-dialog";
 
 export const Route = createFileRoute("/history")({
   component: () => <ProtectedLayout><HistoryPage /></ProtectedLayout>,
@@ -23,6 +24,7 @@ function HistoryPage() {
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [search, setSearch] = useState("");
+  const [editing, setEditing] = useState<Movement | null>(null);
 
   const { data: movements = [] } = useMovements({
     damId: damId || undefined,
@@ -44,7 +46,6 @@ function HistoryPage() {
 
   const handleExport = async (mode: "single" | "all") => {
     try {
-      if (filtered.length === 0) { toast.error("No movements to export"); return; }
       if (mode === "single") {
         if (!damId) { toast.error("Select a dam first"); return; }
         const dam = dams.find((d) => d.id === damId);
@@ -54,9 +55,10 @@ function HistoryPage() {
           filename: `FGC_${dam.name.replace(/\s+/g, "")}_${new Date().toISOString().slice(0,10)}.xlsx`,
         });
       } else {
+        // Full report: always uses ALL dams + ALL movements (ignore dam filter), so summary is complete.
         await exportMovementsToExcel({
-          dams, movements: filtered, perDamSheets: true, allDams: dams,
-          filename: `FGC_AllDams_${new Date().toISOString().slice(0,10)}.xlsx`,
+          dams, movements, perDamSheets: true, allDams: dams,
+          filename: `FGC_FullReport_${new Date().toISOString().slice(0,10)}.xlsx`,
         });
       }
       toast.success("Excel file exported");
@@ -70,7 +72,7 @@ function HistoryPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl lg:text-3xl font-bold">History & Excel export</h1>
-        <p className="text-sm text-muted-foreground mt-1">Filter movements and export per-dam sheets.</p>
+        <p className="text-sm text-muted-foreground mt-1">Click any entry to view or edit. Export per dam or full report.</p>
       </div>
 
       <Card className="p-5">
@@ -95,20 +97,27 @@ function HistoryPage() {
           <div className="space-y-1"><Label className="text-xs">Search</Label><Input placeholder="Driver, vehicle, mill…" value={search} onChange={(e) => setSearch(e.target.value)} /></div>
         </div>
         <div className="flex flex-wrap gap-2 mt-4">
-          <Button variant="outline" onClick={() => handleExport("single")} disabled={!damId || filtered.length === 0}>
+          <Button variant="outline" onClick={() => handleExport("single")} disabled={!damId}>
             <FileSpreadsheet className="h-4 w-4" /> Export selected dam
           </Button>
-          <Button onClick={() => handleExport("all")} disabled={filtered.length === 0}>
-            <FileSpreadsheet className="h-4 w-4" /> Export all dams (sheets)
+          <Button onClick={() => handleExport("all")}>
+            <FileSpreadsheet className="h-4 w-4" /> Export full report (all dams + summary)
           </Button>
         </div>
       </Card>
 
       <div>
-        <div className="text-sm text-muted-foreground mb-3">{filtered.length} movements</div>
+        <div className="text-sm text-muted-foreground mb-3">{filtered.length} movements · click to edit</div>
         <div className="space-y-2">
           {filtered.map((m) => (
-            <Card key={m.id} className="p-4">
+            <Card
+              key={m.id}
+              className="p-4 cursor-pointer hover:border-primary/50 transition-colors"
+              role="button"
+              tabIndex={0}
+              onClick={() => setEditing(m)}
+              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setEditing(m); } }}
+            >
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
                   <div className={`h-9 w-9 rounded-md flex items-center justify-center ${m.movement_type === "incoming" ? "bg-success/10 text-success" : "bg-purple/10 text-purple"}`}>
@@ -117,7 +126,7 @@ function HistoryPage() {
                   <div>
                     <div className="font-semibold tabular-nums">{fmtTons(m.quantity_tons)} <Badge variant="outline" className="ml-1">{damName(m.dam_id)}</Badge></div>
                     <div className="text-xs text-muted-foreground">
-                      {m.driver_or_company || "—"} · {m.src_vehicle_registration || m.fgc_vehicle_registration || "—"} · {m.src_mill || "—"}
+                      {m.driver_or_company || "—"} · {m.src_vehicle_registration || m.fgc_vehicle_registration || "—"} · {m.fgc_haulier || m.src_haulier || "—"}
                     </div>
                   </div>
                 </div>
@@ -128,6 +137,8 @@ function HistoryPage() {
           {filtered.length === 0 && <Card className="p-8 text-center text-sm text-muted-foreground">No movements match.</Card>}
         </div>
       </div>
+
+      {editing && <MovementEditDialog movement={editing} dams={dams} onClose={() => setEditing(null)} />}
     </div>
   );
 }

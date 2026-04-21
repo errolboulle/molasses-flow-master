@@ -214,9 +214,9 @@ function NewMovementPage() {
           <Field label="Delivery note"><Input value={form.src_delivery_note} onChange={(e) => set("src_delivery_note", e.target.value)} /></Field>
           <Field label="Mill number"><Input value={form.src_mill_number} onChange={(e) => set("src_mill_number", e.target.value)} /></Field>
           <Field label="Mill"><Input value={form.src_mill} onChange={(e) => set("src_mill", e.target.value)} /></Field>
-          <Field label="Gross mass (kg)"><Input type="number" step="0.001" value={form.src_gross_mass} onChange={(e) => set("src_gross_mass", e.target.value)} /></Field>
-          <Field label="Tare mass (kg)"><Input type="number" step="0.001" value={form.src_tare_mass} onChange={(e) => set("src_tare_mass", e.target.value)} /></Field>
-          <Field label="Net mass (auto)"><Input type="number" step="0.001" value={isNaN(srcNet) ? "" : srcNet.toString()} onChange={(e) => set("src_net_mass", e.target.value)} /></Field>
+          <Field label="Gross mass (tons)"><Input type="number" step="0.001" value={form.src_gross_mass} onChange={(e) => set("src_gross_mass", e.target.value)} /></Field>
+          <Field label="Tare mass (tons)"><Input type="number" step="0.001" value={form.src_tare_mass} onChange={(e) => set("src_tare_mass", e.target.value)} /></Field>
+          <Field label="Net mass (tons, auto)"><Input type="number" step="0.001" value={isNaN(srcNet) ? "" : srcNet.toString()} onChange={(e) => set("src_net_mass", e.target.value)} /></Field>
           <Field label="Molasses temperature (°C)"><Input type="number" step="0.01" value={form.src_molasses_temperature} onChange={(e) => set("src_molasses_temperature", e.target.value)} /></Field>
           <Field label="Sample number"><Input value={form.src_sample_number} onChange={(e) => set("src_sample_number", e.target.value)} /></Field>
         </div>
@@ -231,9 +231,9 @@ function NewMovementPage() {
           <Field label="Haulier"><Input value={form.fgc_haulier} onChange={(e) => set("fgc_haulier", e.target.value)} /></Field>
           <Field label="Consignment note number"><Input value={form.fgc_consignment_note_number} onChange={(e) => set("fgc_consignment_note_number", e.target.value)} /></Field>
           <Field label="ZSM weighbridge number"><Input value={form.fgc_zsm_weighbridge_number} onChange={(e) => set("fgc_zsm_weighbridge_number", e.target.value)} /></Field>
-          <Field label="Gross mass (kg)"><Input type="number" step="0.001" value={form.fgc_gross_mass} onChange={(e) => set("fgc_gross_mass", e.target.value)} /></Field>
-          <Field label="Tare mass (kg)"><Input type="number" step="0.001" value={form.fgc_tare_mass} onChange={(e) => set("fgc_tare_mass", e.target.value)} /></Field>
-          <Field label="Net mass (auto)"><Input type="number" step="0.001" value={isNaN(fgcNet) ? "" : fgcNet.toString()} onChange={(e) => set("fgc_net_mass", e.target.value)} /></Field>
+          <Field label="Gross mass (tons)"><Input type="number" step="0.001" value={form.fgc_gross_mass} onChange={(e) => set("fgc_gross_mass", e.target.value)} /></Field>
+          <Field label="Tare mass (tons)"><Input type="number" step="0.001" value={form.fgc_tare_mass} onChange={(e) => set("fgc_tare_mass", e.target.value)} /></Field>
+          <Field label="Net mass (tons, auto)"><Input type="number" step="0.001" value={isNaN(fgcNet) ? "" : fgcNet.toString()} onChange={(e) => set("fgc_net_mass", e.target.value)} /></Field>
           <Field label="Variance (Source − FGC)"><Input type="number" step="0.001" value={isNaN(variance) ? "" : variance.toString()} readOnly /></Field>
           <Field label="Brix"><Input type="number" step="0.01" value={form.fgc_brix} onChange={(e) => set("fgc_brix", e.target.value)} /></Field>
           <Field label="In/Out">
