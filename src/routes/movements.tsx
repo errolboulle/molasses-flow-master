@@ -5,8 +5,10 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowDownToLine, ArrowUpFromLine } from "lucide-react";
 import { useMovements, useDams } from "@/lib/queries";
-import { fmtTons, fmtDateTime } from "@/lib/types";
+import { fmtTons, fmtDateTime, type Movement } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
+import { useState } from "react";
+import { MovementEditDialog } from "@/components/movement-edit-dialog";
 
 export const Route = createFileRoute("/movements")({
   component: MovementsRoute,
@@ -27,6 +29,7 @@ function MovementsPage() {
   const { data: movements = [] } = useMovements();
   const { data: dams = [] } = useDams();
   const navigate = useNavigate();
+  const [editing, setEditing] = useState<Movement | null>(null);
   const damName = (id: string) => dams.find((d) => d.id === id)?.name ?? "—";
 
   const openNewMovement = (type: "incoming" | "outgoing") => {
@@ -87,9 +90,17 @@ function MovementsPage() {
 
       <div>
         <h2 className="text-lg font-semibold mb-3">Recent movements</h2>
+        <p className="text-xs text-muted-foreground mb-2">Click any entry to view or edit details.</p>
         <div className="space-y-2">
           {movements.slice(0, 20).map((m) => (
-            <Card key={m.id} className="p-4">
+            <Card
+              key={m.id}
+              className="p-4 cursor-pointer hover:border-primary/50 transition-colors"
+              role="button"
+              tabIndex={0}
+              onClick={() => setEditing(m)}
+              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setEditing(m); } }}
+            >
               <div className="flex items-center justify-between gap-3 flex-wrap">
                 <div className="flex items-center gap-3 min-w-0">
                   <div className={`h-9 w-9 rounded-md flex items-center justify-center shrink-0 ${m.movement_type === "incoming" ? "bg-success/10 text-success" : "bg-purple/10 text-purple"}`}>
@@ -114,6 +125,8 @@ function MovementsPage() {
           </div>
         )}
       </div>
+
+      {editing && <MovementEditDialog movement={editing} dams={dams} onClose={() => setEditing(null)} />}
     </div>
   );
 }
