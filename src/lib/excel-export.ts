@@ -9,13 +9,6 @@ const ALL_MEDIUM = { top: MEDIUM, bottom: MEDIUM, left: MEDIUM, right: MEDIUM };
 const sanitizeSheet = (name: string) => name.replace(/[\\/?*\[\]:]/g, "_").slice(0, 31);
 const cellRef = (r: number, c: number) => XLSX.utils.encode_cell({ r, c });
 
-function calcNet(gross: any, tare: any, fallback: any): number | null {
-  if (fallback != null && fallback !== "") return Number(fallback);
-  const g = Number(gross), t = Number(tare);
-  if (!isNaN(g) && !isNaN(t) && (gross != null || tare != null)) return g - t;
-  return null;
-}
-
 function styleCell(ws: XLSX.WorkSheet, r: number, c: number, style: any, value?: any) {
   const ref = cellRef(r, c);
   if (!ws[ref]) {
@@ -27,55 +20,128 @@ function styleCell(ws: XLSX.WorkSheet, r: number, c: number, style: any, value?:
   ws[ref].s = { ...(ws[ref].s || {}), ...style };
 }
 
-// Per-dam sheet columns:
-// Date | Time | Vehicle Reg | Haulier | Consignment Note | ZSM Operator | If OUT Haulier | IN (tons) | OUT (tons) | NETT (tons) | Notes
-const DAM_COLS = [
-  { header: "Date", width: 12 },
+// ===== Column layout =====
+// Source Mill side (left) — 11 cols
+const SRC_COLS = [
+  { header: "Date of Departure", width: 14 },
   { header: "Time", width: 8 },
   { header: "Vehicle Reg", width: 14 },
   { header: "Haulier", width: 16 },
-  { header: "Consignment Note", width: 18 },
+  { header: "Delivery Note", width: 14 },
+  { header: "Mill #", width: 8 },
+  { header: "Mill", width: 14 },
+  { header: "Gross Mass", width: 12 },
+  { header: "Tare Mass", width: 12 },
+  { header: "Net Mass", width: 12 },
+  { header: "Temp / Sample", width: 14 },
+];
+// FGC Record side (right) — 12 cols
+const FGC_COLS = [
+  { header: "Date of Arrival", width: 14 },
+  { header: "Time", width: 8 },
+  { header: "Vehicle Reg", width: 14 },
+  { header: "Haulier", width: 16 },
+  { header: "Consignment Note", width: 16 },
+  { header: "ZSM W/B #", width: 12 },
+  { header: "Gross Mass", width: 12 },
+  { header: "Tare Mass", width: 12 },
+  { header: "Net Mass", width: 12 },
+  { header: "Variance", width: 10 },
   { header: "ZSM Operator", width: 14 },
-  { header: "If OUT, Haulier", width: 16 },
+  { header: "If OUT, Haulier", width: 14 },
+];
+// Running balance columns (rightmost)
+const BAL_COLS = [
   { header: "IN (tons)", width: 12 },
   { header: "OUT (tons)", width: 12 },
   { header: "NETT (tons)", width: 14 },
-  { header: "Notes", width: 24 },
 ];
-const COL_IN = 7, COL_OUT = 8, COL_NETT = 9, COL_IF_OUT = 6;
-const TOTAL_COLS_DAM = DAM_COLS.length;
 
-const HEADER_BLUE = "1E40AF"; // blue
-const NETT_GREY = "D1D5DB";   // grey
-const YELLOW = "FFF59D";
+const SRC_START = 0;
+const SRC_END = SRC_COLS.length - 1;                  // 10
+const FGC_START = SRC_COLS.length;                     // 11
+const FGC_END = FGC_START + FGC_COLS.length - 1;       // 22
+const BAL_START = FGC_END + 1;                         // 23
+const BAL_IN = BAL_START;                              // 23
+const BAL_OUT = BAL_START + 1;                         // 24
+const BAL_NETT = BAL_START + 2;                        // 25
+const TOTAL_COLS = BAL_NETT + 1;                       // 26
 
-function addDamSheet(wb: XLSX.WorkBook, dam: Dam, rows: Movement[]) {
-  // Sort ascending by date for running balance
-  const sorted = [...rows].sort((a, b) => new Date(a.occurred_at).getTime() - new Date(b.occurred_at).getTime());
-  const opening = Number(dam.starting_balance_tons ?? 0);
+const HEADER_GREY = "D1D5DB";
+const SRC_BLUE = "BFDBFE";        // light blue band
+const FGC_GREEN = "BBF7D0";       // light green band
+const HEADER_YELLOW = "FFF59D";
+const NETT_GREY = "E5E7EB";
+const TITLE_BG = "9CA3AF";
+
+function num(v: any): number | "" {
+  if (v == null || v === "") return "";
+  const n = Number(v);
+  return isNaN(n) ? "" : n;
+}
+
+function addDamSheet(wb: XLSX.WorkBook, dam: Dam, allDams: Dam[], rows: Movement[]) {
+  const sorted = [...rows].sort(
+    (a, b) => new Date(a.occurred_at).getTime() - new Date(b.occurred_at).getTime()
+  );
 
   const aoa: any[][] = [];
 
-  // Title
-  aoa.push([`${dam.name} — Molasses Record`, ...new Array(TOTAL_COLS_DAM - 1).fill("")]);
-  aoa.push(new Array(TOTAL_COLS_DAM).fill(""));
+  // Row 0: main title
+  aoa.push(["Molasses Records for FGC 2025/26", ...new Array(TOTAL_COLS - 1).fill("")]);
 
-  // Opening balance row
-  const openLabelRow = new Array(TOTAL_COLS_DAM).fill("");
-  openLabelRow[0] = "Opening Balance";
-  openLabelRow[COL_NETT] = opening;
-  aoa.push(openLabelRow);
+  // Row 1: blank spacer
+  aoa.push(new Array(TOTAL_COLS).fill(""));
 
-  aoa.push(new Array(TOTAL_COLS_DAM).fill(""));
+  // Row 2: "Current Dam Stock" label
+  const stockLabelRow = new Array(TOTAL_COLS).fill("");
+  stockLabelRow[0] = "Current Dam Stock";
+  aoa.push(stockLabelRow);
 
-  // Header row
-  aoa.push(DAM_COLS.map((c) => c.header));
+  // Rows 3..3+N-1: per-dam stock
+  const stockStart = aoa.length;
+  for (const d of allDams) {
+    const r = new Array(TOTAL_COLS).fill("");
+    r[0] = d.name;
+    r[2] = Number(d.current_volume_tons ?? 0);
+    aoa.push(r);
+  }
+  const stockEnd = aoa.length - 1;
+
+  // Spacer
+  aoa.push(new Array(TOTAL_COLS).fill(""));
+
+  // Section band row (Source Mill | FGC Record | Running Balance)
+  const sectionRow = new Array(TOTAL_COLS).fill("");
+  sectionRow[SRC_START] = "Source Mill";
+  sectionRow[FGC_START] = "FGC Record";
+  sectionRow[BAL_START] = "Running Balance";
+  aoa.push(sectionRow);
+  const sectionRowIdx = aoa.length - 1;
+
+  // Column headers
+  const headerRow = [
+    ...SRC_COLS.map((c) => c.header),
+    ...FGC_COLS.map((c) => c.header),
+    ...BAL_COLS.map((c) => c.header),
+  ];
+  aoa.push(headerRow);
   const headerRowIdx = aoa.length - 1;
+
+  // Opening balance row — first NETT value = current dam volume
+  const opening = Number(dam.current_volume_tons ?? 0);
+  const openingRow = new Array(TOTAL_COLS).fill("");
+  openingRow[0] = "Opening (Current Dam Volume)";
+  openingRow[BAL_NETT] = opening;
+  aoa.push(openingRow);
+  const openingRowIdx = aoa.length - 1;
 
   // Data rows
   let nett = opening;
-  let totalIn = 0, totalOut = 0;
+  let totalIn = 0;
+  let totalOut = 0;
   const dataStart = aoa.length;
+
   for (const m of sorted) {
     const isIn = m.movement_type === "incoming";
     const qty = Number(m.quantity_tons) || 0;
@@ -85,116 +151,200 @@ function addDamSheet(wb: XLSX.WorkBook, dam: Dam, rows: Movement[]) {
     totalIn += inVal;
     totalOut += outVal;
 
-    const occ = m.occurred_at ? new Date(m.occurred_at) : null;
-    const dateStr = occ ? occ.toISOString().slice(0, 10) : (m.fgc_date_of_arrival || m.src_date_of_departure || "");
-    const timeStr = occ
-      ? occ.toTimeString().slice(0, 5)
-      : (m.fgc_time || m.src_time || "");
+    const row = new Array(TOTAL_COLS).fill("");
+    // Source Mill columns
+    row[SRC_START + 0] = m.src_date_of_departure || "";
+    row[SRC_START + 1] = m.src_time || "";
+    row[SRC_START + 2] = m.src_vehicle_registration || "";
+    row[SRC_START + 3] = m.src_haulier || "";
+    row[SRC_START + 4] = m.src_delivery_note || "";
+    row[SRC_START + 5] = m.src_mill_number || "";
+    row[SRC_START + 6] = m.src_mill || "";
+    row[SRC_START + 7] = num(m.src_gross_mass);
+    row[SRC_START + 8] = num(m.src_tare_mass);
+    row[SRC_START + 9] = num(m.src_net_mass);
+    row[SRC_START + 10] = [m.src_molasses_temperature, m.src_sample_number].filter(Boolean).join(" / ");
 
-    aoa.push([
-      dateStr,
-      timeStr,
-      m.fgc_vehicle_registration || m.src_vehicle_registration || "",
-      m.fgc_haulier || m.src_haulier || "",
-      m.fgc_consignment_note_number || m.src_delivery_note || "",
-      m.fgc_zsm_operator || "",
-      m.fgc_if_out_haulier || "",
-      inVal || "",
-      outVal || "",
-      nett,
-      m.notes || "",
-    ]);
+    // FGC Record columns
+    row[FGC_START + 0] = m.fgc_date_of_arrival || "";
+    row[FGC_START + 1] = m.fgc_time || "";
+    row[FGC_START + 2] = m.fgc_vehicle_registration || "";
+    row[FGC_START + 3] = m.fgc_haulier || "";
+    row[FGC_START + 4] = m.fgc_consignment_note_number || "";
+    row[FGC_START + 5] = m.fgc_zsm_weighbridge_number || "";
+    row[FGC_START + 6] = num(m.fgc_gross_mass);
+    row[FGC_START + 7] = num(m.fgc_tare_mass);
+    row[FGC_START + 8] = num(m.fgc_net_mass);
+    row[FGC_START + 9] = num(m.fgc_variance);
+    row[FGC_START + 10] = m.fgc_zsm_operator || "";
+    row[FGC_START + 11] = m.fgc_if_out_haulier || "";
+
+    // Running balance
+    row[BAL_IN] = inVal || "";
+    row[BAL_OUT] = outVal || "";
+    row[BAL_NETT] = nett;
+
+    aoa.push(row);
   }
   const dataEnd = aoa.length - 1;
 
   // Totals row
-  aoa.push(new Array(TOTAL_COLS_DAM).fill(""));
-  const totalsRow = new Array(TOTAL_COLS_DAM).fill("");
+  aoa.push(new Array(TOTAL_COLS).fill(""));
+  const totalsRow = new Array(TOTAL_COLS).fill("");
   totalsRow[0] = "TOTALS";
-  totalsRow[COL_IN] = totalIn;
-  totalsRow[COL_OUT] = totalOut;
-  totalsRow[COL_NETT] = nett;
+  totalsRow[BAL_IN] = totalIn;
+  totalsRow[BAL_OUT] = totalOut;
+  totalsRow[BAL_NETT] = nett;
   aoa.push(totalsRow);
   const totalsRowIdx = aoa.length - 1;
 
   const ws = XLSX.utils.aoa_to_sheet(aoa);
-  ws["!cols"] = DAM_COLS.map((c) => ({ wch: c.width }));
+  ws["!cols"] = [
+    ...SRC_COLS.map((c) => ({ wch: c.width })),
+    ...FGC_COLS.map((c) => ({ wch: c.width })),
+    ...BAL_COLS.map((c) => ({ wch: c.width })),
+  ];
   ws["!merges"] = ws["!merges"] || [];
-  // Title merge
-  ws["!merges"].push({ s: { r: 0, c: 0 }, e: { r: 0, c: TOTAL_COLS_DAM - 1 } });
-  // Opening label merge (cols 0..COL_NETT-1)
-  ws["!merges"].push({ s: { r: 2, c: 0 }, e: { r: 2, c: COL_NETT - 1 } });
-  // Totals label merge
-  ws["!merges"].push({ s: { r: totalsRowIdx, c: 0 }, e: { r: totalsRowIdx, c: COL_IN - 1 } });
+  ws["!rows"] = ws["!rows"] || [];
 
-  // Title style
+  // Title merge across full width
+  ws["!merges"].push({ s: { r: 0, c: 0 }, e: { r: 0, c: TOTAL_COLS - 1 } });
   styleCell(ws, 0, 0, {
-    font: { bold: true, sz: 16, color: { rgb: "FFFFFF" } },
+    font: { bold: true, sz: 16, color: { rgb: "111827" } },
     alignment: { horizontal: "center", vertical: "center" },
-    fill: { patternType: "solid", fgColor: { rgb: HEADER_BLUE } },
+    fill: { patternType: "solid", fgColor: { rgb: TITLE_BG } },
     border: ALL_MEDIUM,
   });
-  ws["!rows"] = ws["!rows"] || [];
-  ws["!rows"][0] = { hpt: 26 };
+  ws["!rows"][0] = { hpt: 28 };
 
-  // Opening balance row style
+  // Current Dam Stock label
+  ws["!merges"].push({ s: { r: 2, c: 0 }, e: { r: 2, c: 2 } });
   styleCell(ws, 2, 0, {
-    font: { bold: true },
+    font: { bold: true, sz: 12 },
     alignment: { horizontal: "left" },
-    fill: { patternType: "solid", fgColor: { rgb: NETT_GREY } },
+    fill: { patternType: "solid", fgColor: { rgb: HEADER_YELLOW } },
     border: ALL_THIN,
   });
-  styleCell(ws, 2, COL_NETT, {
-    font: { bold: true },
-    alignment: { horizontal: "right" },
-    fill: { patternType: "solid", fgColor: { rgb: NETT_GREY } },
-    border: ALL_THIN,
-    numFmt: "#,##0.000",
-  });
-
-  // Header row style
-  for (let c = 0; c < TOTAL_COLS_DAM; c++) {
-    const isInOutNett = c === COL_IN || c === COL_OUT || c === COL_NETT;
-    styleCell(ws, headerRowIdx, c, {
-      font: { bold: true, color: { rgb: isInOutNett ? "FFFFFF" : "FFFFFF" } },
-      alignment: { horizontal: "center", vertical: "center", wrapText: true },
-      fill: { patternType: "solid", fgColor: { rgb: HEADER_BLUE } },
-      border: ALL_MEDIUM,
+  for (let r = stockStart; r <= stockEnd; r++) {
+    styleCell(ws, r, 0, {
+      font: { bold: true },
+      alignment: { horizontal: "left" },
+      fill: { patternType: "solid", fgColor: { rgb: "F3F4F6" } },
+      border: ALL_THIN,
+    });
+    styleCell(ws, r, 1, {
+      alignment: { horizontal: "left" },
+      fill: { patternType: "solid", fgColor: { rgb: "F3F4F6" } },
+      border: ALL_THIN,
+    }, "tons:");
+    styleCell(ws, r, 2, {
+      font: { bold: true },
+      alignment: { horizontal: "right" },
+      fill: { patternType: "solid", fgColor: { rgb: "F3F4F6" } },
+      border: ALL_THIN,
+      numFmt: "#,##0.000",
     });
   }
-  ws["!rows"][headerRowIdx] = { hpt: 28 };
 
-  // Data row styles
+  // Section band row
+  ws["!merges"].push({ s: { r: sectionRowIdx, c: SRC_START }, e: { r: sectionRowIdx, c: SRC_END } });
+  ws["!merges"].push({ s: { r: sectionRowIdx, c: FGC_START }, e: { r: sectionRowIdx, c: FGC_END } });
+  ws["!merges"].push({ s: { r: sectionRowIdx, c: BAL_START }, e: { r: sectionRowIdx, c: BAL_NETT } });
+  styleCell(ws, sectionRowIdx, SRC_START, {
+    font: { bold: true, sz: 12, color: { rgb: "1E3A8A" } },
+    alignment: { horizontal: "center", vertical: "center" },
+    fill: { patternType: "solid", fgColor: { rgb: SRC_BLUE } },
+    border: ALL_MEDIUM,
+  });
+  styleCell(ws, sectionRowIdx, FGC_START, {
+    font: { bold: true, sz: 12, color: { rgb: "065F46" } },
+    alignment: { horizontal: "center", vertical: "center" },
+    fill: { patternType: "solid", fgColor: { rgb: FGC_GREEN } },
+    border: ALL_MEDIUM,
+  });
+  styleCell(ws, sectionRowIdx, BAL_START, {
+    font: { bold: true, sz: 12, color: { rgb: "111827" } },
+    alignment: { horizontal: "center", vertical: "center" },
+    fill: { patternType: "solid", fgColor: { rgb: HEADER_YELLOW } },
+    border: ALL_MEDIUM,
+  });
+  ws["!rows"][sectionRowIdx] = { hpt: 22 };
+
+  // Column header row
+  for (let c = 0; c < TOTAL_COLS; c++) {
+    const isBal = c >= BAL_START;
+    styleCell(ws, headerRowIdx, c, {
+      font: { bold: true, sz: 11 },
+      alignment: { horizontal: "center", vertical: "center", wrapText: true },
+      fill: { patternType: "solid", fgColor: { rgb: isBal ? HEADER_YELLOW : HEADER_GREY } },
+      border: c === FGC_START - 1 || c === FGC_END
+        ? { ...ALL_THIN, right: MEDIUM }
+        : c === FGC_START || c === BAL_START
+          ? { ...ALL_THIN, left: MEDIUM }
+          : ALL_THIN,
+    });
+  }
+  ws["!rows"][headerRowIdx] = { hpt: 32 };
+
+  // Opening balance row
+  for (let c = 0; c < TOTAL_COLS; c++) {
+    const isNett = c === BAL_NETT;
+    styleCell(ws, openingRowIdx, c, {
+      font: { bold: true },
+      alignment: { horizontal: c === 0 ? "left" : "right", vertical: "center" },
+      fill: { patternType: "solid", fgColor: { rgb: NETT_GREY } },
+      border: ALL_THIN,
+      ...(isNett ? { numFmt: "#,##0.000" } : {}),
+    });
+  }
+  ws["!merges"].push({ s: { r: openingRowIdx, c: 0 }, e: { r: openingRowIdx, c: BAL_NETT - 1 } });
+
+  // Data row styling — borders, separator, number formats
   for (let r = dataStart; r <= dataEnd; r++) {
-    for (let c = 0; c < TOTAL_COLS_DAM; c++) {
+    for (let c = 0; c < TOTAL_COLS; c++) {
       const ref = cellRef(r, c);
       if (!ws[ref]) ws[ref] = { t: "s", v: "" };
       const v = ws[ref].v;
       if (typeof v === "number") ws[ref].t = "n";
-      const baseStyle: any = {
-        alignment: { horizontal: typeof v === "number" ? "right" : "left", vertical: "center", wrapText: true },
-        border: ALL_THIN,
+
+      const isNumeric = typeof v === "number";
+      const inSrc = c >= SRC_START && c <= SRC_END;
+      const inFgc = c >= FGC_START && c <= FGC_END;
+      const isNett = c === BAL_NETT;
+      const isInOut = c === BAL_IN || c === BAL_OUT;
+
+      const border: any = { ...ALL_THIN };
+      if (c === SRC_END) border.right = MEDIUM;       // separator between Source and FGC
+      if (c === FGC_START) border.left = MEDIUM;
+      if (c === FGC_END) border.right = MEDIUM;       // separator between FGC and Balance
+      if (c === BAL_START) border.left = MEDIUM;
+
+      const style: any = {
+        alignment: { horizontal: isNumeric ? "right" : "left", vertical: "center", wrapText: true },
+        border,
       };
-      if (c === COL_NETT) {
-        baseStyle.fill = { patternType: "solid", fgColor: { rgb: NETT_GREY } };
-        baseStyle.font = { bold: true };
-        baseStyle.numFmt = "#,##0.000";
-      } else if (c === COL_IN || c === COL_OUT) {
-        baseStyle.numFmt = "#,##0.000";
-      } else if (c === COL_IF_OUT && v) {
-        baseStyle.fill = { patternType: "solid", fgColor: { rgb: YELLOW } };
+
+      if (inSrc && (c >= SRC_START + 7 && c <= SRC_START + 9)) style.numFmt = "#,##0.000";
+      if (inFgc && (c >= FGC_START + 6 && c <= FGC_START + 9)) style.numFmt = "#,##0.000";
+      if (isInOut) style.numFmt = "#,##0.000";
+      if (isNett) {
+        style.numFmt = "#,##0.000";
+        style.font = { bold: true };
+        style.fill = { patternType: "solid", fgColor: { rgb: NETT_GREY } };
       }
-      ws[ref].s = baseStyle;
+
+      ws[ref].s = style;
     }
   }
 
-  // Totals row style
-  for (let c = 0; c < TOTAL_COLS_DAM; c++) {
-    const isVal = c === COL_IN || c === COL_OUT || c === COL_NETT;
+  // Totals row
+  ws["!merges"].push({ s: { r: totalsRowIdx, c: 0 }, e: { r: totalsRowIdx, c: BAL_IN - 1 } });
+  for (let c = 0; c < TOTAL_COLS; c++) {
+    const isVal = c === BAL_IN || c === BAL_OUT || c === BAL_NETT;
     styleCell(ws, totalsRowIdx, c, {
       font: { bold: true, sz: 12 },
-      alignment: { horizontal: c === 0 ? "right" : "right", vertical: "center" },
-      fill: { patternType: "solid", fgColor: { rgb: c === COL_NETT ? NETT_GREY : "FDE68A" } },
+      alignment: { horizontal: "right", vertical: "center" },
+      fill: { patternType: "solid", fgColor: { rgb: c === BAL_NETT ? NETT_GREY : HEADER_YELLOW } },
       border: ALL_MEDIUM,
       ...(isVal ? { numFmt: "#,##0.000" } : {}),
     });
@@ -205,156 +355,20 @@ function addDamSheet(wb: XLSX.WorkBook, dam: Dam, rows: Movement[]) {
   XLSX.utils.book_append_sheet(wb, ws, sanitizeSheet(dam.name));
 }
 
-function addSummarySheet(wb: XLSX.WorkBook, dams: Dam[], movements: Movement[]) {
-  const damStats = dams.map((d) => {
-    const rows = movements.filter((m) => m.dam_id === d.id);
-    let inT = 0, outT = 0;
-    for (const m of rows) {
-      const q = Number(m.quantity_tons) || 0;
-      if (m.movement_type === "incoming") inT += q; else outT += q;
-    }
-    const opening = Number(d.starting_balance_tons ?? 0);
-    const finalNett = opening + inT - outT;
-    return { dam: d, opening, inT, outT, finalNett, current: Number(d.current_volume_tons ?? 0) };
-  });
-
-  const totalIn = damStats.reduce((a, x) => a + x.inT, 0);
-  const totalOut = damStats.reduce((a, x) => a + x.outT, 0);
-  const totalNett = damStats.reduce((a, x) => a + x.finalNett, 0);
-
-  const cols = ["Dam", "Opening (tons)", "IN (tons)", "OUT (tons)", "NETT (tons)", "Current Stock (tons)"];
-  const aoa: any[][] = [];
-  // Title
-  aoa.push(["TOTAL MOLASSES STORED", "", "", "", "", ""]);
-  aoa.push(["Molasses Records for FGC 2025/26", "", "", "", "", ""]);
-  aoa.push(new Array(cols.length).fill(""));
-
-  // Big totals block
-  aoa.push(["Total IN", totalIn, "", "Total OUT", totalOut, ""]);
-  aoa.push(["Total NETT", totalNett, "", "Generated", new Date().toLocaleString(), ""]);
-  aoa.push(new Array(cols.length).fill(""));
-
-  // Per-dam table header
-  aoa.push(cols);
-  const headerIdx = aoa.length - 1;
-
-  // Per-dam rows
-  const dataStart = aoa.length;
-  for (const s of damStats) {
-    aoa.push([s.dam.name, s.opening, s.inT, s.outT, s.finalNett, s.current]);
-  }
-  const dataEnd = aoa.length - 1;
-
-  // Totals row
-  aoa.push(["TOTAL", damStats.reduce((a, x) => a + x.opening, 0), totalIn, totalOut, totalNett, damStats.reduce((a, x) => a + x.current, 0)]);
-  const totalsIdx = aoa.length - 1;
-
-  const ws = XLSX.utils.aoa_to_sheet(aoa);
-  ws["!cols"] = [{ wch: 22 }, { wch: 18 }, { wch: 14 }, { wch: 14 }, { wch: 16 }, { wch: 22 }];
-  ws["!merges"] = ws["!merges"] || [];
-  ws["!merges"].push({ s: { r: 0, c: 0 }, e: { r: 0, c: cols.length - 1 } });
-  ws["!merges"].push({ s: { r: 1, c: 0 }, e: { r: 1, c: cols.length - 1 } });
-
-  // Title styles
-  styleCell(ws, 0, 0, {
-    font: { bold: true, sz: 18, color: { rgb: "FFFFFF" } },
-    alignment: { horizontal: "center", vertical: "center" },
-    fill: { patternType: "solid", fgColor: { rgb: HEADER_BLUE } },
-    border: ALL_MEDIUM,
-  });
-  styleCell(ws, 1, 0, {
-    font: { bold: true, sz: 12, color: { rgb: "1F2937" } },
-    alignment: { horizontal: "center", vertical: "center" },
-    fill: { patternType: "solid", fgColor: { rgb: "E5E7EB" } },
-    border: ALL_THIN,
-  });
-  ws["!rows"] = ws["!rows"] || [];
-  ws["!rows"][0] = { hpt: 30 };
-  ws["!rows"][1] = { hpt: 20 };
-
-  // Big totals block styles
-  const totLabelStyle = {
-    font: { bold: true, sz: 12 },
-    alignment: { horizontal: "left", vertical: "center" },
-    fill: { patternType: "solid", fgColor: { rgb: "FDE68A" } },
-    border: ALL_THIN,
-  };
-  const totValStyle = {
-    font: { bold: true, sz: 14 },
-    alignment: { horizontal: "right", vertical: "center" },
-    fill: { patternType: "solid", fgColor: { rgb: NETT_GREY } },
-    border: ALL_THIN,
-    numFmt: "#,##0.000",
-  };
-  styleCell(ws, 3, 0, totLabelStyle); styleCell(ws, 3, 1, totValStyle);
-  styleCell(ws, 3, 3, totLabelStyle); styleCell(ws, 3, 4, totValStyle);
-  styleCell(ws, 4, 0, { ...totLabelStyle, fill: { patternType: "solid", fgColor: { rgb: HEADER_BLUE } }, font: { bold: true, color: { rgb: "FFFFFF" }, sz: 12 } });
-  styleCell(ws, 4, 1, { ...totValStyle, fill: { patternType: "solid", fgColor: { rgb: HEADER_BLUE } }, font: { bold: true, sz: 14, color: { rgb: "FFFFFF" } } });
-  styleCell(ws, 4, 3, { ...totLabelStyle, fill: { patternType: "solid", fgColor: { rgb: "F3F4F6" } } });
-  styleCell(ws, 4, 4, { ...totLabelStyle, alignment: { horizontal: "right", vertical: "center" }, fill: { patternType: "solid", fgColor: { rgb: "F3F4F6" } }, font: { bold: false, sz: 11 } });
-
-  // Header row
-  for (let c = 0; c < cols.length; c++) {
-    styleCell(ws, headerIdx, c, {
-      font: { bold: true, color: { rgb: "FFFFFF" } },
-      alignment: { horizontal: "center", vertical: "center", wrapText: true },
-      fill: { patternType: "solid", fgColor: { rgb: HEADER_BLUE } },
-      border: ALL_MEDIUM,
-    });
-  }
-  ws["!rows"][headerIdx] = { hpt: 28 };
-
-  // Data rows
-  for (let r = dataStart; r <= dataEnd; r++) {
-    for (let c = 0; c < cols.length; c++) {
-      const ref = cellRef(r, c);
-      if (!ws[ref]) ws[ref] = { t: "s", v: "" };
-      const v = ws[ref].v;
-      if (typeof v === "number") ws[ref].t = "n";
-      const s: any = {
-        alignment: { horizontal: c === 0 ? "left" : "right", vertical: "center" },
-        border: ALL_THIN,
-        font: c === 0 ? { bold: true } : {},
-        ...(c >= 1 ? { numFmt: "#,##0.000" } : {}),
-      };
-      if (c === 4) {
-        s.fill = { patternType: "solid", fgColor: { rgb: NETT_GREY } };
-        s.font = { bold: true };
-      }
-      ws[ref].s = s;
-    }
-  }
-
-  // Totals row
-  for (let c = 0; c < cols.length; c++) {
-    styleCell(ws, totalsIdx, c, {
-      font: { bold: true, sz: 12, color: { rgb: c === 4 ? "000000" : "FFFFFF" } },
-      alignment: { horizontal: c === 0 ? "left" : "right", vertical: "center" },
-      fill: { patternType: "solid", fgColor: { rgb: c === 4 ? NETT_GREY : HEADER_BLUE } },
-      border: ALL_MEDIUM,
-      ...(c >= 1 ? { numFmt: "#,##0.000" } : {}),
-    });
-  }
-
-  XLSX.utils.book_append_sheet(wb, ws, "TOTAL Summary");
-}
-
 export async function exportMovementsToExcel(opts: {
   dams: Dam[];               // dams to include as sheets (filtered)
   movements: Movement[];
   filename: string;
-  perDamSheets: boolean;     // if true, include all dams + summary
-  allDams?: Dam[];           // full list, used by summary when filter applied
+  perDamSheets: boolean;     // if true, include all dams
+  allDams?: Dam[];           // full list, for dam-stock summary
 }) {
   const wb = XLSX.utils.book_new();
   const allDams = opts.allDams ?? opts.dams;
 
   if (opts.perDamSheets) {
-    // Summary first (full report)
-    addSummarySheet(wb, allDams, opts.movements);
     for (const dam of allDams) {
       const rows = opts.movements.filter((m) => m.dam_id === dam.id);
-      addDamSheet(wb, dam, rows);
+      addDamSheet(wb, dam, allDams, rows);
     }
     if (allDams.length === 0) {
       const ws = XLSX.utils.aoa_to_sheet([["No data"]]);
@@ -364,7 +378,7 @@ export async function exportMovementsToExcel(opts: {
     const dam = opts.dams[0];
     if (!dam) throw new Error("No dam selected");
     const rows = opts.movements.filter((m) => m.dam_id === dam.id);
-    addDamSheet(wb, dam, rows);
+    addDamSheet(wb, dam, allDams, rows);
   }
 
   const buf = XLSX.write(wb, { bookType: "xlsx", type: "array" });
