@@ -22,7 +22,7 @@ export function MovementEditDialog({
   onClose: () => void;
 }) {
   const qc = useQueryClient();
-  const { isAdmin, canEntry } = useAuth();
+  const { isAdmin } = useAuth();
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
@@ -42,7 +42,7 @@ export function MovementEditDialog({
 
   const handleSave = async (e: FormEvent) => {
     e.preventDefault();
-    if (!canEntry) { toast.error("No permission"); return; }
+    if (!isAdmin) { toast.error("Only admins can edit historical records"); return; }
     const qty = parseFloat(form.quantity_tons);
     if (isNaN(qty) || qty <= 0) { toast.error("Volume must be greater than 0"); return; }
     if (!form.dam_id) { toast.error("Dam is required"); return; }
@@ -100,54 +100,54 @@ export function MovementEditDialog({
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Edit movement</DialogTitle>
+          <DialogTitle>{isAdmin ? "Edit movement" : "Movement details"}</DialogTitle>
           <DialogDescription>
-            Created {fmtDateTime(movement.created_at)}. Saving will recalculate the dam balance automatically.
+            Created {fmtDateTime(movement.created_at)}. {isAdmin ? "Saving will recalculate the dam balance automatically." : "Viewer and Operator roles can review history but cannot edit past records."}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSave} className="space-y-4 py-2">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label className="text-xs">Type</Label>
-              <select className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm" value={form.movement_type} onChange={(e) => set("movement_type", e.target.value)}>
+              <select disabled={!isAdmin} className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm disabled:opacity-70" value={form.movement_type} onChange={(e) => set("movement_type", e.target.value)}>
                 <option value="incoming">Incoming (IN)</option>
                 <option value="outgoing">Outgoing (OUT)</option>
               </select>
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs">Dam</Label>
-              <select className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm" value={form.dam_id} onChange={(e) => set("dam_id", e.target.value)}>
+              <select disabled={!isAdmin} className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm disabled:opacity-70" value={form.dam_id} onChange={(e) => set("dam_id", e.target.value)}>
                 {dams.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
               </select>
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs">Date & time</Label>
-              <Input type="datetime-local" value={form.occurred_at} onChange={(e) => set("occurred_at", e.target.value)} />
+              <Input disabled={!isAdmin} type="datetime-local" value={form.occurred_at} onChange={(e) => set("occurred_at", e.target.value)} />
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs">Mass (tons)</Label>
-              <Input type="number" step="0.001" min="0.001" value={form.quantity_tons} onChange={(e) => set("quantity_tons", e.target.value)} />
+              <Input disabled={!isAdmin} type="number" step="0.001" min="0.001" value={form.quantity_tons} onChange={(e) => set("quantity_tons", e.target.value)} />
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs">Driver / company</Label>
-              <Input value={form.driver_or_company} onChange={(e) => set("driver_or_company", e.target.value)} />
+              <Input disabled={!isAdmin} value={form.driver_or_company} onChange={(e) => set("driver_or_company", e.target.value)} />
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs">Haulier</Label>
-              <Input value={form.fgc_haulier} onChange={(e) => set("fgc_haulier", e.target.value)} />
+              <Input disabled={!isAdmin} value={form.fgc_haulier} onChange={(e) => set("fgc_haulier", e.target.value)} />
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs">ZSM Operator</Label>
-              <Input value={form.fgc_zsm_operator} onChange={(e) => set("fgc_zsm_operator", e.target.value)} />
+              <Input disabled={!isAdmin} value={form.fgc_zsm_operator} onChange={(e) => set("fgc_zsm_operator", e.target.value)} />
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs">If OUT — Haulier</Label>
-              <Input value={form.fgc_if_out_haulier} onChange={(e) => set("fgc_if_out_haulier", e.target.value)} />
+              <Input disabled={!isAdmin} value={form.fgc_if_out_haulier} onChange={(e) => set("fgc_if_out_haulier", e.target.value)} />
             </div>
           </div>
           <div className="space-y-1.5">
             <Label className="text-xs">Notes</Label>
-            <Textarea rows={2} value={form.notes} onChange={(e) => set("notes", e.target.value)} />
+            <Textarea disabled={!isAdmin} rows={2} value={form.notes} onChange={(e) => set("notes", e.target.value)} />
           </div>
           <DialogFooter className="gap-2 sm:justify-between">
             {isAdmin ? (
@@ -157,7 +157,7 @@ export function MovementEditDialog({
             ) : <span />}
             <div className="flex gap-2">
               <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-              <Button type="submit" disabled={saving || deleting}>{saving ? "Saving…" : "Save changes"}</Button>
+              {isAdmin && <Button type="submit" disabled={saving || deleting}>{saving ? "Saving…" : "Save changes"}</Button>}
             </div>
           </DialogFooter>
         </form>

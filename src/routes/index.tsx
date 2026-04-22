@@ -3,6 +3,7 @@ import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
 import heroImage from "@/assets/molasses-yard-hero.jpg";
 import { ArrowRight, BarChart3, FileSpreadsheet, ShieldCheck } from "lucide-react";
+import type { ReactNode } from "react";
 
 export const Route = createFileRoute("/")({
   component: Index,
@@ -45,6 +46,6 @@ function Index() {
   );
 }
 
-function HeroMetric({ icon, label }: { icon: React.ReactNode; label: string }) {
+function HeroMetric({ icon, label }: { icon: ReactNode; label: string }) {
   return <div className="flex items-center gap-2 border border-border bg-card/65 px-3 py-3 text-sm font-semibold backdrop-blur">{icon}{label}</div>;
 }
