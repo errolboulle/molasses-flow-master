@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -81,7 +82,8 @@ function UsersPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl lg:text-3xl font-bold">Users</h1>
+          <p className="text-xs font-semibold uppercase tracking-wider text-primary">Access control</p>
+          <h1 className="mt-1 text-3xl font-black lg:text-4xl">Users</h1>
           <p className="text-sm text-muted-foreground mt-1">Add users, manage roles, edit details, and deactivate access.</p>
         </div>
         <Button onClick={() => { setCreating(true); setEditing(null); setForm({ fullName: "", email: "", password: "", role: "operator" }); }}>
@@ -101,29 +103,20 @@ function UsersPage() {
         </Card>
       )}
 
-      <div className="space-y-2">
-        {users.map((u) => (
-          <Card key={u.id} className="p-4">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <div className="font-semibold">{u.full_name || u.email}</div>
-                <div className="text-xs text-muted-foreground">{u.email} · joined {fmtDateTime(u.created_at)}</div>
-                <div className="flex gap-1 mt-2 flex-wrap">
-                  {u.roles.length === 0 && <Badge variant="outline">no role</Badge>}
-                  {u.roles.map((r) => <Badge key={r} variant={r === "admin" ? "default" : "secondary"}>{r}</Badge>)}
-                  <Badge variant={u.status === "active" ? "outline" : "destructive"}>{u.status === "active" ? "active" : "inactive"}</Badge>
-                </div>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <Button size="sm" variant="outline" onClick={() => startEdit(u as UserRow)}><Edit3 className="h-4 w-4" /> Edit</Button>
-                <Button size="sm" variant={u.status === "active" ? "destructive" : "default"} onClick={() => updateUser({ userId: u.id, status: u.status === "active" ? "disabled" : "active" })}>
-                  {u.status === "active" ? "Deactivate" : "Restore"}
-                </Button>
-              </div>
-            </div>
-          </Card>
-        ))}
-      </div>
+      <Table>
+        <TableHeader><TableRow><TableHead>User</TableHead><TableHead>Roles</TableHead><TableHead>Status</TableHead><TableHead>Joined</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
+        <TableBody>
+          {users.map((u) => (
+            <TableRow key={u.id}>
+              <TableCell><div className="font-semibold">{u.full_name || u.email}</div><div className="text-xs text-muted-foreground">{u.email}</div></TableCell>
+              <TableCell><div className="flex gap-1 flex-wrap">{u.roles.length === 0 && <Badge variant="outline">no role</Badge>}{u.roles.map((r) => <Badge key={r} variant={r === "admin" ? "default" : "secondary"}>{r}</Badge>)}</div></TableCell>
+              <TableCell><Badge variant={u.status === "active" ? "outline" : "destructive"}>{u.status === "active" ? "active" : "inactive"}</Badge></TableCell>
+              <TableCell className="text-muted-foreground">{fmtDateTime(u.created_at)}</TableCell>
+              <TableCell><div className="flex justify-end gap-2"><Button size="sm" variant="outline" onClick={() => startEdit(u as UserRow)}><Edit3 className="h-4 w-4" /> Edit</Button><Button size="sm" variant={u.status === "active" ? "destructive" : "default"} onClick={() => updateUser({ userId: u.id, status: u.status === "active" ? "disabled" : "active" })}>{u.status === "active" ? "Deactivate" : "Restore"}</Button></div></TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
     </div>
   );
 }
