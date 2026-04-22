@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      audit_logs: {
+        Row: {
+          action: string
+          entity_id: string | null
+          entity_type: string
+          id: string
+          metadata: Json
+          timestamp: string
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          entity_id?: string | null
+          entity_type: string
+          id?: string
+          metadata?: Json
+          timestamp?: string
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          entity_id?: string | null
+          entity_type?: string
+          id?: string
+          metadata?: Json
+          timestamp?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       dam_adjustments: {
         Row: {
           created_at: string
@@ -55,38 +85,161 @@ export type Database = {
           },
         ]
       }
+      dam_transactions: {
+        Row: {
+          change_liters: number
+          change_tons: number
+          created_at: string
+          dam_id: string
+          id: string
+          load_id: string
+          resulting_balance_liters: number
+          resulting_balance_tons: number
+        }
+        Insert: {
+          change_liters: number
+          change_tons: number
+          created_at?: string
+          dam_id: string
+          id?: string
+          load_id: string
+          resulting_balance_liters: number
+          resulting_balance_tons: number
+        }
+        Update: {
+          change_liters?: number
+          change_tons?: number
+          created_at?: string
+          dam_id?: string
+          id?: string
+          load_id?: string
+          resulting_balance_liters?: number
+          resulting_balance_tons?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dam_transactions_dam_id_fkey"
+            columns: ["dam_id"]
+            isOneToOne: false
+            referencedRelation: "dams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dam_transactions_load_id_fkey"
+            columns: ["load_id"]
+            isOneToOne: true
+            referencedRelation: "loads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dams: {
         Row: {
+          capacity_liters: number | null
           capacity_tons: number | null
           created_at: string
+          current_volume_liters: number
           current_volume_tons: number
+          deleted_at: string | null
           id: string
+          location: string | null
           name: string
           notes: string | null
           starting_balance_tons: number
+          status: Database["public"]["Enums"]["dam_status"]
           updated_at: string
         }
         Insert: {
+          capacity_liters?: number | null
           capacity_tons?: number | null
           created_at?: string
+          current_volume_liters?: number
           current_volume_tons?: number
+          deleted_at?: string | null
           id?: string
+          location?: string | null
           name: string
           notes?: string | null
           starting_balance_tons?: number
+          status?: Database["public"]["Enums"]["dam_status"]
           updated_at?: string
         }
         Update: {
+          capacity_liters?: number | null
           capacity_tons?: number | null
           created_at?: string
+          current_volume_liters?: number
           current_volume_tons?: number
+          deleted_at?: string | null
           id?: string
+          location?: string | null
           name?: string
           notes?: string | null
           starting_balance_tons?: number
+          status?: Database["public"]["Enums"]["dam_status"]
           updated_at?: string
         }
         Relationships: []
+      }
+      loads: {
+        Row: {
+          created_at: string
+          created_by: string
+          dam_id: string
+          deleted_at: string | null
+          id: string
+          status: Database["public"]["Enums"]["load_status"]
+          timestamp: string
+          truck_id: string
+          type: Database["public"]["Enums"]["load_type"]
+          updated_at: string
+          volume_liters: number
+          weight_tons: number
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          dam_id: string
+          deleted_at?: string | null
+          id?: string
+          status?: Database["public"]["Enums"]["load_status"]
+          timestamp?: string
+          truck_id: string
+          type: Database["public"]["Enums"]["load_type"]
+          updated_at?: string
+          volume_liters: number
+          weight_tons: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          dam_id?: string
+          deleted_at?: string | null
+          id?: string
+          status?: Database["public"]["Enums"]["load_status"]
+          timestamp?: string
+          truck_id?: string
+          type?: Database["public"]["Enums"]["load_type"]
+          updated_at?: string
+          volume_liters?: number
+          weight_tons?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loads_dam_id_fkey"
+            columns: ["dam_id"]
+            isOneToOne: false
+            referencedRelation: "dams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loads_truck_id_fkey"
+            columns: ["truck_id"]
+            isOneToOne: false
+            referencedRelation: "trucks"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       movements: {
         Row: {
@@ -255,6 +408,36 @@ export type Database = {
         }
         Relationships: []
       }
+      reports: {
+        Row: {
+          created_at: string
+          deleted_at: string | null
+          file_url: string | null
+          filters: Json
+          generated_by: string | null
+          id: string
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          deleted_at?: string | null
+          file_url?: string | null
+          filters?: Json
+          generated_by?: string | null
+          id?: string
+          type: string
+        }
+        Update: {
+          created_at?: string
+          deleted_at?: string | null
+          file_url?: string | null
+          filters?: Json
+          generated_by?: string | null
+          id?: string
+          type?: string
+        }
+        Relationships: []
+      }
       settings: {
         Row: {
           density_kg_per_l: number
@@ -276,6 +459,39 @@ export type Database = {
           onboarded?: boolean
           updated_at?: string
           updated_by?: string | null
+        }
+        Relationships: []
+      }
+      trucks: {
+        Row: {
+          created_at: string
+          deleted_at: string | null
+          driver_name: string
+          id: string
+          registration_number: string
+          status: Database["public"]["Enums"]["truck_status"]
+          transporter_company: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          deleted_at?: string | null
+          driver_name: string
+          id?: string
+          registration_number: string
+          status?: Database["public"]["Enums"]["truck_status"]
+          transporter_company: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          deleted_at?: string | null
+          driver_name?: string
+          id?: string
+          registration_number?: string
+          status?: Database["public"]["Enums"]["truck_status"]
+          transporter_company?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -305,6 +521,39 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_operate: { Args: never; Returns: boolean }
+      can_view_operations: { Args: never; Returns: boolean }
+      create_load_transaction: {
+        Args: {
+          _dam_id: string
+          _status?: Database["public"]["Enums"]["load_status"]
+          _timestamp?: string
+          _truck_id: string
+          _type: Database["public"]["Enums"]["load_type"]
+          _volume_liters: number
+          _weight_tons: number
+        }
+        Returns: {
+          created_at: string
+          created_by: string
+          dam_id: string
+          deleted_at: string | null
+          id: string
+          status: Database["public"]["Enums"]["load_status"]
+          timestamp: string
+          truck_id: string
+          type: Database["public"]["Enums"]["load_type"]
+          updated_at: string
+          volume_liters: number
+          weight_tons: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "loads"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -315,7 +564,11 @@ export type Database = {
       is_active: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
-      app_role: "admin" | "operator" | "viewer"
+      app_role: "admin" | "operator" | "viewer" | "supervisor"
+      dam_status: "active" | "maintenance"
+      load_status: "pending" | "completed" | "cancelled"
+      load_type: "incoming" | "outgoing"
+      truck_status: "idle" | "en_route" | "waiting" | "offloading"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -443,7 +696,11 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "operator", "viewer"],
+      app_role: ["admin", "operator", "viewer", "supervisor"],
+      dam_status: ["active", "maintenance"],
+      load_status: ["pending", "completed", "cancelled"],
+      load_type: ["incoming", "outgoing"],
+      truck_status: ["idle", "en_route", "waiting", "offloading"],
     },
   },
 } as const

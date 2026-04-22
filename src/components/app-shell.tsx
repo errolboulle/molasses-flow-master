@@ -30,12 +30,12 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 const navItems = [
-  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["admin", "operator", "viewer"] },
-  { to: "/dams", label: "Dams", icon: Database, roles: ["admin", "operator", "viewer"] },
-  { to: "/movements", label: "Movements", icon: TruckIcon, roles: ["admin", "operator", "viewer"] },
-  { to: "/history", label: "History", icon: History, roles: ["admin", "operator", "viewer"] },
-  { to: "/reports", label: "Reports", icon: BarChart3, roles: ["admin", "operator", "viewer"] },
-  { to: "/audit", label: "Audit Log", icon: ScrollText, roles: ["admin", "operator", "viewer"] },
+  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["admin", "operator", "supervisor", "viewer"] },
+  { to: "/dams", label: "Dams", icon: Database, roles: ["admin", "operator", "supervisor", "viewer"] },
+  { to: "/movements", label: "Movements", icon: TruckIcon, roles: ["admin", "operator", "supervisor", "viewer"] },
+  { to: "/history", label: "History", icon: History, roles: ["admin", "operator", "supervisor", "viewer"] },
+  { to: "/reports", label: "Reports", icon: BarChart3, roles: ["admin", "operator", "supervisor", "viewer"] },
+  { to: "/audit", label: "Audit Log", icon: ScrollText, roles: ["admin", "operator", "supervisor", "viewer"] },
   { to: "/users", label: "Users", icon: Users, roles: ["admin"] },
   { to: "/settings", label: "Settings", icon: Settings, roles: ["admin"] },
 ] as const;

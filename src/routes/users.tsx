@@ -18,7 +18,7 @@ export const Route = createFileRoute("/users")({
   component: () => <ProtectedLayout requireAdmin><UsersPage /></ProtectedLayout>,
 });
 
-const ROLES = ["admin", "operator", "viewer"] as const;
+const ROLES = ["admin", "operator", "supervisor", "viewer"] as const;
 type Role = typeof ROLES[number];
 
 type UserRow = { id: string; full_name: string | null; email: string; status: string; created_at: string; roles: string[] };
