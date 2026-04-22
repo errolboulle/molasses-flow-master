@@ -2,8 +2,7 @@ import { createFileRoute, Link, Navigate } from "@tanstack/react-router";
 import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
 import heroImage from "@/assets/molasses-yard-hero.jpg";
-import { ArrowRight, BarChart3, FileSpreadsheet, ShieldCheck, Truck } from "lucide-react";
-import type { ReactNode } from "react";
+import { ArrowRight, Truck } from "lucide-react";
 
 export const Route = createFileRoute("/")({
   component: Index,
@@ -24,20 +23,15 @@ function Index() {
     <main className="min-h-screen overflow-hidden bg-background text-foreground">
       <section className="grid min-h-screen lg:grid-cols-[minmax(0,1.35fr)_minmax(360px,0.65fr)]">
         <div className="relative flex min-h-[68vh] items-end overflow-hidden px-6 py-10 sm:px-10 lg:min-h-screen lg:px-14 lg:py-14">
-          <img src={heroImage} alt="Large tanker truck entering an industrial molasses storage yard with sugar cane fields behind it" width={1920} height={1088} className="absolute inset-0 h-full w-full object-cover object-center motion-safe:animate-[industrial-pan_22s_ease-in-out_infinite_alternate]" />
-          <div className="absolute inset-0 bg-background/30" />
-          <div className="absolute inset-0 bg-[linear-gradient(0deg,var(--background)_0%,oklch(0.16_0.012_260_/_0.72)_42%,oklch(0.16_0.012_260_/_0.18)_100%)]" />
+          <img src={heroImage} alt="Large tanker truck entering an industrial molasses storage yard with sugar cane fields behind it" width={1920} height={1088} className="absolute inset-[-2%] h-[104%] w-[104%] max-w-none object-cover object-center motion-safe:animate-[industrial-pan_22s_ease-in-out_infinite_alternate]" />
+          <div className="absolute inset-0 bg-background/10" />
+          <div className="absolute inset-0 bg-[linear-gradient(0deg,var(--background)_0%,oklch(0.16_0.012_260_/_0.46)_42%,oklch(0.16_0.012_260_/_0.08)_100%)]" />
           <div className="relative z-10 max-w-4xl pb-4">
             <div className="mb-5 inline-flex items-center gap-2 border border-border bg-card/70 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground shadow-elevated backdrop-blur">
               <Truck className="h-3.5 w-3.5" /> Yard operations platform
             </div>
             <h1 className="max-w-4xl text-4xl font-black leading-tight text-foreground drop-shadow-2xl sm:text-6xl lg:text-7xl">FGC Molasses Flow Tracking</h1>
             <p className="mt-5 max-w-2xl text-base leading-7 text-muted-foreground drop-shadow sm:text-lg">Control dam stock, truck movements, variance insights, audit records, and formatted Excel reports from one industrial-grade workspace.</p>
-            <div className="mt-10 grid max-w-3xl grid-cols-1 gap-3 sm:grid-cols-3">
-              <HeroMetric icon={<ShieldCheck className="h-4 w-4" />} label="Audit controlled" />
-              <HeroMetric icon={<BarChart3 className="h-4 w-4" />} label="Live insights" />
-              <HeroMetric icon={<FileSpreadsheet className="h-4 w-4" />} label="Excel reports" />
-            </div>
           </div>
         </div>
 
@@ -61,8 +55,4 @@ function Index() {
       </section>
     </main>
   );
-}
-
-function HeroMetric({ icon, label }: { icon: ReactNode; label: string }) {
-  return <div className="flex items-center gap-2 border border-border bg-card/65 px-3 py-3 text-sm font-semibold backdrop-blur">{icon}{label}</div>;
 }
