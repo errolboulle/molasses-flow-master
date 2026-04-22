@@ -97,9 +97,6 @@ export function AppShell({ children }: { children: ReactNode }) {
             <div className="font-semibold truncate">{user?.email}</div>
             <div className="mt-1 text-muted-foreground">{primaryRole}</div>
           </div>
-          <Button variant="ghost" size="sm" className="w-full justify-start" onClick={handleSignOut}>
-            <LogOut className="h-4 w-4" /> Sign out
-          </Button>
         </div>
       </aside>
 

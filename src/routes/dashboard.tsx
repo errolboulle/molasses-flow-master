@@ -65,7 +65,6 @@ function DashboardPage() {
           <h1 className="mt-1 text-3xl font-black lg:text-4xl">Dashboard</h1>
           <p className="text-sm text-muted-foreground mt-1">Live storage status, operations, and variance insights.</p>
         </div>
-        <div className="rounded-full border border-border bg-success/10 px-3 py-1 text-xs font-semibold text-success">System Live</div>
       </div>
 
       <Tabs defaultValue="overview" className="space-y-5">
