@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { getAuthedClient, jsonError, paginationFromUrl, requireApiAuth } from "@/lib/api-auth";
+import { getAuthedClient, logAndJsonError, paginationFromUrl, requireApiAuth } from "@/lib/api-auth";
 
 export const Route = createFileRoute("/api/audit-logs")({
   server: {
@@ -19,7 +19,7 @@ export const Route = createFileRoute("/api/audit-logs")({
         if (fromDate) query = query.gte("timestamp", fromDate);
         if (toDate) query = query.lte("timestamp", toDate);
         const { data, error, count } = await query.range(from, to);
-        if (error) return jsonError(error.message, 400);
+        if (error) return logAndJsonError("api/audit-logs GET", error, "Could not load audit logs");
         return Response.json({ data, count });
       },
     },
