@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
 import { supabase } from "@/integrations/supabase/client";
 import type { Session, User } from "@supabase/supabase-js";
 
-export type AppRole = "admin" | "operator" | "viewer";
+export type AppRole = "admin" | "operator" | "supervisor" | "viewer";
 
 interface AuthContextValue {
   session: Session | null;
@@ -11,6 +11,7 @@ interface AuthContextValue {
   loading: boolean;
   isAdmin: boolean;
   isOperator: boolean;
+  isSupervisor: boolean;
   isViewer: boolean;
   canEntry: boolean;
   signOut: () => Promise<void>;
@@ -59,6 +60,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const isAdmin = roles.includes("admin");
   const isOperator = roles.includes("operator");
+  const isSupervisor = roles.includes("supervisor");
   const isViewer = roles.includes("viewer");
 
   const disabled = status !== "active";
@@ -70,6 +72,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     loading,
     isAdmin,
     isOperator,
+    isSupervisor,
     isViewer,
     canEntry: isAdmin || isOperator,
     signOut: async () => { await supabase.auth.signOut(); },

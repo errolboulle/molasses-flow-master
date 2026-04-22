@@ -3,7 +3,7 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import type { Database } from "@/integrations/supabase/types";
 import { z } from "zod";
 
-const roleSchema = z.enum(["admin", "operator", "viewer"]);
+const roleSchema = z.enum(["admin", "operator", "supervisor", "viewer"]);
 type ProfileUpdate = Database["public"]["Tables"]["profiles"]["Update"];
 
 async function requireAdmin(request: Request) {
