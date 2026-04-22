@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useMemo, useState } from "react";
 import { fmtTons, fmtDateTime, type Movement } from "@/lib/types";
 import { ArrowDownToLine, ArrowUpFromLine, FileSpreadsheet } from "lucide-react";
@@ -108,34 +109,24 @@ function HistoryPage() {
 
       <div>
         <div className="text-sm text-muted-foreground mb-3">{filtered.length} movements · click to edit</div>
-        <div className="space-y-2">
-          {filtered.map((m) => (
-            <Card
-              key={m.id}
-              className="p-4 cursor-pointer hover:border-primary/50 transition-colors"
-              role="button"
-              tabIndex={0}
-              onClick={() => setEditing(m)}
-              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setEditing(m); } }}
-            >
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <div className={`h-9 w-9 rounded-md flex items-center justify-center ${m.movement_type === "incoming" ? "bg-success/10 text-success" : "bg-purple/10 text-purple"}`}>
-                    {m.movement_type === "incoming" ? <ArrowDownToLine className="h-4 w-4" /> : <ArrowUpFromLine className="h-4 w-4" />}
-                  </div>
-                  <div>
-                    <div className="font-semibold tabular-nums">{fmtTons(m.quantity_tons)} <Badge variant="outline" className="ml-1">{damName(m.dam_id)}</Badge></div>
-                    <div className="text-xs text-muted-foreground">
-                      {m.driver_or_company || "—"} · {m.src_vehicle_registration || m.fgc_vehicle_registration || "—"} · {m.fgc_haulier || m.src_haulier || "—"}
-                    </div>
-                  </div>
-                </div>
-                <div className="text-xs text-muted-foreground">{fmtDateTime(m.occurred_at)}</div>
-              </div>
-            </Card>
-          ))}
-          {filtered.length === 0 && <Card className="p-8 text-center text-sm text-muted-foreground">No movements match.</Card>}
-        </div>
+        {filtered.length > 0 ? (
+          <Table>
+            <TableHeader>
+              <TableRow><TableHead>Type</TableHead><TableHead>Quantity</TableHead><TableHead>Dam</TableHead><TableHead>Driver / vehicle</TableHead><TableHead>Date</TableHead></TableRow>
+            </TableHeader>
+            <TableBody>
+              {filtered.map((m) => (
+                <TableRow key={m.id} className="cursor-pointer" tabIndex={0} onClick={() => setEditing(m)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setEditing(m); } }}>
+                  <TableCell><Badge variant="outline" className={m.movement_type === "incoming" ? "text-success" : "text-purple"}>{m.movement_type === "incoming" ? <ArrowDownToLine className="h-3 w-3" /> : <ArrowUpFromLine className="h-3 w-3" />}{m.movement_type}</Badge></TableCell>
+                  <TableCell className="font-semibold tabular-nums">{fmtTons(m.quantity_tons)}</TableCell>
+                  <TableCell>{damName(m.dam_id)}</TableCell>
+                  <TableCell className="text-muted-foreground">{m.driver_or_company || "—"} · {m.src_vehicle_registration || m.fgc_vehicle_registration || "—"} · {m.fgc_haulier || m.src_haulier || "—"}</TableCell>
+                  <TableCell className="text-muted-foreground">{fmtDateTime(m.occurred_at)}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        ) : <Card className="p-8 text-center text-sm text-muted-foreground">No movements match.</Card>}
       </div>
 
       {editing && <MovementEditDialog movement={editing} dams={dams} onClose={() => setEditing(null)} />}
