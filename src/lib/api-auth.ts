@@ -7,6 +7,11 @@ export function jsonError(message: string, status = 400) {
   return Response.json({ error: message }, { status });
 }
 
+export function logAndJsonError(scope: string, error: unknown, safeMessage = "Operation failed", status = 400) {
+  console.error(`[${scope}]`, error);
+  return jsonError(safeMessage, status);
+}
+
 export async function requireApiAuth(request: Request, allowedRoles?: AppRole[]) {
   const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
   if (!token) return { error: jsonError("Unauthorized", 401) } as const;

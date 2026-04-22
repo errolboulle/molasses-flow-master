@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { getAuthedClient, jsonError, requireApiAuth } from "@/lib/api-auth";
+import { getAuthedClient, logAndJsonError, requireApiAuth } from "@/lib/api-auth";
 
 export const Route = createFileRoute("/api/dashboard/summary")({
   server: {
@@ -16,8 +16,8 @@ export const Route = createFileRoute("/api/dashboard/summary")({
           client.from("dams").select("id,name,capacity_tons,capacity_liters,current_volume_tons,current_volume_liters,status").is("deleted_at", null).order("name"),
           client.from("loads").select("dam_id,type,weight_tons,volume_liters,status,timestamp").is("deleted_at", null).eq("status", "completed").gte("timestamp", monthStart.toISOString()),
         ]);
-        if (damsError) return jsonError(damsError.message, 400);
-        if (loadsError) return jsonError(loadsError.message, 400);
+        if (damsError) return logAndJsonError("api/dashboard/summary dams", damsError, "Could not load dashboard summary");
+        if (loadsError) return logAndJsonError("api/dashboard/summary loads", loadsError, "Could not load dashboard summary");
 
         const monthlyIncoming = (loads ?? []).filter((load: any) => load.type === "incoming").reduce((sum: number, load: any) => sum + Number(load.weight_tons), 0);
         const monthlyOutgoing = (loads ?? []).filter((load: any) => load.type === "outgoing").reduce((sum: number, load: any) => sum + Number(load.weight_tons), 0);
