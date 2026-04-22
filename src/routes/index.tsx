@@ -60,7 +60,7 @@ function Index() {
             <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-border bg-card/50 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground shadow-[var(--shadow-elevated)] backdrop-blur-xl">
               <Truck className="h-3.5 w-3.5 text-primary" /> Yard operations platform
             </div>
-            <h1 className="max-w-4xl text-4xl font-black leading-tight text-foreground drop-shadow-2xl sm:text-6xl lg:text-7xl">Molasses Flow & Dam Management Platform</h1>
+            <h1 className="max-w-3xl text-3xl font-black leading-tight text-foreground drop-shadow-2xl sm:text-5xl lg:text-6xl">Molasses Flow & Dam Management Platform</h1>
             <p className="mt-5 max-w-2xl text-base leading-7 text-muted-foreground drop-shadow sm:text-lg">Real-time tracking, audit logs, and automated reporting for industrial operations.</p>
           </div>
         </div>
