@@ -51,7 +51,8 @@ function ReportsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl lg:text-3xl font-bold">Reports</h1>
+        <p className="text-xs font-semibold uppercase tracking-wider text-primary">Analytics & export</p>
+        <h1 className="mt-1 text-3xl font-black lg:text-4xl">Reports</h1>
         <p className="text-sm text-muted-foreground mt-1">Period summaries with charts.</p>
       </div>
 
@@ -100,7 +101,7 @@ function ReportsPage() {
           </Card>
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
             {damReports.map((r) => (
-              <Card key={r.dam.id} className="p-5">
+              <Card key={r.dam.id} className="p-5 hover:-translate-y-1 hover:border-primary/35">
                 <h3 className="font-bold text-lg">{r.dam.name}</h3>
                 <div className="mt-4 space-y-3 text-sm">
                   <Stat label="Total received" value={fmtTons(r.totalIn)} color="text-success" />
