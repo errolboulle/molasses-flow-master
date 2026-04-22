@@ -11,7 +11,7 @@ const damPatchSchema = z.object({
   deleted_at: z.string().datetime().nullable().optional(),
 });
 
-export const Route = createFileRoute("/api/dams/")({
+export const Route = createFileRoute("/api/dams/$id")({
   server: {
     handlers: {
       GET: async ({ request, params }) => {
