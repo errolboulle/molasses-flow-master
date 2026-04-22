@@ -22,11 +22,16 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [roles, setRoles] = useState<AppRole[]>([]);
+  const [status, setStatus] = useState<string>("active");
   const [loading, setLoading] = useState(true);
 
   const fetchRoles = async (userId: string) => {
-    const { data } = await supabase.from("user_roles").select("role").eq("user_id", userId);
+    const [{ data }, profileResult] = await Promise.all([
+      supabase.from("user_roles").select("role").eq("user_id", userId),
+      supabase.from("profiles").select("status").eq("id", userId).maybeSingle(),
+    ]);
     setRoles((data?.map((r) => r.role as AppRole)) ?? []);
+    setStatus(profileResult.data?.status ?? "active");
   };
 
   useEffect(() => {
@@ -36,6 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setTimeout(() => fetchRoles(sess.user.id), 0);
       } else {
         setRoles([]);
+        setStatus("active");
       }
     });
 
@@ -55,9 +61,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const isOperator = roles.includes("operator");
   const isViewer = roles.includes("viewer");
 
+  const disabled = status !== "active";
+
   const value: AuthContextValue = {
-    session,
-    user: session?.user ?? null,
+    session: disabled ? null : session,
+    user: disabled ? null : (session?.user ?? null),
     roles,
     loading,
     isAdmin,
