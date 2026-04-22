@@ -1,4 +1,5 @@
 import { Card } from "@/components/ui/card";
+import type { ReactNode } from "react";
 import { buildDamReportRows, LEFT_COLS, RIGHT_COLS } from "@/lib/report-layout";
 import { fmtNum, type Dam, type Movement } from "@/lib/types";
 
@@ -68,7 +69,7 @@ export function ReportPreview({ dams, movements, damId }: { dams: Dam[]; movemen
   );
 }
 
-function HeaderCell({ children, tone }: { children: React.ReactNode; tone: "source" | "fgc" | "balance" }) {
+function HeaderCell({ children, tone }: { children: ReactNode; tone: "source" | "fgc" | "balance" }) {
   const cls = tone === "source" ? "bg-primary/25 text-primary" : tone === "fgc" ? "bg-success/25 text-success" : "bg-warning/70 text-warning-foreground";
   return <div className={`min-h-12 border-2 border-foreground/80 px-1 py-2 text-center font-black leading-tight ${cls}`}>{children}</div>;
 }

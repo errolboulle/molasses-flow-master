@@ -22,6 +22,7 @@ function styleCell(ws: XLSX.WorkSheet, r: number, c: number, style: any, value?:
 }
 
 // ===== Column layout =====
+const GAP_WIDTH = 3;
 const LEFT_START = 0;
 const LEFT_END = LEFT_COLS.length - 1;                  // 11
 const GAP_COL = LEFT_END + 1;                           // 12
