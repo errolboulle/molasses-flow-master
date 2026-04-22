@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
-import { getAuthedClient, jsonError, requireApiAuth } from "@/lib/api-auth";
+import { getAuthedClient, jsonError, logAndJsonError, requireApiAuth } from "@/lib/api-auth";
 
 const truckPatchSchema = z.object({
   registration_number: z.string().trim().min(1).max(40).optional(),
@@ -21,7 +21,7 @@ export const Route = createFileRoute("/api/trucks/$id")({
         if (!auth.roles.includes("admin") && Object.keys(parsed.data).some((key) => key !== "status")) return jsonError("Operators can only update truck status", 403);
         const client = getAuthedClient(auth.token);
         const { data, error } = await client.from("trucks").update(parsed.data).eq("id", params.id).select("*").single();
-        if (error) return jsonError(error.message, 400);
+        if (error) return logAndJsonError("api/trucks/$id PATCH", error, "Could not update truck");
         return Response.json({ data });
       },
     },
