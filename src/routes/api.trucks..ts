@@ -10,7 +10,7 @@ const truckPatchSchema = z.object({
   deleted_at: z.string().datetime().nullable().optional(),
 });
 
-export const Route = createFileRoute("/api/trucks/$id")({
+export const Route = createFileRoute("/api/trucks/")({
   server: {
     handlers: {
       PATCH: async ({ request, params }) => {
