@@ -1,8 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import type { Database } from "@/integrations/supabase/types";
 import { z } from "zod";
 
 const roleSchema = z.enum(["admin", "operator", "viewer"]);
+type ProfileUpdate = Database["public"]["Tables"]["profiles"]["Update"];
 
 async function requireAdmin(request: Request) {
   const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
@@ -60,7 +62,7 @@ export const Route = createFileRoute("/api/admin/users")({
         if (!parsed.success) return Response.json({ error: "Invalid user details" }, { status: 400 });
         const { userId, fullName, email, role, status } = parsed.data;
 
-        const profilePatch: { full_name?: string; email?: string; status?: string } = {};
+        const profilePatch: ProfileUpdate = {};
         if (fullName) profilePatch.full_name = fullName;
         if (email) profilePatch.email = email;
         if (status) profilePatch.status = status;
