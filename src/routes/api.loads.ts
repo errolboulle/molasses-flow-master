@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
-import { getAuthedClient, jsonError, paginationFromUrl, requireApiAuth } from "@/lib/api-auth";
+import { getAuthedClient, jsonError, logAndJsonError, paginationFromUrl, requireApiAuth } from "@/lib/api-auth";
 
 const loadCreateSchema = z.object({
   truck_id: z.string().uuid(),
@@ -30,7 +30,7 @@ export const Route = createFileRoute("/api/loads")({
         if (fromDate) query = query.gte("timestamp", fromDate);
         if (toDate) query = query.lte("timestamp", toDate);
         const { data, error, count } = await query.range(from, to);
-        if (error) return jsonError(error.message, 400);
+        if (error) return logAndJsonError("api/loads GET", error, "Could not load load records");
         return Response.json({ data, count });
       },
       POST: async ({ request }) => {
@@ -48,7 +48,7 @@ export const Route = createFileRoute("/api/loads")({
           _timestamp: parsed.data.timestamp ?? new Date().toISOString(),
           _status: parsed.data.status,
         });
-        if (error) return jsonError(error.message, 400);
+        if (error) return logAndJsonError("api/loads POST", error, "Could not create load");
         return Response.json({ data }, { status: 201 });
       },
     },
