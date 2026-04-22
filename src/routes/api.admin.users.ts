@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import type { Database } from "@/integrations/supabase/types";
+import { logAndJsonError } from "@/lib/api-auth";
 import { z } from "zod";
 
 const roleSchema = z.enum(["admin", "operator", "supervisor", "viewer"]);
@@ -47,12 +48,12 @@ export const Route = createFileRoute("/api/admin/users")({
           email_confirm: true,
           user_metadata: { full_name: fullName },
         });
-        if (error || !data.user) return Response.json({ error: error?.message ?? "Could not create user" }, { status: 400 });
+        if (error || !data.user) return logAndJsonError("api/admin/users POST createUser", error, "Could not create user");
 
         await supabaseAdmin.from("profiles").upsert({ id: data.user.id, email, full_name: fullName, status: "active" });
         await supabaseAdmin.from("user_roles").delete().eq("user_id", data.user.id);
         const { error: roleError } = await supabaseAdmin.from("user_roles").insert({ user_id: data.user.id, role });
-        if (roleError) return Response.json({ error: roleError.message }, { status: 400 });
+        if (roleError) return logAndJsonError("api/admin/users POST role", roleError, "Could not assign user role");
         return Response.json({ ok: true });
       },
       PATCH: async ({ request }) => {
@@ -68,19 +69,19 @@ export const Route = createFileRoute("/api/admin/users")({
         if (status) profilePatch.status = status;
         if (Object.keys(profilePatch).length) {
           const { error } = await supabaseAdmin.from("profiles").update(profilePatch).eq("id", userId);
-          if (error) return Response.json({ error: error.message }, { status: 400 });
+          if (error) return logAndJsonError("api/admin/users PATCH profile", error, "Could not update user");
         }
         if (email || fullName) {
           const { error } = await supabaseAdmin.auth.admin.updateUserById(userId, {
             ...(email ? { email } : {}),
             ...(fullName ? { user_metadata: { full_name: fullName } } : {}),
           });
-          if (error) return Response.json({ error: error.message }, { status: 400 });
+          if (error) return logAndJsonError("api/admin/users PATCH auth", error, "Could not update user");
         }
         if (role) {
           await supabaseAdmin.from("user_roles").delete().eq("user_id", userId);
           const { error } = await supabaseAdmin.from("user_roles").insert({ user_id: userId, role });
-          if (error) return Response.json({ error: error.message }, { status: 400 });
+          if (error) return logAndJsonError("api/admin/users PATCH role", error, "Could not update user role");
         }
         return Response.json({ ok: true });
       },
