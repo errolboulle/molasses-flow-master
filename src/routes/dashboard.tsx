@@ -42,8 +42,8 @@ function DashboardPage() {
 
   const varianceFor = (start: Date, end?: Date) => movements.filter((m) => {
     const at = new Date(m.occurred_at);
-    return at >= start && (!end || at < end);
-  }).reduce((sum, m) => sum + (m.movement_type === "incoming" ? Number(m.quantity_tons) : -Number(m.quantity_tons)), 0);
+    return m.movement_type === "incoming" && at >= start && (!end || at < end);
+  }).reduce((sum, m) => sum + Number(m.fgc_variance ?? 0), 0);
 
   const today = periodStart("today");
   const yesterday = periodStart("yesterday");
