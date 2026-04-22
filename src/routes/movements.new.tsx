@@ -87,6 +87,7 @@ function NewMovementPage() {
   }, [form.fgc_gross_mass, form.fgc_tare_mass, form.fgc_net_mass]);
 
   const variance = !isNaN(srcNet) && !isNaN(fgcNet) ? srcNet - fgcNet : NaN;
+  const autoQuantityTons = movementType === "incoming" && !isNaN(fgcNet) ? fgcNet : NaN;
 
   if (!canEntry) {
     return <div className="text-center py-16 text-muted-foreground">You don't have permission to add entries.</div>;
@@ -99,7 +100,7 @@ function NewMovementPage() {
     if (!form.dam_id) { toast.error("Please select a dam"); return; }
     if (!form.occurred_at) { toast.error("Date & time is required"); return; }
 
-    const qty = parseFloat(form.quantity_tons);
+    const qty = !isNaN(autoQuantityTons) ? autoQuantityTons : parseFloat(form.quantity_tons);
     if (isNaN(qty) || qty <= 0) { toast.error("Volume must be greater than 0"); return; }
 
     setSaving(true);
@@ -195,7 +196,17 @@ function NewMovementPage() {
             </select>
           </Field>
           <Field label="Date & time *"><Input required type="datetime-local" value={form.occurred_at} onChange={(e) => set("occurred_at", e.target.value)} /></Field>
-          <Field label="Volume (tons) *"><Input required type="number" step="0.001" min="0.001" value={form.quantity_tons} onChange={(e) => set("quantity_tons", e.target.value)} /></Field>
+          <Field label={movementType === "incoming" ? "Volume (tons, auto from FGC net) *" : "Volume (tons) *"}>
+            <Input
+              required
+              type="number"
+              step="0.001"
+              min="0.001"
+              value={!isNaN(autoQuantityTons) ? autoQuantityTons.toString() : form.quantity_tons}
+              onChange={(e) => set("quantity_tons", e.target.value)}
+              readOnly={movementType === "incoming"}
+            />
+          </Field>
           <Field label={movementType === "incoming" ? "Truck / Driver" : "Company / Driver"}><Input value={form.driver_or_company} onChange={(e) => set("driver_or_company", e.target.value)} /></Field>
           <div className="sm:col-span-2 lg:col-span-3">
             <Label>Reference / notes</Label>
