@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
-import { getAuthedClient, jsonError, paginationFromUrl, requireApiAuth } from "@/lib/api-auth";
+import { getAuthedClient, jsonError, logAndJsonError, paginationFromUrl, requireApiAuth } from "@/lib/api-auth";
 
 const truckCreateSchema = z.object({
   registration_number: z.string().trim().min(1).max(40),
@@ -18,7 +18,7 @@ export const Route = createFileRoute("/api/trucks")({
         const { from, to } = paginationFromUrl(request);
         const client = getAuthedClient(auth.token);
         const { data, error, count } = await client.from("trucks").select("*", { count: "exact" }).is("deleted_at", null).order("registration_number").range(from, to);
-        if (error) return jsonError(error.message, 400);
+        if (error) return logAndJsonError("api/trucks GET", error, "Could not load trucks");
         return Response.json({ data, count });
       },
       POST: async ({ request }) => {
@@ -28,7 +28,7 @@ export const Route = createFileRoute("/api/trucks")({
         if (!parsed.success) return jsonError("Invalid truck details", 400);
         const client = getAuthedClient(auth.token);
         const { data, error } = await client.from("trucks").insert(parsed.data).select("*").single();
-        if (error) return jsonError(error.message, 400);
+        if (error) return logAndJsonError("api/trucks POST", error, "Could not create truck");
         return Response.json({ data }, { status: 201 });
       },
     },
