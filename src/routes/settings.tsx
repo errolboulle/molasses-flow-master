@@ -42,7 +42,8 @@ function SettingsPage() {
   return (
     <div className="space-y-6 max-w-xl">
       <div>
-        <h1 className="text-2xl lg:text-3xl font-bold">Settings</h1>
+        <p className="text-xs font-semibold uppercase tracking-wider text-primary">System setup</p>
+        <h1 className="mt-1 text-3xl font-black lg:text-4xl">Settings</h1>
         <p className="text-sm text-muted-foreground mt-1">Global system configuration.</p>
       </div>
 

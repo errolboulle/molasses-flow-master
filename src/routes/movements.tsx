@@ -39,14 +39,15 @@ function MovementsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl lg:text-3xl font-bold">Truck movements</h1>
+        <p className="text-xs font-semibold uppercase tracking-wider text-primary">Logistics flow</p>
+        <h1 className="mt-1 text-3xl font-black lg:text-4xl">Truck movements</h1>
         <p className="text-sm text-muted-foreground mt-1">Log incoming deliveries and outgoing dispatches.</p>
       </div>
 
       {canEntry && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Card
-            className="p-5 hover:border-success/50 transition-colors cursor-pointer h-full"
+            className="p-5 hover:-translate-y-1 hover:border-success/50 cursor-pointer h-full"
             role="button"
             tabIndex={0}
             onClick={() => openNewMovement("incoming")}
@@ -66,7 +67,7 @@ function MovementsPage() {
             </div>
           </Card>
           <Card
-            className="p-5 hover:border-purple/50 transition-colors cursor-pointer h-full"
+            className="p-5 hover:-translate-y-1 hover:border-purple/50 cursor-pointer h-full"
             role="button"
             tabIndex={0}
             onClick={() => openNewMovement("outgoing")}
@@ -95,7 +96,7 @@ function MovementsPage() {
           {movements.slice(0, 20).map((m) => (
             <Card
               key={m.id}
-              className="p-4 cursor-pointer hover:border-primary/50 transition-colors"
+              className="p-4 cursor-pointer hover:-translate-y-0.5 hover:border-primary/50"
               role="button"
               tabIndex={0}
               onClick={() => setEditing(m)}
