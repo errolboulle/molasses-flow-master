@@ -59,9 +59,13 @@ function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl lg:text-3xl font-bold">Dashboard</h1>
-        <p className="text-sm text-muted-foreground mt-1">Live storage status, operations, and variance insights.</p>
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wider text-primary">Operations command</p>
+          <h1 className="mt-1 text-3xl font-black lg:text-4xl">Dashboard</h1>
+          <p className="text-sm text-muted-foreground mt-1">Live storage status, operations, and variance insights.</p>
+        </div>
+        <div className="rounded-full border border-border bg-success/10 px-3 py-1 text-xs font-semibold text-success">System Live</div>
       </div>
 
       <Tabs defaultValue="overview" className="space-y-5">
@@ -78,8 +82,8 @@ function DashboardPage() {
               const cur = Number(dam.current_volume_tons);
               const pct = cap > 0 ? Math.min(100, (cur / cap) * 100) : 0;
               return (
-                <Card key={dam.id} className="p-5 bg-card border-border" style={{ background: "var(--gradient-industrial)" }}>
-                  <div className="flex items-start justify-between"><div><div className="text-xs text-muted-foreground uppercase tracking-wider">Dam</div><h3 className="text-xl font-bold">{dam.name}</h3></div><div className="h-9 w-9 rounded-md bg-primary/10 text-primary flex items-center justify-center"><Droplet className="h-5 w-5" /></div></div>
+                <Card key={dam.id} className="p-5 bg-card/80 border-border hover:-translate-y-1 hover:border-primary/35" style={{ background: "var(--gradient-industrial)" }}>
+                  <div className="flex items-start justify-between"><div><div className="text-xs text-muted-foreground uppercase tracking-wider">Dam overview</div><h3 className="text-xl font-bold">{dam.name}</h3></div><div className="h-10 w-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center"><Droplet className="h-5 w-5" /></div></div>
                   <div className="mt-4"><div className="text-3xl font-bold tabular-nums">{fmtTons(cur)}</div><div className="text-sm text-muted-foreground">{fmtLitres(tonsToLitres(cur, density))}</div></div>
                   {cap > 0 && <div className="mt-4"><div className="flex justify-between text-xs text-muted-foreground mb-1"><span>Capacity</span><span>{pct.toFixed(0)}%</span></div><Progress value={pct} /><div className="text-xs text-muted-foreground mt-1">{fmtTons(cap)} max</div></div>}
                   <div className="mt-4 grid grid-cols-2 gap-3 pt-4 border-t border-border"><div><div className="text-xs text-muted-foreground flex items-center gap-1"><ArrowDownToLine className="h-3 w-3" /> In (mo)</div><div className="font-semibold text-success tabular-nums">{fmtTons(totalIn)}</div></div><div><div className="text-xs text-muted-foreground flex items-center gap-1"><ArrowUpFromLine className="h-3 w-3" /> Out (mo)</div><div className="font-semibold text-purple tabular-nums">{fmtTons(totalOut)}</div></div></div>
@@ -103,10 +107,10 @@ function DashboardPage() {
 
 function VarianceCard({ label, value }: { label: string; value: number }) {
   const positive = value >= 0;
-  return <Card className="p-5"><div className="text-xs text-muted-foreground uppercase tracking-wider">{label}</div><div className={`mt-2 text-3xl font-bold tabular-nums ${positive ? "text-success" : "text-destructive"}`}>{positive ? "+" : ""}{fmtTons(value)}</div></Card>;
+  return <Card className="p-5 hover:-translate-y-1 hover:border-primary/35"><div className="text-xs text-muted-foreground uppercase tracking-wider">{label}</div><div className={`mt-2 text-3xl font-black tabular-nums ${positive ? "text-success" : "text-destructive"}`}>{positive ? "+" : ""}{fmtTons(value)}</div></Card>;
 }
 
 function SummaryCard({ label, value, sub, icon, accent }: { label: string; value: string; sub?: string; icon: ReactNode; accent: "primary" | "success" | "purple" }) {
   const accentClass = accent === "success" ? "bg-success/10 text-success" : accent === "purple" ? "bg-purple/10 text-purple" : "bg-primary/10 text-primary";
-  return <Card className="p-5"><div className="flex items-center justify-between"><div><div className="text-xs text-muted-foreground uppercase tracking-wider">{label}</div><div className="text-2xl font-bold mt-1 tabular-nums">{value}</div>{sub && <div className="text-xs text-muted-foreground">{sub}</div>}</div><div className={`h-10 w-10 rounded-md flex items-center justify-center ${accentClass}`}>{icon}</div></div></Card>;
+  return <Card className="p-5 hover:-translate-y-1 hover:border-primary/35"><div className="flex items-center justify-between"><div><div className="text-xs text-muted-foreground uppercase tracking-wider">{label}</div><div className="text-2xl font-black mt-1 tabular-nums">{value}</div>{sub && <div className="text-xs text-muted-foreground">{sub}</div>}</div><div className={`h-11 w-11 rounded-xl flex items-center justify-center ${accentClass}`}>{icon}</div></div></Card>;
 }
