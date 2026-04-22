@@ -1,8 +1,13 @@
-import { createFileRoute, Link, Navigate } from "@tanstack/react-router";
+import { createFileRoute, Navigate, useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import heroImage from "@/assets/molasses-yard-hero.jpg";
-import { ArrowRight, Truck } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { ArrowRight, LockKeyhole, Truck } from "lucide-react";
+import { useState, type FormEvent } from "react";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/")({
   component: Index,
@@ -10,6 +15,24 @@ export const Route = createFileRoute("/")({
 
 function Index() {
   const { user, loading } = useAuth();
+  const navigate = useNavigate();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [signingIn, setSigningIn] = useState(false);
+
+  const handleSignIn = async (event: FormEvent) => {
+    event.preventDefault();
+    setSigningIn(true);
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    setSigningIn(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success("Signed in");
+    navigate({ to: "/dashboard" });
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -38,13 +61,23 @@ function Index() {
         <aside className="flex min-h-[32vh] items-center justify-center border-t border-border bg-card px-6 py-10 shadow-elevated lg:min-h-screen lg:border-l lg:border-t-0 lg:px-10">
           <div className="w-full max-w-sm">
             <div className="mb-8">
-              <p className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Secure access</p>
+              <p className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground"><LockKeyhole className="h-4 w-4" /> Secure access</p>
               <h2 className="mt-3 text-3xl font-black leading-tight text-foreground">Sign in to operations</h2>
               <p className="mt-3 text-sm leading-6 text-muted-foreground">Open the live dashboard to manage molasses stock, reports, users, and movement history.</p>
             </div>
-            <Link to="/auth" className="block">
-              <Button size="lg" className="w-full justify-between">Sign in <ArrowRight className="h-4 w-4" /></Button>
-            </Link>
+            <form onSubmit={handleSignIn} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="home-email">Email</Label>
+                <Input id="home-email" type="email" required value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="email" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="home-password">Password</Label>
+                <Input id="home-password" type="password" required value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="current-password" />
+              </div>
+              <Button type="submit" size="lg" className="w-full justify-between" disabled={signingIn}>
+                {signingIn ? "Signing in…" : "Sign in"} <ArrowRight className="h-4 w-4" />
+              </Button>
+            </form>
             <div className="mt-8 space-y-3 border-t border-border pt-6 text-sm text-muted-foreground">
               <div className="flex items-center justify-between gap-4"><span>Dam tracking</span><span className="font-semibold text-foreground">Live</span></div>
               <div className="flex items-center justify-between gap-4"><span>Audit logs</span><span className="font-semibold text-foreground">Protected</span></div>
