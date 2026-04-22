@@ -60,7 +60,7 @@ export const Route = createFileRoute("/api/admin/users")({
         if (!parsed.success) return Response.json({ error: "Invalid user details" }, { status: 400 });
         const { userId, fullName, email, role, status } = parsed.data;
 
-        const profilePatch: Record<string, string> = {};
+        const profilePatch: { full_name?: string; email?: string; status?: string } = {};
         if (fullName) profilePatch.full_name = fullName;
         if (email) profilePatch.email = email;
         if (status) profilePatch.status = status;
