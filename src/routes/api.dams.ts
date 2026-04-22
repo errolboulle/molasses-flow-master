@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
-import { getAuthedClient, jsonError, paginationFromUrl, requireApiAuth } from "@/lib/api-auth";
+import { getAuthedClient, jsonError, logAndJsonError, paginationFromUrl, requireApiAuth } from "@/lib/api-auth";
 
 const damCreateSchema = z.object({
   name: z.string().trim().min(1).max(120),
@@ -21,7 +21,7 @@ export const Route = createFileRoute("/api/dams")({
         const { from, to } = paginationFromUrl(request);
         const client = getAuthedClient(auth.token);
         const { data, error, count } = await client.from("dams").select("*", { count: "exact" }).is("deleted_at", null).order("name").range(from, to);
-        if (error) return jsonError(error.message, 400);
+        if (error) return logAndJsonError("api/dams GET", error, "Could not load dams");
         return Response.json({ data, count });
       },
       POST: async ({ request }) => {
@@ -31,7 +31,7 @@ export const Route = createFileRoute("/api/dams")({
         if (!parsed.success) return jsonError("Invalid dam details", 400);
         const client = getAuthedClient(auth.token);
         const { data, error } = await client.from("dams").insert(parsed.data).select("*").single();
-        if (error) return jsonError(error.message, 400);
+        if (error) return logAndJsonError("api/dams POST", error, "Could not create dam");
         return Response.json({ data }, { status: 201 });
       },
     },
