@@ -16,7 +16,7 @@ export function ProtectedLayout({ requireAdmin = false, children }: { requireAdm
     );
   }
 
-  if (!user) return <Navigate to="/auth" />;
+  if (!user) return <Navigate to="/" />;
   if (roles.length === 0) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background px-4">
