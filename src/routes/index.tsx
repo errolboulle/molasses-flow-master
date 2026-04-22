@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import heroImage from "@/assets/molasses-yard-hero.jpg";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowRight, ClipboardCheck, Database, FileSpreadsheet, LockKeyhole, SearchCheck, Truck } from "lucide-react";
+import { ArrowRight, Database, FileSpreadsheet, LockKeyhole, SearchCheck, Truck } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
 
@@ -65,13 +65,13 @@ function Index() {
           </div>
         </div>
 
-        <aside className="relative flex min-h-[32vh] items-center justify-center border-t border-border bg-background px-6 py-10 lg:min-h-screen lg:border-l lg:border-t-0 lg:px-10">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,oklch(0.32_0.08_255_/_0.32),transparent_28rem)]" />
-          <div className="relative w-full max-w-sm rounded-3xl border border-border bg-card/64 p-7 shadow-[var(--shadow-glow)] backdrop-blur-2xl sm:p-8">
-            <div className="mb-8">
+        <aside className="relative flex min-h-[32vh] items-center justify-center overflow-hidden border-t border-border bg-background px-6 py-10 lg:min-h-screen lg:border-l lg:border-t-0 lg:px-10">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_12%,oklch(0.63_0.16_248_/_0.20),transparent_18rem),radial-gradient(circle_at_90%_82%,oklch(0.55_0.09_170_/_0.16),transparent_22rem),linear-gradient(145deg,oklch(0.12_0.018_258),oklch(0.17_0.025_248)_52%,oklch(0.10_0.014_258))]" />
+          <div className="absolute inset-0 bg-[linear-gradient(90deg,transparent,oklch(1_0_0_/_0.035)_1px,transparent_1px),linear-gradient(0deg,transparent,oklch(1_0_0_/_0.028)_1px,transparent_1px)] bg-[length:48px_48px] opacity-45" />
+          <div className="relative flex w-full max-w-sm flex-col gap-6 rounded-3xl bg-card/58 p-7 shadow-[var(--shadow-glow)] backdrop-blur-2xl sm:p-8">
+            <div className="mb-2">
               <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground"><LockKeyhole className="h-4 w-4 text-primary" /> Secure Access</p>
               <h2 className="mt-3 text-3xl font-black leading-tight text-foreground">Sign in to operations</h2>
-              <p className="mt-3 text-sm leading-6 text-muted-foreground">Open the live dashboard for stock, reports, users, and movement history.</p>
             </div>
             <form onSubmit={handleSignIn} className="space-y-4">
               <div className="space-y-2">
@@ -86,32 +86,19 @@ function Index() {
                 {signingIn ? "Signing in…" : "Sign in"} <ArrowRight className="h-4 w-4" />
               </Button>
             </form>
+            <div className="grid grid-cols-2 gap-3 border-t border-border/70 pt-5">
+              {features.map((feature) => {
+                const Icon = feature.icon;
+                return (
+                  <div key={feature.title} className="rounded-2xl bg-secondary/24 p-3 transition-all duration-200 hover:bg-secondary/36">
+                    <div className="mb-2 flex h-8 w-8 items-center justify-center rounded-lg bg-primary/12 text-primary"><Icon className="h-4 w-4" /></div>
+                    <h3 className="text-xs font-bold leading-snug">{feature.title}</h3>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </aside>
-      </section>
-
-      <section className="border-t border-border bg-background px-6 py-16 sm:px-10 lg:px-16">
-        <div className="mx-auto max-w-7xl">
-          <div className="mb-8 flex flex-col gap-4 border-b border-border pb-6 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-primary">Built for industrial operations</p>
-              <h2 className="mt-2 text-2xl font-black sm:text-3xl">Control, visibility, and reporting in one workspace.</h2>
-            </div>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground"><ClipboardCheck className="h-4 w-4 text-success" /> Audit-ready operating records</div>
-          </div>
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            {features.map((feature) => {
-              const Icon = feature.icon;
-              return (
-                <div key={feature.title} className="group rounded-2xl border border-border bg-card/70 p-5 shadow-[var(--shadow-elevated)] transition-all duration-200 hover:-translate-y-1 hover:border-primary/35 hover:bg-card">
-                  <div className="mb-5 flex h-11 w-11 items-center justify-center rounded-xl bg-primary/12 text-primary"><Icon className="h-5 w-5" /></div>
-                  <h3 className="font-bold">{feature.title}</h3>
-                  <p className="mt-2 text-sm leading-6 text-muted-foreground">{feature.description}</p>
-                </div>
-              );
-            })}
-          </div>
-        </div>
       </section>
     </main>
   );
