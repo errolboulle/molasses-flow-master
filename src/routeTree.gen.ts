@@ -21,6 +21,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuditRouteImport } from './routes/audit'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as MovementsNewRouteImport } from './routes/movements.new'
+import { Route as ApiAdminUsersRouteImport } from './routes/api.admin.users'
 
 const UsersRoute = UsersRouteImport.update({
   id: '/users',
@@ -82,6 +83,11 @@ const MovementsNewRoute = MovementsNewRouteImport.update({
   path: '/new',
   getParentRoute: () => MovementsRoute,
 } as any)
+const ApiAdminUsersRoute = ApiAdminUsersRouteImport.update({
+  id: '/api/admin/users',
+  path: '/api/admin/users',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -96,6 +102,7 @@ export interface FileRoutesByFullPath {
   '/settings': typeof SettingsRoute
   '/users': typeof UsersRoute
   '/movements/new': typeof MovementsNewRoute
+  '/api/admin/users': typeof ApiAdminUsersRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -110,6 +117,7 @@ export interface FileRoutesByTo {
   '/settings': typeof SettingsRoute
   '/users': typeof UsersRoute
   '/movements/new': typeof MovementsNewRoute
+  '/api/admin/users': typeof ApiAdminUsersRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -125,6 +133,7 @@ export interface FileRoutesById {
   '/settings': typeof SettingsRoute
   '/users': typeof UsersRoute
   '/movements/new': typeof MovementsNewRoute
+  '/api/admin/users': typeof ApiAdminUsersRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -141,6 +150,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/users'
     | '/movements/new'
+    | '/api/admin/users'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -155,6 +165,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/users'
     | '/movements/new'
+    | '/api/admin/users'
   id:
     | '__root__'
     | '/'
@@ -169,6 +180,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/users'
     | '/movements/new'
+    | '/api/admin/users'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -183,6 +195,7 @@ export interface RootRouteChildren {
   ReportsRoute: typeof ReportsRoute
   SettingsRoute: typeof SettingsRoute
   UsersRoute: typeof UsersRoute
+  ApiAdminUsersRoute: typeof ApiAdminUsersRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -271,6 +284,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MovementsNewRouteImport
       parentRoute: typeof MovementsRoute
     }
+    '/api/admin/users': {
+      id: '/api/admin/users'
+      path: '/api/admin/users'
+      fullPath: '/api/admin/users'
+      preLoaderRoute: typeof ApiAdminUsersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -298,6 +318,7 @@ const rootRouteChildren: RootRouteChildren = {
   ReportsRoute: ReportsRoute,
   SettingsRoute: SettingsRoute,
   UsersRoute: UsersRoute,
+  ApiAdminUsersRoute: ApiAdminUsersRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

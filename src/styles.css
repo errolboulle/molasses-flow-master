@@ -109,3 +109,9 @@
   html, body { background-color: var(--color-background); color: var(--color-foreground); }
   body { font-feature-settings: "tnum" 1; }
 }
+
+
+@keyframes industrial-pan {
+  from { transform: scale(1.03) translate3d(-1.5%, 0, 0); }
+  to { transform: scale(1.08) translate3d(1.5%, 0, 0); }
+}

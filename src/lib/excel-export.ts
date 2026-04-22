@@ -1,5 +1,6 @@
 import * as XLSX from "xlsx-js-style";
 import type { Movement, Dam } from "./types";
+import { LEFT_COLS, RIGHT_COLS } from "./report-layout";
 
 const THIN = { style: "thin", color: { rgb: "000000" } };
 const MEDIUM = { style: "medium", color: { rgb: "000000" } };
@@ -21,46 +22,7 @@ function styleCell(ws: XLSX.WorkSheet, r: number, c: number, style: any, value?:
 }
 
 // ===== Column layout =====
-// LEFT BLOCK — Source Mill (Departure) — 12 cols
-const LEFT_COLS = [
-  { header: "Date of Departure", width: 14 },
-  { header: "Time", width: 8 },
-  { header: "Vehicle Registration", width: 16 },
-  { header: "Haulier", width: 16 },
-  { header: "Delnote", width: 12 },
-  { header: "Mill Number / Consign", width: 16 },
-  { header: "Mill", width: 14 },
-  { header: "Gross Mass", width: 12 },
-  { header: "Tare Mass", width: 12 },
-  { header: "Nett Mass", width: 12 },
-  { header: "Molasses Temp", width: 12 },
-  { header: "Sample Number", width: 12 },
-];
-
-// GAP column between sections
 const GAP_WIDTH = 3;
-
-// RIGHT BLOCK — FGC (Arrival) — 15 cols (incl. IN/OUT/NETT running balance)
-const RIGHT_COLS = [
-  { header: "Arrival Date", width: 14 },
-  { header: "Time", width: 8 },
-  { header: "Vehicle Registration", width: 16 },
-  { header: "Haulier", width: 16 },
-  { header: "Consignment Number", width: 16 },
-  { header: "ZSM Weighbridge No", width: 14 },
-  { header: "Gross Mass", width: 12 },
-  { header: "Tare Mass", width: 12 },
-  { header: "Nett Mass", width: 12 },
-  { header: "Variance", width: 10 },
-  { header: "Brix", width: 8 },
-  { header: "In / Out", width: 9 },
-  { header: "ZSM Operator", width: 14 },
-  { header: "If Out Haulier", width: 14 },
-  { header: "IN", width: 11 },
-  { header: "OUT", width: 11 },
-  { header: "NETT", width: 13 },
-];
-
 const LEFT_START = 0;
 const LEFT_END = LEFT_COLS.length - 1;                  // 11
 const GAP_COL = LEFT_END + 1;                           // 12
