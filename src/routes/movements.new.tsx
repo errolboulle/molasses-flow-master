@@ -6,11 +6,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { SmartAutocompleteInput } from "@/components/smart-autocomplete-input";
 import { useState, useMemo, type FormEvent } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { ArrowDownToLine, ArrowUpFromLine } from "lucide-react";
+import { useMovementAutocompleteOptions } from "@/lib/queries";
+import { duplicateFieldFromDatabaseError, findDuplicateMovementReference, type DuplicateFieldName } from "@/lib/movement-duplicates";
 
 type SearchParams = { type?: "incoming" | "outgoing" };
 
@@ -25,9 +28,11 @@ function NewMovementPage() {
   const { type: searchType = "incoming" } = Route.useSearch();
   const { canEntry, user } = useAuth();
   const { data: dams = [] } = useDams();
+  const { data: autocompleteOptions } = useMovementAutocompleteOptions();
   const navigate = useNavigate();
   const qc = useQueryClient();
   const [saving, setSaving] = useState(false);
+  const [duplicateField, setDuplicateField] = useState<DuplicateFieldName | null>(null);
   const [movementType, setMovementType] = useState<"incoming" | "outgoing">(searchType);
 
   const nowIso = new Date().toISOString();
@@ -67,7 +72,10 @@ function NewMovementPage() {
     fgc_if_out_haulier: "",
   });
 
-  const set = (k: string, v: string) => setForm((f) => ({ ...f, [k]: v }));
+  const set = (k: string, v: string) => {
+    if (k === duplicateField) setDuplicateField(null);
+    setForm((f) => ({ ...f, [k]: v }));
+  };
 
   const setType = (nextType: "incoming" | "outgoing") => {
     setMovementType(nextType);
@@ -105,6 +113,12 @@ function NewMovementPage() {
 
     setSaving(true);
     try {
+      const duplicate = await findDuplicateMovementReference(form);
+      if (duplicate) {
+        setDuplicateField(duplicate.field);
+        toast.error(`Duplicate detected: ${duplicate.label} already exists`);
+        return;
+      }
       const numOrNull = (s: string) => s === "" ? null : parseFloat(s);
       const strOrNull = (s: string) => s.trim() === "" ? null : s.trim();
       const payload = {
@@ -159,6 +173,12 @@ function NewMovementPage() {
       navigate({ to: "/movements" });
     } catch (e: any) {
       console.error("Movement save failed:", e);
+      const duplicate = duplicateFieldFromDatabaseError(e);
+      if (duplicate) {
+        setDuplicateField(duplicate.field);
+        toast.error(`Duplicate detected: ${duplicate.label} already exists`);
+        return;
+      }
       toast.error(e?.message ?? "Failed to save movement");
     } finally {
       setSaving(false);
