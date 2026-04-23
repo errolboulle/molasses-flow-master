@@ -313,6 +313,7 @@ function WeighBridgeModePage() {
       setSavedPulse(true);
       window.setTimeout(() => setSavedPulse(false), 1200);
       resetForNextTruck();
+      window.requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: "smooth" }));
     } catch (error: any) {
       console.error("Weigh Bridge save failed:", error);
       const duplicate = duplicateFieldFromDatabaseError(error);
