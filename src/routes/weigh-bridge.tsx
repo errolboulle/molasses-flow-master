@@ -379,16 +379,16 @@ function WeighBridgeModePage() {
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
             <FastInput label="Date of departure" name="src_date_of_departure" type="date" value={form.src_date_of_departure} activeField={activeField} onFocus={handleFocus} onChange={(value) => set("src_date_of_departure", value)} />
             <FastInput label="Time" name="src_time" type="time" value={form.src_time} activeField={activeField} onFocus={handleFocus} onChange={(value) => set("src_time", value)} />
-            <FastInput label="Vehicle registration" name="src_vehicle_registration" value={form.src_vehicle_registration} activeField={activeField} onFocus={handleFocus} onChange={(value) => set("src_vehicle_registration", value)} />
-            <FastInput label="Haulier" name="src_haulier" value={form.src_haulier} activeField={activeField} onFocus={handleFocus} onChange={(value) => set("src_haulier", value)} />
-            <FastInput label="Delivery note" name="src_delivery_note" value={form.src_delivery_note} activeField={activeField} onFocus={handleFocus} onChange={(value) => set("src_delivery_note", value)} />
-            <FastInput label="Mill number" name="src_mill_number" value={form.src_mill_number} activeField={activeField} onFocus={handleFocus} onChange={(value) => set("src_mill_number", value)} />
-            <FastInput label="Mill" name="src_mill" value={form.src_mill} activeField={activeField} onFocus={handleFocus} onChange={(value) => set("src_mill", value)} />
+            <FastAutocomplete label="Vehicle registration" name="src_vehicle_registration" value={form.src_vehicle_registration} activeField={activeField} suggestions={autocompleteOptions?.vehicleRegistrations ?? []} onFocus={handleFocus} onChange={(value) => set("src_vehicle_registration", value)} />
+            <FastAutocomplete label="Haulier" name="src_haulier" value={form.src_haulier} activeField={activeField} suggestions={autocompleteOptions?.hauliers ?? []} onFocus={handleFocus} onChange={(value) => set("src_haulier", value)} />
+            <FastInput label="Delivery note" name="src_delivery_note" value={form.src_delivery_note} activeField={activeField} duplicate={duplicateField === "src_delivery_note"} onFocus={handleFocus} onChange={(value) => set("src_delivery_note", value)} />
+            <FastInput label="Mill number" name="src_mill_number" value={form.src_mill_number} activeField={activeField} duplicate={duplicateField === "src_mill_number"} onFocus={handleFocus} onChange={(value) => set("src_mill_number", value)} />
+            <FastAutocomplete label="Mill" name="src_mill" value={form.src_mill} activeField={activeField} suggestions={autocompleteOptions?.mills ?? []} onFocus={handleFocus} onChange={(value) => set("src_mill", value)} />
             <FastInput label="Gross mass (tons)" name="src_gross_mass" type="number" step="0.001" value={form.src_gross_mass} activeField={activeField} onFocus={handleFocus} onChange={(value) => set("src_gross_mass", value)} />
             <FastInput label="Tare mass (tons)" name="src_tare_mass" type="number" step="0.001" value={form.src_tare_mass} activeField={activeField} onFocus={handleFocus} onChange={(value) => set("src_tare_mass", value)} />
             <FastInput label="Net mass (tons, auto)" name="src_net_mass" type="number" step="0.001" value={isNaN(srcNet) ? "" : srcNet.toString()} activeField={activeField} onFocus={handleFocus} onChange={(value) => set("src_net_mass", value)} />
             <FastInput label="Molasses temperature (°C)" name="src_molasses_temperature" type="number" step="0.01" value={form.src_molasses_temperature} activeField={activeField} onFocus={handleFocus} onChange={(value) => set("src_molasses_temperature", value)} />
-            <FastInput label="Sample number" name="src_sample_number" value={form.src_sample_number} activeField={activeField} onFocus={handleFocus} onChange={(value) => set("src_sample_number", value)} />
+            <FastInput label="Sample number" name="src_sample_number" value={form.src_sample_number} activeField={activeField} duplicate={duplicateField === "src_sample_number"} onFocus={handleFocus} onChange={(value) => set("src_sample_number", value)} />
           </div>
         </section>
 
@@ -397,10 +397,10 @@ function WeighBridgeModePage() {
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
             <FastInput label="Date of arrival" name="fgc_date_of_arrival" type="date" value={form.fgc_date_of_arrival} activeField={activeField} onFocus={handleFocus} onChange={(value) => set("fgc_date_of_arrival", value)} />
             <FastInput label="Time" name="fgc_time" type="time" value={form.fgc_time} activeField={activeField} onFocus={handleFocus} onChange={(value) => set("fgc_time", value)} />
-            <FastInput label="Vehicle registration" name="fgc_vehicle_registration" value={form.fgc_vehicle_registration} activeField={activeField} onFocus={handleFocus} onChange={(value) => set("fgc_vehicle_registration", value)} />
-            <FastInput label="Haulier" name="fgc_haulier" value={form.fgc_haulier} activeField={activeField} onFocus={handleFocus} onChange={(value) => set("fgc_haulier", value)} />
-            <FastInput label="Consignment note number" name="fgc_consignment_note_number" value={form.fgc_consignment_note_number} activeField={activeField} onFocus={handleFocus} onChange={(value) => set("fgc_consignment_note_number", value)} />
-            <FastInput label="ZSM weighbridge number" name="fgc_zsm_weighbridge_number" value={form.fgc_zsm_weighbridge_number} activeField={activeField} onFocus={handleFocus} onChange={(value) => set("fgc_zsm_weighbridge_number", value)} />
+            <FastAutocomplete label="Vehicle registration" name="fgc_vehicle_registration" value={form.fgc_vehicle_registration} activeField={activeField} suggestions={autocompleteOptions?.vehicleRegistrations ?? []} onFocus={handleFocus} onChange={(value) => set("fgc_vehicle_registration", value)} />
+            <FastAutocomplete label="Haulier" name="fgc_haulier" value={form.fgc_haulier} activeField={activeField} suggestions={autocompleteOptions?.hauliers ?? []} onFocus={handleFocus} onChange={(value) => set("fgc_haulier", value)} />
+            <FastInput label="Consignment note number" name="fgc_consignment_note_number" value={form.fgc_consignment_note_number} activeField={activeField} duplicate={duplicateField === "fgc_consignment_note_number"} onFocus={handleFocus} onChange={(value) => set("fgc_consignment_note_number", value)} />
+            <FastInput label="ZSM weighbridge number" name="fgc_zsm_weighbridge_number" value={form.fgc_zsm_weighbridge_number} activeField={activeField} duplicate={duplicateField === "fgc_zsm_weighbridge_number"} onFocus={handleFocus} onChange={(value) => set("fgc_zsm_weighbridge_number", value)} />
             <FastInput label="Gross mass (tons)" name="fgc_gross_mass" type="number" step="0.001" value={form.fgc_gross_mass} activeField={activeField} onFocus={handleFocus} onChange={(value) => set("fgc_gross_mass", value)} />
             <FastInput label="Tare mass (tons)" name="fgc_tare_mass" type="number" step="0.001" value={form.fgc_tare_mass} activeField={activeField} onFocus={handleFocus} onChange={(value) => set("fgc_tare_mass", value)} />
             <FastInput label="Net mass (tons, auto)" name="fgc_net_mass_secondary" type="number" step="0.001" value={isNaN(fgcNet) ? "" : fgcNet.toString()} activeField={activeField} onFocus={handleFocus} onChange={(value) => set("fgc_net_mass", value)} />
