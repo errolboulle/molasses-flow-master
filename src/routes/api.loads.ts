@@ -6,8 +6,8 @@ const loadCreateSchema = z.object({
   truck_id: z.string().uuid(),
   dam_id: z.string().uuid(),
   type: z.enum(["incoming", "outgoing"]),
-  weight_tons: z.number().positive(),
-  volume_liters: z.number().positive(),
+  fgc_net_mass: z.number().positive(),
+  volume_liters: z.number().min(0).default(0),
   timestamp: z.string().datetime().optional(),
   status: z.enum(["pending", "completed", "cancelled"]).default("completed"),
 });
@@ -39,11 +39,11 @@ export const Route = createFileRoute("/api/loads")({
         const parsed = loadCreateSchema.safeParse(await request.json());
         if (!parsed.success) return jsonError("Invalid load details", 400);
         const client = getAuthedClient(auth.token);
-        const { data, error } = await client.rpc("create_load_transaction", {
+        const { data, error } = await (client as any).rpc("create_load_transaction", {
           _truck_id: parsed.data.truck_id,
           _dam_id: parsed.data.dam_id,
           _type: parsed.data.type,
-          _weight_tons: parsed.data.weight_tons,
+          _fgc_net_mass: parsed.data.fgc_net_mass,
           _volume_liters: parsed.data.volume_liters,
           _timestamp: parsed.data.timestamp ?? new Date().toISOString(),
           _status: parsed.data.status,
