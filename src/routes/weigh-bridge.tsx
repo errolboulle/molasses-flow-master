@@ -116,7 +116,12 @@ function WeighBridgeModePage() {
 
   const set = (key: string, value: string) => {
     if (key === duplicateField) setDuplicateField(null);
-    setForm((current) => ({ ...current, [key]: value }));
+    setForm((current) => ({
+      ...current,
+      [key]: value,
+      ...(key === "src_vehicle_registration" ? { fgc_vehicle_registration: value } : {}),
+      ...(key === "src_haulier" ? { fgc_haulier: value } : {}),
+    }));
   };
 
   const checkDuplicateOnBlur = async (field: DuplicateFieldName, value: string) => {
