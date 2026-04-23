@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as WeighBridgeRouteImport } from './routes/weigh-bridge'
 import { Route as UsersRouteImport } from './routes/users'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as ReportsRouteImport } from './routes/reports'
@@ -32,6 +33,11 @@ import { Route as ApiAuthRegisterRouteImport } from './routes/api.auth.register'
 import { Route as ApiAuthLoginRouteImport } from './routes/api.auth.login'
 import { Route as ApiAdminUsersRouteImport } from './routes/api.admin.users'
 
+const WeighBridgeRoute = WeighBridgeRouteImport.update({
+  id: '/weigh-bridge',
+  path: '/weigh-bridge',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const UsersRoute = UsersRouteImport.update({
   id: '/users',
   path: '/users',
@@ -155,6 +161,7 @@ export interface FileRoutesByFullPath {
   '/reports': typeof ReportsRoute
   '/settings': typeof SettingsRoute
   '/users': typeof UsersRoute
+  '/weigh-bridge': typeof WeighBridgeRoute
   '/api/audit-logs': typeof ApiAuditLogsRoute
   '/api/dams': typeof ApiDamsRouteWithChildren
   '/api/loads': typeof ApiLoadsRoute
@@ -179,6 +186,7 @@ export interface FileRoutesByTo {
   '/reports': typeof ReportsRoute
   '/settings': typeof SettingsRoute
   '/users': typeof UsersRoute
+  '/weigh-bridge': typeof WeighBridgeRoute
   '/api/audit-logs': typeof ApiAuditLogsRoute
   '/api/dams': typeof ApiDamsRouteWithChildren
   '/api/loads': typeof ApiLoadsRoute
@@ -204,6 +212,7 @@ export interface FileRoutesById {
   '/reports': typeof ReportsRoute
   '/settings': typeof SettingsRoute
   '/users': typeof UsersRoute
+  '/weigh-bridge': typeof WeighBridgeRoute
   '/api/audit-logs': typeof ApiAuditLogsRoute
   '/api/dams': typeof ApiDamsRouteWithChildren
   '/api/loads': typeof ApiLoadsRoute
@@ -230,6 +239,7 @@ export interface FileRouteTypes {
     | '/reports'
     | '/settings'
     | '/users'
+    | '/weigh-bridge'
     | '/api/audit-logs'
     | '/api/dams'
     | '/api/loads'
@@ -254,6 +264,7 @@ export interface FileRouteTypes {
     | '/reports'
     | '/settings'
     | '/users'
+    | '/weigh-bridge'
     | '/api/audit-logs'
     | '/api/dams'
     | '/api/loads'
@@ -278,6 +289,7 @@ export interface FileRouteTypes {
     | '/reports'
     | '/settings'
     | '/users'
+    | '/weigh-bridge'
     | '/api/audit-logs'
     | '/api/dams'
     | '/api/loads'
@@ -303,6 +315,7 @@ export interface RootRouteChildren {
   ReportsRoute: typeof ReportsRoute
   SettingsRoute: typeof SettingsRoute
   UsersRoute: typeof UsersRoute
+  WeighBridgeRoute: typeof WeighBridgeRoute
   ApiAuditLogsRoute: typeof ApiAuditLogsRoute
   ApiDamsRoute: typeof ApiDamsRouteWithChildren
   ApiLoadsRoute: typeof ApiLoadsRoute
@@ -315,6 +328,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/weigh-bridge': {
+      id: '/weigh-bridge'
+      path: '/weigh-bridge'
+      fullPath: '/weigh-bridge'
+      preLoaderRoute: typeof WeighBridgeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/users': {
       id: '/users'
       path: '/users'
@@ -519,6 +539,7 @@ const rootRouteChildren: RootRouteChildren = {
   ReportsRoute: ReportsRoute,
   SettingsRoute: SettingsRoute,
   UsersRoute: UsersRoute,
+  WeighBridgeRoute: WeighBridgeRoute,
   ApiAuditLogsRoute: ApiAuditLogsRoute,
   ApiDamsRoute: ApiDamsRouteWithChildren,
   ApiLoadsRoute: ApiLoadsRoute,
