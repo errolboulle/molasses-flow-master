@@ -312,7 +312,7 @@ function WeighBridgeModePage() {
       </div>
 
       <section className="rounded-lg border border-border bg-card p-4 shadow-sm">
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-5">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
           <FastField label="Movement Type" name="movement_type" activeField={activeField} className="xl:col-span-1">
             <select ref={firstFieldRef} className="fast-control" value={movementType} onFocus={(event) => handleFocus(event, "movement_type")} onChange={(event) => setType(event.target.value as MovementType)}>
               <option value="incoming">Incoming</option>
@@ -338,9 +338,6 @@ function WeighBridgeModePage() {
           </FastField>
           <FastField label="Truck / Driver" name="truck" activeField={activeField} className="xl:col-span-1">
             <Input list="weigh-bridge-trucks" className="fast-control" value={truckSearch} onFocus={(event) => handleFocus(event, "truck")} onChange={(event) => applyTruck(event.target.value)} placeholder="Type truck" />
-          </FastField>
-          <FastField label="FGC Net Mass" name="fgc_net_mass" activeField={activeField} className="xl:col-span-1">
-            <Input required type="number" step="0.001" min="0.001" className="fast-control" value={form.fgc_net_mass} onFocus={(event) => handleFocus(event, "fgc_net_mass")} onChange={(event) => set("fgc_net_mass", event.target.value)} />
           </FastField>
           <FastField label="Volume (tons, auto from FGC net)" name="quantity_tons" activeField={activeField} className="xl:col-span-1">
             <Input readOnly type="number" step="0.001" className="fast-control" value={!isNaN(fgcNet) ? fgcNet.toString() : ""} onFocus={(event) => handleFocus(event, "quantity_tons")} />
