@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { z } from "zod";
 import { FileText, Loader2, Plus, RotateCcw, Upload } from "lucide-react";
 import { toast } from "sonner";
@@ -77,7 +77,7 @@ function ReportsPage() {
     }
   };
 
-  useState(() => { void loadReports(false); });
+  useEffect(() => { void loadReports(false); }, [session?.access_token]);
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
