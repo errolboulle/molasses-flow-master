@@ -187,6 +187,7 @@ export type Database = {
           created_by: string
           dam_id: string
           deleted_at: string | null
+          fgc_net_mass: number
           id: string
           status: Database["public"]["Enums"]["load_status"]
           timestamp: string
@@ -201,6 +202,7 @@ export type Database = {
           created_by: string
           dam_id: string
           deleted_at?: string | null
+          fgc_net_mass: number
           id?: string
           status?: Database["public"]["Enums"]["load_status"]
           timestamp?: string
@@ -215,6 +217,7 @@ export type Database = {
           created_by?: string
           dam_id?: string
           deleted_at?: string | null
+          fgc_net_mass?: number
           id?: string
           status?: Database["public"]["Enums"]["load_status"]
           timestamp?: string
@@ -526,18 +529,19 @@ export type Database = {
       create_load_transaction: {
         Args: {
           _dam_id: string
+          _fgc_net_mass: number
           _status?: Database["public"]["Enums"]["load_status"]
           _timestamp?: string
           _truck_id: string
           _type: Database["public"]["Enums"]["load_type"]
-          _volume_liters: number
-          _weight_tons: number
+          _volume_liters?: number
         }
         Returns: {
           created_at: string
           created_by: string
           dam_id: string
           deleted_at: string | null
+          fgc_net_mass: number
           id: string
           status: Database["public"]["Enums"]["load_status"]
           timestamp: string
