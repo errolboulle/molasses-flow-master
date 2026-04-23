@@ -1,131 +1,173 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { ProtectedLayout } from "@/components/protected-layout";
-import { useDams, useMovements } from "@/lib/queries";
-import { Card } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ReportPreview } from "@/components/report-preview";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { fmtTons } from "@/lib/types";
+import { z } from "zod";
+import { FileText, Loader2, Plus, RotateCcw, Upload } from "lucide-react";
+import { toast } from "sonner";
+import { ProtectedLayout } from "@/components/protected-layout";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis, Legend } from "recharts";
+import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
+import { useAuth } from "@/lib/auth-context";
+import { fmtDateTime } from "@/lib/types";
 
 export const Route = createFileRoute("/reports")({
   component: () => <ProtectedLayout><ReportsPage /></ProtectedLayout>,
 });
 
-type Period = "weekly" | "monthly" | "yearly";
+type ReportRow = {
+  id: string;
+  title: string;
+  description: string | null;
+  status: string;
+  is_deleted: boolean;
+  created_at: string;
+  updated_at: string;
+  current_version?: ReportVersion | null;
+};
 
-function startOf(period: Period) {
-  const d = new Date();
-  if (period === "weekly") {
-    d.setDate(d.getDate() - 7);
-  } else if (period === "monthly") {
-    d.setMonth(d.getMonth() - 1);
-  } else {
-    d.setFullYear(d.getFullYear() - 1);
-  }
-  d.setHours(0, 0, 0, 0);
-  return d;
-}
+type ReportVersion = {
+  id: string;
+  version_number: number;
+  file_type: "pdf" | "xlsx" | "docx";
+  file_size: number;
+  created_at: string;
+};
+
+const MAX_FILE_SIZE = 25 * 1024 * 1024;
+const allowedMimeTypes = [
+  "application/pdf",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+];
+
+const uploadSchema = z.object({
+  title: z.string().trim().min(1, "Title is required").max(160),
+  description: z.string().trim().max(1000).optional(),
+  file: z.instanceof(File).refine((file) => allowedMimeTypes.includes(file.type), "Only PDF, XLSX, and DOCX files are allowed").refine((file) => file.size > 0 && file.size <= MAX_FILE_SIZE, "File must be 25 MB or smaller"),
+});
 
 function ReportsPage() {
-  const { data: dams = [] } = useDams();
-  const { data: movements = [] } = useMovements();
-  const [period, setPeriod] = useState<Period>("monthly");
-  const [damId, setDamId] = useState("");
+  const { session } = useAuth();
+  const [reports, setReports] = useState<ReportRow[]>([]);
+  const [showDeleted, setShowDeleted] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [file, setFile] = useState<File | null>(null);
 
-  const since = useMemo(() => startOf(period), [period]);
+  const authHeaders = useMemo(() => ({ Authorization: `Bearer ${session?.access_token ?? ""}` }), [session?.access_token]);
 
-  const damReports = useMemo(() => {
-    const list = damId ? dams.filter((d) => d.id === damId) : dams;
-    return list.map((dam) => {
-      const inPeriod = movements.filter((m) => m.dam_id === dam.id && new Date(m.occurred_at) >= since);
-      const totalIn = inPeriod.filter((m) => m.movement_type === "incoming").reduce((s, m) => s + Number(m.quantity_tons), 0);
-      const totalOut = inPeriod.filter((m) => m.movement_type === "outgoing").reduce((s, m) => s + Number(m.quantity_tons), 0);
-      return { dam, totalIn, totalOut, closing: Number(dam.current_volume_tons) };
-    });
-  }, [dams, movements, damId, since]);
+  const loadReports = async (includeDeleted = showDeleted) => {
+    if (!session?.access_token) return;
+    setLoading(true);
+    try {
+      const response = await fetch(`/api/reports?showDeleted=${includeDeleted}`, { headers: authHeaders });
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.error ?? "Could not load reports");
+      setReports(body.data ?? []);
+    } catch (error: any) {
+      toast.error(error.message ?? "Could not load reports");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const chartData = damReports.map((r) => ({ name: r.dam.name, In: r.totalIn, Out: r.totalOut, Closing: r.closing }));
+  useState(() => { void loadReports(false); });
+
+  const submit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    const parsed = uploadSchema.safeParse({ title, description, file });
+    if (!parsed.success) { toast.error(parsed.error.errors[0]?.message ?? "Invalid report"); return; }
+    setSaving(true);
+    try {
+      const form = new FormData();
+      form.set("title", parsed.data.title);
+      form.set("description", parsed.data.description ?? "");
+      form.set("file", parsed.data.file);
+      const response = await fetch("/api/reports", { method: "POST", headers: authHeaders, body: form });
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.error ?? "Could not create report");
+      toast.success("Report saved with version 1");
+      setTitle("");
+      setDescription("");
+      setFile(null);
+      await loadReports(showDeleted);
+    } catch (error: any) {
+      toast.error(error.message ?? "Could not create report");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const toggleDeleted = (checked: boolean) => {
+    setShowDeleted(checked);
+    void loadReports(checked);
+  };
 
   return (
     <div className="space-y-6">
-      <div>
-        <p className="text-xs font-semibold uppercase tracking-wider text-primary">Analytics & export</p>
-        <h1 className="mt-1 text-3xl font-black lg:text-4xl">Reports</h1>
-        <p className="text-sm text-muted-foreground mt-1">Period summaries with charts.</p>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wider text-primary">Private report vault</p>
+          <h1 className="mt-1 text-3xl font-black lg:text-4xl">Reports</h1>
+          <p className="mt-1 text-sm text-muted-foreground">Every file is versioned, private, and retained.</p>
+        </div>
+        <div className="flex items-center gap-2 rounded-md border border-input px-3 py-2">
+          <Switch checked={showDeleted} onCheckedChange={toggleDeleted} id="show-deleted" />
+          <Label htmlFor="show-deleted" className="text-sm">Show deleted</Label>
+        </div>
       </div>
 
       <Card className="p-5">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-xl">
-          <div className="space-y-1">
-            <Label className="text-xs">Period</Label>
-            <select className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm" value={period} onChange={(e) => setPeriod(e.target.value as Period)}>
-              <option value="weekly">Last 7 days</option>
-              <option value="monthly">Last 30 days</option>
-              <option value="yearly">Last 12 months</option>
-            </select>
+        <form onSubmit={submit} className="grid gap-4 lg:grid-cols-[1fr_1fr_auto] lg:items-end">
+          <div className="space-y-2">
+            <Label>Title</Label>
+            <Input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Monthly molasses reconciliation" />
           </div>
-          <div className="space-y-1">
-            <Label className="text-xs">Dam</Label>
-            <select className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm" value={damId} onChange={(e) => setDamId(e.target.value)}>
-              <option value="">All dams</option>
-              {dams.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
-            </select>
+          <div className="space-y-2">
+            <Label>Description</Label>
+            <Textarea value={description} onChange={(event) => setDescription(event.target.value)} placeholder="Optional report notes" />
           </div>
-        </div>
+          <div className="space-y-2">
+            <Label>PDF / XLSX / DOCX</Label>
+            <Input type="file" accept=".pdf,.xlsx,.docx" onChange={(event) => setFile(event.target.files?.[0] ?? null)} />
+            <Button type="submit" disabled={saving} className="w-full">
+              {saving ? <Loader2 className="animate-spin" /> : <Upload />} Save report
+            </Button>
+          </div>
+        </form>
       </Card>
 
-      <Tabs defaultValue="charts" className="space-y-5">
-        <TabsList>
-          <TabsTrigger value="charts">Charts</TabsTrigger>
-          <TabsTrigger value="preview">Report Preview</TabsTrigger>
-        </TabsList>
-        <TabsContent value="charts" className="space-y-5">
-          <Card className="p-5">
-            <h2 className="font-semibold mb-4">In vs Out</h2>
-            <div className="h-72">
-              <ResponsiveContainer>
-                <BarChart data={chartData}>
-                  <CartesianGrid stroke="hsl(0 0% 100% / 0.06)" vertical={false} />
-                  <XAxis dataKey="name" stroke="hsl(0 0% 100% / 0.5)" fontSize={12} />
-                  <YAxis stroke="hsl(0 0% 100% / 0.5)" fontSize={12} />
-                  <Tooltip contentStyle={{ background: "oklch(0.21 0.014 260)", border: "1px solid oklch(1 0 0 / 0.1)", borderRadius: 8 }} />
-                  <Legend wrapperStyle={{ fontSize: 12 }} />
-                  <Bar dataKey="In" fill="oklch(0.65 0.16 155)" radius={[4,4,0,0]} />
-                  <Bar dataKey="Out" fill="oklch(0.62 0.21 305)" radius={[4,4,0,0]} />
-                  <Bar dataKey="Closing" fill="oklch(0.62 0.19 260)" radius={[4,4,0,0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </Card>
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-            {damReports.map((r) => (
-              <Card key={r.dam.id} className="p-5 hover:-translate-y-1 hover:border-primary/35">
-                <h3 className="font-bold text-lg">{r.dam.name}</h3>
-                <div className="mt-4 space-y-3 text-sm">
-                  <Stat label="Total received" value={fmtTons(r.totalIn)} color="text-success" />
-                  <Stat label="Total dispatched" value={fmtTons(r.totalOut)} color="text-purple" />
-                  <Stat label="Net change" value={fmtTons(r.totalIn - r.totalOut)} />
-                  <Stat label="Closing balance" value={fmtTons(r.closing)} bold />
-                </div>
-              </Card>
-            ))}
-          </div>
-        </TabsContent>
-        <TabsContent value="preview">
-          <ReportPreview dams={dams} movements={movements} damId={damId} />
-        </TabsContent>
-      </Tabs>
-    </div>
-  );
-}
-
-function Stat({ label, value, color, bold }: { label: string; value: string; color?: string; bold?: boolean }) {
-  return (
-    <div className="flex justify-between items-baseline">
-      <span className="text-xs text-muted-foreground uppercase tracking-wider">{label}</span>
-      <span className={`tabular-nums ${color ?? ""} ${bold ? "font-bold text-base" : "font-semibold"}`}>{value}</span>
+      {loading ? (
+        <Card className="p-8 text-center text-sm text-muted-foreground">Loading reports…</Card>
+      ) : reports.length === 0 ? (
+        <Card className="p-8 text-center text-sm text-muted-foreground">No reports found.</Card>
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {reports.map((report) => (
+            <Card key={report.id} className="p-5">
+              <div className="flex items-start justify-between gap-3">
+                <FileText className="mt-1 text-primary" />
+                <Badge variant={report.is_deleted ? "destructive" : "outline"}>{report.is_deleted ? "Deleted" : report.status}</Badge>
+              </div>
+              <h2 className="mt-4 text-lg font-bold">{report.title}</h2>
+              <p className="mt-1 line-clamp-2 min-h-10 text-sm text-muted-foreground">{report.description || "No description"}</p>
+              <div className="mt-4 text-xs text-muted-foreground">
+                <p>Current version: {report.current_version ? `v${report.current_version.version_number} ${report.current_version.file_type.toUpperCase()}` : "None"}</p>
+                <p>Updated: {fmtDateTime(report.updated_at)}</p>
+              </div>
+              <Button asChild className="mt-4 w-full" variant="outline">
+                <Link to="/reports/$id" params={{ id: report.id }}>Open report</Link>
+              </Button>
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
