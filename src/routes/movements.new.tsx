@@ -195,7 +195,6 @@ function NewMovementPage() {
               {dams.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
             </select>
           </Field>
-          <Field label="Date & time *"><Input required type="datetime-local" value={form.occurred_at} onChange={(e) => set("occurred_at", e.target.value)} /></Field>
           <Field label="Volume (tons, auto from FGC net) *">
             <Input
               required
@@ -207,7 +206,6 @@ function NewMovementPage() {
               readOnly
             />
           </Field>
-          <Field label={movementType === "incoming" ? "Truck / Driver" : "Company / Driver"}><Input value={form.driver_or_company} onChange={(e) => set("driver_or_company", e.target.value)} /></Field>
           <div className="sm:col-span-2 lg:col-span-3">
             <Label>Reference / notes</Label>
             <Textarea rows={2} value={form.notes} onChange={(e) => set("notes", e.target.value)} placeholder="Optional reference, note, or explanation" />
