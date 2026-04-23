@@ -11,7 +11,7 @@ const allowedFiles = {
 
 const schema = z.object({ title: z.string().trim().min(1).max(160).optional(), description: z.string().trim().max(1000).optional() });
 
-export const Route = createFileRoute("/api/reports/$id/versions")({
+export const Route = createFileRoute("/api/reports/versions")({
   server: {
     handlers: {
       POST: async ({ request, params }) => {

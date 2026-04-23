@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { getAuthedClient, jsonError, logAndJsonError, requireApiAuth } from "@/lib/api-auth";
 
-export const Route = createFileRoute("/api/reports/$id/download")({
+export const Route = createFileRoute("/api/reports/download")({
   server: {
     handlers: {
       GET: async ({ request, params }) => {
