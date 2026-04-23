@@ -44,6 +44,26 @@ export function useMovements(filters?: {
   });
 }
 
+export function useMovementAutocompleteOptions() {
+  return useQuery({
+    queryKey: ["movement-autocomplete-options"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("movements")
+        .select("src_vehicle_registration, fgc_vehicle_registration, src_haulier, fgc_haulier, src_mill")
+        .order("created_at", { ascending: false })
+        .limit(1000);
+      if (error) throw error;
+      const unique = (...values: Array<string | null>) => Array.from(new Set(values.map((value) => value?.trim()).filter(Boolean) as string[])).slice(0, 80);
+      return {
+        vehicleRegistrations: unique(...(data ?? []).flatMap((row) => [row.src_vehicle_registration, row.fgc_vehicle_registration])),
+        hauliers: unique(...(data ?? []).flatMap((row) => [row.src_haulier, row.fgc_haulier])),
+        mills: unique(...(data ?? []).map((row) => row.src_mill)),
+      };
+    },
+  });
+}
+
 export function useAdjustments(damId?: string) {
   return useQuery({
     queryKey: ["adjustments", damId],
