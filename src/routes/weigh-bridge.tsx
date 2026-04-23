@@ -455,6 +455,7 @@ function FastInput({
   type = "text",
   step,
   readOnly,
+  duplicate,
 }: {
   label: string;
   name: string;
@@ -465,10 +466,35 @@ function FastInput({
   type?: string;
   step?: string;
   readOnly?: boolean;
+  duplicate?: boolean;
+}) {
+  return (
+    <FastField label={label} name={name} activeField={activeField} className={duplicate ? "border-destructive bg-destructive/10" : undefined}>
+      <Input type={type} step={step} readOnly={readOnly} className={cn("fast-control", duplicate && "border-destructive focus-visible:ring-destructive/30")} value={value} onFocus={(event) => onFocus(event, name)} onChange={(event) => onChange?.(event.target.value)} />
+    </FastField>
+  );
+}
+
+function FastAutocomplete({
+  label,
+  name,
+  value,
+  activeField,
+  suggestions,
+  onFocus,
+  onChange,
+}: {
+  label: string;
+  name: string;
+  value: string;
+  activeField: string;
+  suggestions: string[];
+  onFocus: (event: FocusEvent<HTMLInputElement>, name: string) => void;
+  onChange: (value: string) => void;
 }) {
   return (
     <FastField label={label} name={name} activeField={activeField}>
-      <Input type={type} step={step} readOnly={readOnly} className="fast-control" value={value} onFocus={(event) => onFocus(event, name)} onChange={(event) => onChange?.(event.target.value)} />
+      <SmartAutocompleteInput className="fast-control" value={value} suggestions={suggestions} onFocus={(event) => onFocus(event, name)} onChange={onChange} />
     </FastField>
   );
 }
