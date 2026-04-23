@@ -238,16 +238,16 @@ function NewMovementPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <Field label="Date of departure"><Input type="date" value={form.src_date_of_departure} onChange={(e) => set("src_date_of_departure", e.target.value)} /></Field>
           <Field label="Time"><Input type="time" value={form.src_time} onChange={(e) => set("src_time", e.target.value)} /></Field>
-          <Field label="Vehicle registration"><Input value={form.src_vehicle_registration} onChange={(e) => set("src_vehicle_registration", e.target.value)} /></Field>
-          <Field label="Haulier"><Input value={form.src_haulier} onChange={(e) => set("src_haulier", e.target.value)} /></Field>
-          <Field label="Delivery note"><Input value={form.src_delivery_note} onChange={(e) => set("src_delivery_note", e.target.value)} /></Field>
-          <Field label="Mill number"><Input value={form.src_mill_number} onChange={(e) => set("src_mill_number", e.target.value)} /></Field>
-          <Field label="Mill"><Input value={form.src_mill} onChange={(e) => set("src_mill", e.target.value)} /></Field>
+          <Field label="Vehicle registration"><SmartAutocompleteInput value={form.src_vehicle_registration} suggestions={autocompleteOptions?.vehicleRegistrations ?? []} onChange={(value) => set("src_vehicle_registration", value)} /></Field>
+          <Field label="Haulier"><SmartAutocompleteInput value={form.src_haulier} suggestions={autocompleteOptions?.hauliers ?? []} onChange={(value) => set("src_haulier", value)} /></Field>
+          <Field label="Delivery note"><Input className={duplicateField === "src_delivery_note" ? "border-destructive focus-visible:ring-destructive/30" : undefined} value={form.src_delivery_note} onChange={(e) => set("src_delivery_note", e.target.value)} /></Field>
+          <Field label="Mill number"><Input className={duplicateField === "src_mill_number" ? "border-destructive focus-visible:ring-destructive/30" : undefined} value={form.src_mill_number} onChange={(e) => set("src_mill_number", e.target.value)} /></Field>
+          <Field label="Mill"><SmartAutocompleteInput value={form.src_mill} suggestions={autocompleteOptions?.mills ?? []} onChange={(value) => set("src_mill", value)} /></Field>
           <Field label="Gross mass (tons)"><Input type="number" step="0.001" value={form.src_gross_mass} onChange={(e) => set("src_gross_mass", e.target.value)} /></Field>
           <Field label="Tare mass (tons)"><Input type="number" step="0.001" value={form.src_tare_mass} onChange={(e) => set("src_tare_mass", e.target.value)} /></Field>
           <Field label="Net mass (tons, auto)"><Input type="number" step="0.001" value={isNaN(srcNet) ? "" : srcNet.toString()} onChange={(e) => set("src_net_mass", e.target.value)} /></Field>
           <Field label="Molasses temperature (°C)"><Input type="number" step="0.01" value={form.src_molasses_temperature} onChange={(e) => set("src_molasses_temperature", e.target.value)} /></Field>
-          <Field label="Sample number"><Input value={form.src_sample_number} onChange={(e) => set("src_sample_number", e.target.value)} /></Field>
+          <Field label="Sample number"><Input className={duplicateField === "src_sample_number" ? "border-destructive focus-visible:ring-destructive/30" : undefined} value={form.src_sample_number} onChange={(e) => set("src_sample_number", e.target.value)} /></Field>
         </div>
       </Card>
 
@@ -256,10 +256,10 @@ function NewMovementPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <Field label="Date of arrival"><Input type="date" value={form.fgc_date_of_arrival} onChange={(e) => set("fgc_date_of_arrival", e.target.value)} /></Field>
           <Field label="Time"><Input type="time" value={form.fgc_time} onChange={(e) => set("fgc_time", e.target.value)} /></Field>
-          <Field label="Vehicle registration"><Input value={form.fgc_vehicle_registration} onChange={(e) => set("fgc_vehicle_registration", e.target.value)} /></Field>
-          <Field label="Haulier"><Input value={form.fgc_haulier} onChange={(e) => set("fgc_haulier", e.target.value)} /></Field>
-          <Field label="Consignment note number"><Input value={form.fgc_consignment_note_number} onChange={(e) => set("fgc_consignment_note_number", e.target.value)} /></Field>
-          <Field label="ZSM weighbridge number"><Input value={form.fgc_zsm_weighbridge_number} onChange={(e) => set("fgc_zsm_weighbridge_number", e.target.value)} /></Field>
+          <Field label="Vehicle registration"><SmartAutocompleteInput value={form.fgc_vehicle_registration} suggestions={autocompleteOptions?.vehicleRegistrations ?? []} onChange={(value) => set("fgc_vehicle_registration", value)} /></Field>
+          <Field label="Haulier"><SmartAutocompleteInput value={form.fgc_haulier} suggestions={autocompleteOptions?.hauliers ?? []} onChange={(value) => set("fgc_haulier", value)} /></Field>
+          <Field label="Consignment note number"><Input className={duplicateField === "fgc_consignment_note_number" ? "border-destructive focus-visible:ring-destructive/30" : undefined} value={form.fgc_consignment_note_number} onChange={(e) => set("fgc_consignment_note_number", e.target.value)} /></Field>
+          <Field label="ZSM weighbridge number"><Input className={duplicateField === "fgc_zsm_weighbridge_number" ? "border-destructive focus-visible:ring-destructive/30" : undefined} value={form.fgc_zsm_weighbridge_number} onChange={(e) => set("fgc_zsm_weighbridge_number", e.target.value)} /></Field>
           <Field label="Gross mass (tons)"><Input type="number" step="0.001" value={form.fgc_gross_mass} onChange={(e) => set("fgc_gross_mass", e.target.value)} /></Field>
           <Field label="Tare mass (tons)"><Input type="number" step="0.001" value={form.fgc_tare_mass} onChange={(e) => set("fgc_tare_mass", e.target.value)} /></Field>
           <Field label="Net mass (tons, auto)"><Input type="number" step="0.001" value={isNaN(fgcNet) ? "" : fgcNet.toString()} onChange={(e) => set("fgc_net_mass", e.target.value)} /></Field>
