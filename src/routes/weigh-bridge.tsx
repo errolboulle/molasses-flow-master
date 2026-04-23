@@ -8,9 +8,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { SmartAutocompleteInput } from "@/components/smart-autocomplete-input";
 import { useAuth } from "@/lib/auth-context";
-import { useDams } from "@/lib/queries";
+import { useDams, useMovementAutocompleteOptions } from "@/lib/queries";
 import { cn } from "@/lib/utils";
+import { duplicateFieldFromDatabaseError, findDuplicateMovementReference, type DuplicateFieldName } from "@/lib/movement-duplicates";
 import { supabase } from "@/integrations/supabase/client";
 import { type Tables } from "@/integrations/supabase/types";
 
@@ -67,6 +69,7 @@ export const Route = createFileRoute("/weigh-bridge")({
 function WeighBridgeModePage() {
   const { canEntry, user } = useAuth();
   const { data: dams = [] } = useDams();
+  const { data: autocompleteOptions } = useMovementAutocompleteOptions();
   const { data: trucks = [] } = useQuery({
     queryKey: ["trucks", "weigh-bridge"],
     queryFn: async () => {
@@ -83,6 +86,7 @@ function WeighBridgeModePage() {
   const [activeField, setActiveField] = useState("movement_type");
   const [movementType, setMovementTypeState] = useState<MovementType>("incoming");
   const [form, setForm] = useState<Record<string, string>>(() => initialForm("incoming"));
+  const [duplicateField, setDuplicateField] = useState<DuplicateFieldName | null>(null);
   const [damSearch, setDamSearch] = useState("");
   const [truckSearch, setTruckSearch] = useState("");
 
@@ -110,7 +114,10 @@ function WeighBridgeModePage() {
     firstFieldRef.current?.focus();
   }, []);
 
-  const set = (key: string, value: string) => setForm((current) => ({ ...current, [key]: value }));
+  const set = (key: string, value: string) => {
+    if (key === duplicateField) setDuplicateField(null);
+    setForm((current) => ({ ...current, [key]: value }));
+  };
 
   const persistDefaults = (damId = form.dam_id, type = movementType) => {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ dam_id: damId, movement_type: type }));
@@ -218,6 +225,13 @@ function WeighBridgeModePage() {
 
     setSaving(true);
     try {
+      const duplicate = await findDuplicateMovementReference(form);
+      if (duplicate) {
+        setDuplicateField(duplicate.field);
+        setActiveField(duplicate.field);
+        toast.error(`Duplicate detected: ${duplicate.label} already exists`);
+        return;
+      }
       const numOrNull = (value: string) => (value === "" ? null : parseFloat(value));
       const strOrNull = (value: string) => (value.trim() === "" ? null : value.trim());
       const payload = {
@@ -274,6 +288,13 @@ function WeighBridgeModePage() {
       resetForNextTruck();
     } catch (error: any) {
       console.error("Weigh Bridge save failed:", error);
+      const duplicate = duplicateFieldFromDatabaseError(error);
+      if (duplicate) {
+        setDuplicateField(duplicate.field);
+        setActiveField(duplicate.field);
+        toast.error(`Duplicate detected: ${duplicate.label} already exists`);
+        return;
+      }
       toast.error(error?.message ?? "Failed to save movement");
     } finally {
       setSaving(false);
