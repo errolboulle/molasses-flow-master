@@ -1,173 +1,120 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
-import { z } from "zod";
-import { FileText, Loader2, Plus, RotateCcw, Upload } from "lucide-react";
-import { toast } from "sonner";
+import { createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
+import { Area, AreaChart, CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts";
+import { BarChart3, FileText, TrendingDown, TrendingUp } from "lucide-react";
 import { ProtectedLayout } from "@/components/protected-layout";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { ReportPreview } from "@/components/report-preview";
 import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import { Textarea } from "@/components/ui/textarea";
-import { useAuth } from "@/lib/auth-context";
-import { fmtDateTime } from "@/lib/types";
+import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useDams, useMovements, useSettings } from "@/lib/queries";
+import { fmtTons, tonsToLitres } from "@/lib/types";
 
 export const Route = createFileRoute("/reports")({
   component: () => <ProtectedLayout><ReportsPage /></ProtectedLayout>,
 });
 
-type ReportRow = {
-  id: string;
-  title: string;
-  description: string | null;
-  status: string;
-  is_deleted: boolean;
-  created_at: string;
-  updated_at: string;
-  current_version?: ReportVersion | null;
-};
+const movementConfig = {
+  incoming: { label: "Incoming", color: "var(--success)" },
+  outgoing: { label: "Outgoing", color: "var(--destructive)" },
+} satisfies ChartConfig;
 
-type ReportVersion = {
-  id: string;
-  version_number: number;
-  file_type: "pdf" | "xlsx" | "docx";
-  file_size: number;
-  created_at: string;
-};
-
-const MAX_FILE_SIZE = 25 * 1024 * 1024;
-const allowedMimeTypes = [
-  "application/pdf",
-  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-];
-
-const uploadSchema = z.object({
-  title: z.string().trim().min(1, "Title is required").max(160),
-  description: z.string().trim().max(1000).optional(),
-  file: z.instanceof(File).refine((file) => allowedMimeTypes.includes(file.type), "Only PDF, XLSX, and DOCX files are allowed").refine((file) => file.size > 0 && file.size <= MAX_FILE_SIZE, "File must be 25 MB or smaller"),
-});
+const stockConfig = {
+  stock: { label: "Stock", color: "var(--primary)" },
+} satisfies ChartConfig;
 
 function ReportsPage() {
-  const { session } = useAuth();
-  const [reports, setReports] = useState<ReportRow[]>([]);
-  const [showDeleted, setShowDeleted] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [file, setFile] = useState<File | null>(null);
+  const { data: dams = [] } = useDams();
+  const { data: movements = [] } = useMovements();
+  const { data: settings } = useSettings();
+  const density = settings?.density_kg_per_l ?? 1.4;
+  const [selectedDam, setSelectedDam] = useState("");
 
-  const authHeaders = useMemo(() => ({ Authorization: `Bearer ${session?.access_token ?? ""}` }), [session?.access_token]);
+  const filteredMovements = selectedDam ? movements.filter((movement) => movement.dam_id === selectedDam) : movements;
+  const selectedDams = selectedDam ? dams.filter((dam) => dam.id === selectedDam) : dams;
+  const totalIn = filteredMovements.filter((movement) => movement.movement_type === "incoming").reduce((sum, movement) => sum + Number(movement.quantity_tons ?? 0), 0);
+  const totalOut = filteredMovements.filter((movement) => movement.movement_type === "outgoing").reduce((sum, movement) => sum + Number(movement.quantity_tons ?? 0), 0);
+  const totalStock = selectedDams.reduce((sum, dam) => sum + Number(dam.current_volume_tons ?? 0), 0);
 
-  const loadReports = async (includeDeleted = showDeleted) => {
-    if (!session?.access_token) return;
-    setLoading(true);
-    try {
-      const response = await fetch(`/api/reports?showDeleted=${includeDeleted}`, { headers: authHeaders });
-      const body = await response.json();
-      if (!response.ok) throw new Error(body.error ?? "Could not load reports");
-      setReports(body.data ?? []);
-    } catch (error: any) {
-      toast.error(error.message ?? "Could not load reports");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => { void loadReports(false); }, [session?.access_token]);
-
-  const submit = async (event: React.FormEvent) => {
-    event.preventDefault();
-    const parsed = uploadSchema.safeParse({ title, description, file });
-    if (!parsed.success) { toast.error(parsed.error.errors[0]?.message ?? "Invalid report"); return; }
-    setSaving(true);
-    try {
-      const form = new FormData();
-      form.set("title", parsed.data.title);
-      form.set("description", parsed.data.description ?? "");
-      form.set("file", parsed.data.file);
-      const response = await fetch("/api/reports", { method: "POST", headers: authHeaders, body: form });
-      const body = await response.json();
-      if (!response.ok) throw new Error(body.error ?? "Could not create report");
-      toast.success("Report saved with version 1");
-      setTitle("");
-      setDescription("");
-      setFile(null);
-      await loadReports(showDeleted);
-    } catch (error: any) {
-      toast.error(error.message ?? "Could not create report");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const toggleDeleted = (checked: boolean) => {
-    setShowDeleted(checked);
-    void loadReports(checked);
-  };
+  const movementChartData = buildMovementChartData(filteredMovements);
+  const stockChartData = selectedDams.map((dam) => ({ name: dam.name, stock: Number(dam.current_volume_tons ?? 0) }));
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wider text-primary">Private report vault</p>
+          <p className="text-xs font-semibold uppercase tracking-wider text-primary">Operations reports</p>
           <h1 className="mt-1 text-3xl font-black lg:text-4xl">Reports</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Every file is versioned, private, and retained.</p>
+          <p className="mt-1 text-sm text-muted-foreground">Report preview, movement graphs, and dam stock summaries.</p>
         </div>
-        <div className="flex items-center gap-2 rounded-md border border-input px-3 py-2">
-          <Switch checked={showDeleted} onCheckedChange={toggleDeleted} id="show-deleted" />
-          <Label htmlFor="show-deleted" className="text-sm">Show deleted</Label>
-        </div>
+        <select
+          value={selectedDam}
+          onChange={(event) => setSelectedDam(event.target.value)}
+          className="h-10 rounded-md border border-input bg-background px-3 text-sm text-foreground shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <option value="">All dams</option>
+          {dams.map((dam) => <option key={dam.id} value={dam.id}>{dam.name}</option>)}
+        </select>
       </div>
 
-      <Card className="p-5">
-        <form onSubmit={submit} className="grid gap-4 lg:grid-cols-[1fr_1fr_auto] lg:items-end">
-          <div className="space-y-2">
-            <Label>Title</Label>
-            <Input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Monthly molasses reconciliation" />
-          </div>
-          <div className="space-y-2">
-            <Label>Description</Label>
-            <Textarea value={description} onChange={(event) => setDescription(event.target.value)} placeholder="Optional report notes" />
-          </div>
-          <div className="space-y-2">
-            <Label>PDF / XLSX / DOCX</Label>
-            <Input type="file" accept=".pdf,.xlsx,.docx" onChange={(event) => setFile(event.target.files?.[0] ?? null)} />
-            <Button type="submit" disabled={saving} className="w-full">
-              {saving ? <Loader2 className="animate-spin" /> : <Upload />} Save report
-            </Button>
-          </div>
-        </form>
-      </Card>
+      <div className="grid gap-4 md:grid-cols-3">
+        <MetricCard label="Total stock" value={fmtTons(totalStock)} sub={`${Math.round(tonsToLitres(totalStock, density)).toLocaleString()} L`} icon={<FileText className="h-5 w-5" />} />
+        <MetricCard label="Total incoming" value={fmtTons(totalIn)} icon={<TrendingUp className="h-5 w-5" />} />
+        <MetricCard label="Total outgoing" value={fmtTons(totalOut)} icon={<TrendingDown className="h-5 w-5" />} />
+      </div>
 
-      {loading ? (
-        <Card className="p-8 text-center text-sm text-muted-foreground">Loading reports…</Card>
-      ) : reports.length === 0 ? (
-        <Card className="p-8 text-center text-sm text-muted-foreground">No reports found.</Card>
-      ) : (
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {reports.map((report) => (
-            <Card key={report.id} className="p-5">
-              <div className="flex items-start justify-between gap-3">
-                <FileText className="mt-1 text-primary" />
-                <Badge variant={report.is_deleted ? "destructive" : "outline"}>{report.is_deleted ? "Deleted" : report.status}</Badge>
-              </div>
-              <h2 className="mt-4 text-lg font-bold">{report.title}</h2>
-              <p className="mt-1 line-clamp-2 min-h-10 text-sm text-muted-foreground">{report.description || "No description"}</p>
-              <div className="mt-4 text-xs text-muted-foreground">
-                <p>Current version: {report.current_version ? `v${report.current_version.version_number} ${report.current_version.file_type.toUpperCase()}` : "None"}</p>
-                <p>Updated: {fmtDateTime(report.updated_at)}</p>
-              </div>
-              <Button asChild className="mt-4 w-full" variant="outline">
-                <Link to="/reports/$id" params={{ id: report.id }}>Open report</Link>
-              </Button>
-            </Card>
-          ))}
-        </div>
-      )}
+      <Tabs defaultValue="preview" className="space-y-5">
+        <TabsList>
+          <TabsTrigger value="preview">Report Preview</TabsTrigger>
+          <TabsTrigger value="graphs">Graphs</TabsTrigger>
+        </TabsList>
+        <TabsContent value="preview">
+          <ReportPreview dams={dams} movements={movements} damId={selectedDam} />
+        </TabsContent>
+        <TabsContent value="graphs" className="grid gap-4 xl:grid-cols-2">
+          <Card className="p-5">
+            <div className="mb-4 flex items-center gap-2 font-bold"><BarChart3 className="h-5 w-5 text-primary" /> Monthly movement</div>
+            <ChartContainer config={movementConfig} className="h-[320px] w-full">
+              <AreaChart data={movementChartData} margin={{ left: 8, right: 8, top: 8, bottom: 8 }}>
+                <CartesianGrid vertical={false} />
+                <XAxis dataKey="month" tickLine={false} axisLine={false} />
+                <YAxis tickLine={false} axisLine={false} tickFormatter={(value) => `${value}t`} />
+                <ChartTooltip content={<ChartTooltipContent />} />
+                <Area dataKey="incoming" type="monotone" fill="var(--color-incoming)" fillOpacity={0.25} stroke="var(--color-incoming)" />
+                <Area dataKey="outgoing" type="monotone" fill="var(--color-outgoing)" fillOpacity={0.2} stroke="var(--color-outgoing)" />
+              </AreaChart>
+            </ChartContainer>
+          </Card>
+          <Card className="p-5">
+            <div className="mb-4 flex items-center gap-2 font-bold"><FileText className="h-5 w-5 text-primary" /> Stock by dam</div>
+            <ChartContainer config={stockConfig} className="h-[320px] w-full">
+              <LineChart data={stockChartData} margin={{ left: 8, right: 8, top: 8, bottom: 8 }}>
+                <CartesianGrid vertical={false} />
+                <XAxis dataKey="name" tickLine={false} axisLine={false} />
+                <YAxis tickLine={false} axisLine={false} tickFormatter={(value) => `${value}t`} />
+                <ChartTooltip content={<ChartTooltipContent />} />
+                <Line dataKey="stock" type="monotone" stroke="var(--color-stock)" strokeWidth={3} dot={{ r: 4 }} />
+              </LineChart>
+            </ChartContainer>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
+}
+
+function MetricCard({ label, value, sub, icon }: { label: string; value: string; sub?: string; icon: React.ReactNode }) {
+  return <Card className="p-5"><div className="flex items-center justify-between gap-4"><div><div className="text-xs uppercase tracking-wider text-muted-foreground">{label}</div><div className="mt-1 text-2xl font-black tabular-nums">{value}</div>{sub && <div className="text-xs text-muted-foreground">{sub}</div>}</div><div className="flex h-11 w-11 items-center justify-center rounded-md bg-primary/10 text-primary">{icon}</div></div></Card>;
+}
+
+function buildMovementChartData(movements: Array<{ occurred_at: string; movement_type: string; quantity_tons: number }>) {
+  const months = new Map<string, { month: string; incoming: number; outgoing: number }>();
+  [...movements].reverse().forEach((movement) => {
+    const month = new Date(movement.occurred_at).toLocaleDateString(undefined, { month: "short", year: "2-digit" });
+    const row = months.get(month) ?? { month, incoming: 0, outgoing: 0 };
+    if (movement.movement_type === "incoming") row.incoming += Number(movement.quantity_tons ?? 0);
+    if (movement.movement_type === "outgoing") row.outgoing += Number(movement.quantity_tons ?? 0);
+    months.set(month, row);
+  });
+  return Array.from(months.values()).slice(-12);
 }
