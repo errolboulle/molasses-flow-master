@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
 import { Area, AreaChart, CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts";
 import { BarChart3, FileText, TrendingDown, TrendingUp } from "lucide-react";
 import { ProtectedLayout } from "@/components/protected-layout";
