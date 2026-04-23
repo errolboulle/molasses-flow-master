@@ -100,8 +100,8 @@ function NewMovementPage() {
     if (!form.dam_id) { toast.error("Please select a dam"); return; }
     if (!form.occurred_at) { toast.error("Date & time is required"); return; }
 
-    const qty = !isNaN(autoQuantityTons) ? autoQuantityTons : parseFloat(form.quantity_tons);
-    if (isNaN(qty) || qty <= 0) { toast.error("Volume must be greater than 0"); return; }
+    const qty = fgcNet;
+    if (isNaN(qty) || qty <= 0) { toast.error("FGC net mass must be greater than 0"); return; }
 
     setSaving(true);
     try {
@@ -196,15 +196,15 @@ function NewMovementPage() {
             </select>
           </Field>
           <Field label="Date & time *"><Input required type="datetime-local" value={form.occurred_at} onChange={(e) => set("occurred_at", e.target.value)} /></Field>
-          <Field label={movementType === "incoming" ? "Volume (tons, auto from FGC net) *" : "Volume (tons) *"}>
+          <Field label="Volume (tons, auto from FGC net) *">
             <Input
               required
               type="number"
               step="0.001"
               min="0.001"
-              value={!isNaN(autoQuantityTons) ? autoQuantityTons.toString() : form.quantity_tons}
+              value={!isNaN(fgcNet) ? fgcNet.toString() : form.quantity_tons}
               onChange={(e) => set("quantity_tons", e.target.value)}
-              readOnly={movementType === "incoming"}
+              readOnly
             />
           </Field>
           <Field label={movementType === "incoming" ? "Truck / Driver" : "Company / Driver"}><Input value={form.driver_or_company} onChange={(e) => set("driver_or_company", e.target.value)} /></Field>
