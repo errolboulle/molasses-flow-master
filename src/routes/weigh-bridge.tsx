@@ -62,6 +62,10 @@ const initialForm = (movementType: MovementType) => {
   };
 };
 
+const uppercaseFields = new Set(["src_vehicle_registration", "fgc_vehicle_registration", "src_haulier", "fgc_haulier", "src_mill", "fgc_zsm_operator"]);
+
+const normalizeFieldValue = (key: string, value: string) => (uppercaseFields.has(key) ? value.toUpperCase() : value);
+
 export const Route = createFileRoute("/weigh-bridge")({
   component: WeighBridgeModePage,
 });
@@ -115,12 +119,13 @@ function WeighBridgeModePage() {
   }, []);
 
   const set = (key: string, value: string) => {
+    const nextValue = normalizeFieldValue(key, value);
     if (key === duplicateField) setDuplicateField(null);
     setForm((current) => ({
       ...current,
-      [key]: value,
-      ...(key === "src_vehicle_registration" ? { fgc_vehicle_registration: value } : {}),
-      ...(key === "src_haulier" ? { fgc_haulier: value } : {}),
+      [key]: nextValue,
+      ...(key === "src_vehicle_registration" ? { fgc_vehicle_registration: nextValue } : {}),
+      ...(key === "src_haulier" ? { fgc_haulier: nextValue } : {}),
     }));
   };
 
@@ -208,10 +213,10 @@ function WeighBridgeModePage() {
     setForm((current) => ({
       ...current,
       driver_or_company: truck.driver_name,
-      src_vehicle_registration: truck.registration_number,
-      fgc_vehicle_registration: truck.registration_number,
-      src_haulier: truck.transporter_company,
-      fgc_haulier: truck.transporter_company,
+      src_vehicle_registration: truck.registration_number.toUpperCase(),
+      fgc_vehicle_registration: truck.registration_number.toUpperCase(),
+      src_haulier: truck.transporter_company.toUpperCase(),
+      fgc_haulier: truck.transporter_company.toUpperCase(),
     }));
   };
 
