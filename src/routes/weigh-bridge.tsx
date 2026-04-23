@@ -8,9 +8,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { SmartAutocompleteInput } from "@/components/smart-autocomplete-input";
 import { useAuth } from "@/lib/auth-context";
-import { useDams } from "@/lib/queries";
+import { useDams, useMovementAutocompleteOptions } from "@/lib/queries";
 import { cn } from "@/lib/utils";
+import { duplicateFieldFromDatabaseError, findDuplicateMovementReference, type DuplicateFieldName } from "@/lib/movement-duplicates";
 import { supabase } from "@/integrations/supabase/client";
 import { type Tables } from "@/integrations/supabase/types";
 
@@ -67,6 +69,7 @@ export const Route = createFileRoute("/weigh-bridge")({
 function WeighBridgeModePage() {
   const { canEntry, user } = useAuth();
   const { data: dams = [] } = useDams();
+  const { data: autocompleteOptions } = useMovementAutocompleteOptions();
   const { data: trucks = [] } = useQuery({
     queryKey: ["trucks", "weigh-bridge"],
     queryFn: async () => {
@@ -83,6 +86,7 @@ function WeighBridgeModePage() {
   const [activeField, setActiveField] = useState("movement_type");
   const [movementType, setMovementTypeState] = useState<MovementType>("incoming");
   const [form, setForm] = useState<Record<string, string>>(() => initialForm("incoming"));
+  const [duplicateField, setDuplicateField] = useState<DuplicateFieldName | null>(null);
   const [damSearch, setDamSearch] = useState("");
   const [truckSearch, setTruckSearch] = useState("");
 
@@ -110,7 +114,10 @@ function WeighBridgeModePage() {
     firstFieldRef.current?.focus();
   }, []);
 
-  const set = (key: string, value: string) => setForm((current) => ({ ...current, [key]: value }));
+  const set = (key: string, value: string) => {
+    if (key === duplicateField) setDuplicateField(null);
+    setForm((current) => ({ ...current, [key]: value }));
+  };
 
   const persistDefaults = (damId = form.dam_id, type = movementType) => {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ dam_id: damId, movement_type: type }));
@@ -218,6 +225,13 @@ function WeighBridgeModePage() {
 
     setSaving(true);
     try {
+      const duplicate = await findDuplicateMovementReference(form);
+      if (duplicate) {
+        setDuplicateField(duplicate.field);
+        setActiveField(duplicate.field);
+        toast.error(`Duplicate detected: ${duplicate.label} already exists`);
+        return;
+      }
       const numOrNull = (value: string) => (value === "" ? null : parseFloat(value));
       const strOrNull = (value: string) => (value.trim() === "" ? null : value.trim());
       const payload = {
@@ -274,6 +288,13 @@ function WeighBridgeModePage() {
       resetForNextTruck();
     } catch (error: any) {
       console.error("Weigh Bridge save failed:", error);
+      const duplicate = duplicateFieldFromDatabaseError(error);
+      if (duplicate) {
+        setDuplicateField(duplicate.field);
+        setActiveField(duplicate.field);
+        toast.error(`Duplicate detected: ${duplicate.label} already exists`);
+        return;
+      }
       toast.error(error?.message ?? "Failed to save movement");
     } finally {
       setSaving(false);
@@ -358,16 +379,16 @@ function WeighBridgeModePage() {
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
             <FastInput label="Date of departure" name="src_date_of_departure" type="date" value={form.src_date_of_departure} activeField={activeField} onFocus={handleFocus} onChange={(value) => set("src_date_of_departure", value)} />
             <FastInput label="Time" name="src_time" type="time" value={form.src_time} activeField={activeField} onFocus={handleFocus} onChange={(value) => set("src_time", value)} />
-            <FastInput label="Vehicle registration" name="src_vehicle_registration" value={form.src_vehicle_registration} activeField={activeField} onFocus={handleFocus} onChange={(value) => set("src_vehicle_registration", value)} />
-            <FastInput label="Haulier" name="src_haulier" value={form.src_haulier} activeField={activeField} onFocus={handleFocus} onChange={(value) => set("src_haulier", value)} />
-            <FastInput label="Delivery note" name="src_delivery_note" value={form.src_delivery_note} activeField={activeField} onFocus={handleFocus} onChange={(value) => set("src_delivery_note", value)} />
-            <FastInput label="Mill number" name="src_mill_number" value={form.src_mill_number} activeField={activeField} onFocus={handleFocus} onChange={(value) => set("src_mill_number", value)} />
-            <FastInput label="Mill" name="src_mill" value={form.src_mill} activeField={activeField} onFocus={handleFocus} onChange={(value) => set("src_mill", value)} />
+            <FastAutocomplete label="Vehicle registration" name="src_vehicle_registration" value={form.src_vehicle_registration} activeField={activeField} suggestions={autocompleteOptions?.vehicleRegistrations ?? []} onFocus={handleFocus} onChange={(value) => set("src_vehicle_registration", value)} />
+            <FastAutocomplete label="Haulier" name="src_haulier" value={form.src_haulier} activeField={activeField} suggestions={autocompleteOptions?.hauliers ?? []} onFocus={handleFocus} onChange={(value) => set("src_haulier", value)} />
+            <FastInput label="Delivery note" name="src_delivery_note" value={form.src_delivery_note} activeField={activeField} duplicate={duplicateField === "src_delivery_note"} onFocus={handleFocus} onChange={(value) => set("src_delivery_note", value)} />
+            <FastInput label="Mill number" name="src_mill_number" value={form.src_mill_number} activeField={activeField} duplicate={duplicateField === "src_mill_number"} onFocus={handleFocus} onChange={(value) => set("src_mill_number", value)} />
+            <FastAutocomplete label="Mill" name="src_mill" value={form.src_mill} activeField={activeField} suggestions={autocompleteOptions?.mills ?? []} onFocus={handleFocus} onChange={(value) => set("src_mill", value)} />
             <FastInput label="Gross mass (tons)" name="src_gross_mass" type="number" step="0.001" value={form.src_gross_mass} activeField={activeField} onFocus={handleFocus} onChange={(value) => set("src_gross_mass", value)} />
             <FastInput label="Tare mass (tons)" name="src_tare_mass" type="number" step="0.001" value={form.src_tare_mass} activeField={activeField} onFocus={handleFocus} onChange={(value) => set("src_tare_mass", value)} />
             <FastInput label="Net mass (tons, auto)" name="src_net_mass" type="number" step="0.001" value={isNaN(srcNet) ? "" : srcNet.toString()} activeField={activeField} onFocus={handleFocus} onChange={(value) => set("src_net_mass", value)} />
             <FastInput label="Molasses temperature (°C)" name="src_molasses_temperature" type="number" step="0.01" value={form.src_molasses_temperature} activeField={activeField} onFocus={handleFocus} onChange={(value) => set("src_molasses_temperature", value)} />
-            <FastInput label="Sample number" name="src_sample_number" value={form.src_sample_number} activeField={activeField} onFocus={handleFocus} onChange={(value) => set("src_sample_number", value)} />
+            <FastInput label="Sample number" name="src_sample_number" value={form.src_sample_number} activeField={activeField} duplicate={duplicateField === "src_sample_number"} onFocus={handleFocus} onChange={(value) => set("src_sample_number", value)} />
           </div>
         </section>
 
@@ -376,10 +397,10 @@ function WeighBridgeModePage() {
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
             <FastInput label="Date of arrival" name="fgc_date_of_arrival" type="date" value={form.fgc_date_of_arrival} activeField={activeField} onFocus={handleFocus} onChange={(value) => set("fgc_date_of_arrival", value)} />
             <FastInput label="Time" name="fgc_time" type="time" value={form.fgc_time} activeField={activeField} onFocus={handleFocus} onChange={(value) => set("fgc_time", value)} />
-            <FastInput label="Vehicle registration" name="fgc_vehicle_registration" value={form.fgc_vehicle_registration} activeField={activeField} onFocus={handleFocus} onChange={(value) => set("fgc_vehicle_registration", value)} />
-            <FastInput label="Haulier" name="fgc_haulier" value={form.fgc_haulier} activeField={activeField} onFocus={handleFocus} onChange={(value) => set("fgc_haulier", value)} />
-            <FastInput label="Consignment note number" name="fgc_consignment_note_number" value={form.fgc_consignment_note_number} activeField={activeField} onFocus={handleFocus} onChange={(value) => set("fgc_consignment_note_number", value)} />
-            <FastInput label="ZSM weighbridge number" name="fgc_zsm_weighbridge_number" value={form.fgc_zsm_weighbridge_number} activeField={activeField} onFocus={handleFocus} onChange={(value) => set("fgc_zsm_weighbridge_number", value)} />
+            <FastAutocomplete label="Vehicle registration" name="fgc_vehicle_registration" value={form.fgc_vehicle_registration} activeField={activeField} suggestions={autocompleteOptions?.vehicleRegistrations ?? []} onFocus={handleFocus} onChange={(value) => set("fgc_vehicle_registration", value)} />
+            <FastAutocomplete label="Haulier" name="fgc_haulier" value={form.fgc_haulier} activeField={activeField} suggestions={autocompleteOptions?.hauliers ?? []} onFocus={handleFocus} onChange={(value) => set("fgc_haulier", value)} />
+            <FastInput label="Consignment note number" name="fgc_consignment_note_number" value={form.fgc_consignment_note_number} activeField={activeField} duplicate={duplicateField === "fgc_consignment_note_number"} onFocus={handleFocus} onChange={(value) => set("fgc_consignment_note_number", value)} />
+            <FastInput label="ZSM weighbridge number" name="fgc_zsm_weighbridge_number" value={form.fgc_zsm_weighbridge_number} activeField={activeField} duplicate={duplicateField === "fgc_zsm_weighbridge_number"} onFocus={handleFocus} onChange={(value) => set("fgc_zsm_weighbridge_number", value)} />
             <FastInput label="Gross mass (tons)" name="fgc_gross_mass" type="number" step="0.001" value={form.fgc_gross_mass} activeField={activeField} onFocus={handleFocus} onChange={(value) => set("fgc_gross_mass", value)} />
             <FastInput label="Tare mass (tons)" name="fgc_tare_mass" type="number" step="0.001" value={form.fgc_tare_mass} activeField={activeField} onFocus={handleFocus} onChange={(value) => set("fgc_tare_mass", value)} />
             <FastInput label="Net mass (tons, auto)" name="fgc_net_mass_secondary" type="number" step="0.001" value={isNaN(fgcNet) ? "" : fgcNet.toString()} activeField={activeField} onFocus={handleFocus} onChange={(value) => set("fgc_net_mass", value)} />
@@ -434,6 +455,7 @@ function FastInput({
   type = "text",
   step,
   readOnly,
+  duplicate,
 }: {
   label: string;
   name: string;
@@ -444,10 +466,35 @@ function FastInput({
   type?: string;
   step?: string;
   readOnly?: boolean;
+  duplicate?: boolean;
+}) {
+  return (
+    <FastField label={label} name={name} activeField={activeField} className={duplicate ? "border-destructive bg-destructive/10" : undefined}>
+      <Input type={type} step={step} readOnly={readOnly} className={cn("fast-control", duplicate && "border-destructive focus-visible:ring-destructive/30")} value={value} onFocus={(event) => onFocus(event, name)} onChange={(event) => onChange?.(event.target.value)} />
+    </FastField>
+  );
+}
+
+function FastAutocomplete({
+  label,
+  name,
+  value,
+  activeField,
+  suggestions,
+  onFocus,
+  onChange,
+}: {
+  label: string;
+  name: string;
+  value: string;
+  activeField: string;
+  suggestions: string[];
+  onFocus: (event: FocusEvent<HTMLInputElement>, name: string) => void;
+  onChange: (value: string) => void;
 }) {
   return (
     <FastField label={label} name={name} activeField={activeField}>
-      <Input type={type} step={step} readOnly={readOnly} className="fast-control" value={value} onFocus={(event) => onFocus(event, name)} onChange={(event) => onChange?.(event.target.value)} />
+      <SmartAutocompleteInput className="fast-control" value={value} suggestions={suggestions} onFocus={(event) => onFocus(event, name)} onChange={onChange} />
     </FastField>
   );
 }
