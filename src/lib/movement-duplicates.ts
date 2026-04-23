@@ -17,13 +17,31 @@ export const duplicateFieldLabels: Record<DuplicateFieldName, string> = {
 
 const duplicateFields = Object.keys(duplicateFieldLabels) as DuplicateFieldName[];
 
+const normalizeDuplicateValue = (value: string) => value.trim().toLowerCase();
+
+const escapeLikeValue = (value: string) => value.replace(/[\\%_]/g, (match) => `\\${match}`);
+
+export async function checkDuplicateMovementField(field: DuplicateFieldName, rawValue: string) {
+  const value = rawValue.trim();
+  if (!value) return null;
+
+  const { data, error } = await supabase
+    .from("movements")
+    .select(`id, ${field}`)
+    .ilike(field, `%${escapeLikeValue(value)}%`)
+    .limit(10);
+
+  if (error) throw error;
+
+  const normalized = normalizeDuplicateValue(value);
+  const exists = (data as Array<Record<string, string | null>> | null)?.some((row) => normalizeDuplicateValue(row[field] ?? "") === normalized);
+  return exists ? { field, label: duplicateFieldLabels[field] } : null;
+}
+
 export async function findDuplicateMovementReference(form: Record<string, string>) {
   for (const field of duplicateFields) {
-    const value = form[field]?.trim();
-    if (!value) continue;
-    const { data, error } = await supabase.from("movements").select("id").eq(field, value).limit(1);
-    if (error) throw error;
-    if (data && data.length > 0) return { field, label: duplicateFieldLabels[field] };
+    const duplicate = await checkDuplicateMovementField(field, form[field] ?? "");
+    if (duplicate) return duplicate;
   }
   return null;
 }
