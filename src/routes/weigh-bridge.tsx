@@ -94,7 +94,8 @@ function WeighBridgeModePage() {
       if (parsed.movement_type === "incoming" || parsed.movement_type === "outgoing") {
         setType(parsed.movement_type);
       }
-      if (parsed.dam_id) setForm((current) => ({ ...current, dam_id: parsed.dam_id }));
+      const savedDamId = parsed.dam_id;
+      if (savedDamId) setForm((current) => ({ ...current, dam_id: savedDamId }));
     } catch {
       window.localStorage.removeItem(STORAGE_KEY);
     }
