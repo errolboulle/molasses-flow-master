@@ -469,6 +469,7 @@ function FastInput({
   step,
   readOnly,
   duplicate,
+  onBlur,
 }: {
   label: string;
   name: string;
@@ -476,6 +477,7 @@ function FastInput({
   activeField: string;
   onFocus: (event: FocusEvent<HTMLInputElement>, name: string) => void;
   onChange?: (value: string) => void;
+  onBlur?: () => void;
   type?: string;
   step?: string;
   readOnly?: boolean;
@@ -483,7 +485,10 @@ function FastInput({
 }) {
   return (
     <FastField label={label} name={name} activeField={activeField} className={duplicate ? "border-destructive bg-destructive/10" : undefined}>
-      <Input type={type} step={step} readOnly={readOnly} className={cn("fast-control", duplicate && "border-destructive focus-visible:ring-destructive/30")} value={value} onFocus={(event) => onFocus(event, name)} onChange={(event) => onChange?.(event.target.value)} />
+      <div className="relative">
+        <Input type={type} step={step} readOnly={readOnly} className={cn("fast-control", duplicate && "border-destructive focus-visible:ring-destructive/30")} value={value} onFocus={(event) => onFocus(event, name)} onBlur={onBlur} onChange={(event) => onChange?.(event.target.value)} />
+        {duplicate && <div className="absolute left-2 top-full z-40 mt-1 rounded-md border border-destructive bg-destructive px-2 py-1 text-xs font-bold text-destructive-foreground shadow-[var(--shadow-elevated)]">Duplicate: {duplicateFieldLabels[name as DuplicateFieldName]} already exists</div>}
+      </div>
     </FastField>
   );
 }
