@@ -123,13 +123,18 @@ function WeighBridgeModePage() {
     try {
       const duplicate = await checkDuplicateMovementField(field, value);
       if (duplicate) {
-        setDuplicateField(field);
-        setActiveField(field);
+        showDuplicateField(field);
         toast.error(`Duplicate detected: ${duplicate.label} already exists`);
       }
     } catch (error) {
       console.error("Duplicate check failed:", error);
     }
+  };
+
+  const showDuplicateField = (field: DuplicateFieldName) => {
+    setDuplicateField(field);
+    setActiveField(field);
+    setForm((current) => ({ ...current, [field]: "" }));
   };
 
   const persistDefaults = (damId = form.dam_id, type = movementType) => {
@@ -240,8 +245,7 @@ function WeighBridgeModePage() {
     try {
       const duplicate = await findDuplicateMovementReference(form);
       if (duplicate) {
-        setDuplicateField(duplicate.field);
-        setActiveField(duplicate.field);
+        showDuplicateField(duplicate.field);
         toast.error(`Duplicate detected: ${duplicate.label} already exists`);
         return;
       }
@@ -303,8 +307,7 @@ function WeighBridgeModePage() {
       console.error("Weigh Bridge save failed:", error);
       const duplicate = duplicateFieldFromDatabaseError(error);
       if (duplicate) {
-        setDuplicateField(duplicate.field);
-        setActiveField(duplicate.field);
+        showDuplicateField(duplicate.field);
         toast.error(`Duplicate detected: ${duplicate.label} already exists`);
         return;
       }
