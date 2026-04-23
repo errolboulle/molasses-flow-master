@@ -411,35 +411,140 @@ export type Database = {
         }
         Relationships: []
       }
+      report_audit_log: {
+        Row: {
+          action: Database["public"]["Enums"]["report_audit_action"]
+          created_at: string
+          id: string
+          metadata: Json
+          report_id: string
+          user_id: string
+        }
+        Insert: {
+          action: Database["public"]["Enums"]["report_audit_action"]
+          created_at?: string
+          id?: string
+          metadata?: Json
+          report_id: string
+          user_id?: string
+        }
+        Update: {
+          action?: Database["public"]["Enums"]["report_audit_action"]
+          created_at?: string
+          id?: string
+          metadata?: Json
+          report_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_audit_log_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      report_versions: {
+        Row: {
+          created_at: string
+          created_by: string
+          file_path: string
+          file_size: number
+          file_type: Database["public"]["Enums"]["report_file_type"]
+          id: string
+          report_id: string
+          version_number: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string
+          file_path: string
+          file_size: number
+          file_type: Database["public"]["Enums"]["report_file_type"]
+          id?: string
+          report_id: string
+          version_number: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          file_path?: string
+          file_size?: number
+          file_type?: Database["public"]["Enums"]["report_file_type"]
+          id?: string
+          report_id?: string
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_versions_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       reports: {
         Row: {
           created_at: string
+          current_version_id: string | null
           deleted_at: string | null
+          description: string | null
           file_url: string | null
           filters: Json
           generated_by: string | null
           id: string
+          is_deleted: boolean
+          status: Database["public"]["Enums"]["report_status"]
+          title: string
           type: string
+          updated_at: string
+          user_id: string
         }
         Insert: {
           created_at?: string
+          current_version_id?: string | null
           deleted_at?: string | null
+          description?: string | null
           file_url?: string | null
           filters?: Json
           generated_by?: string | null
           id?: string
+          is_deleted?: boolean
+          status?: Database["public"]["Enums"]["report_status"]
+          title: string
           type: string
+          updated_at?: string
+          user_id?: string
         }
         Update: {
           created_at?: string
+          current_version_id?: string | null
           deleted_at?: string | null
+          description?: string | null
           file_url?: string | null
           filters?: Json
           generated_by?: string | null
           id?: string
+          is_deleted?: boolean
+          status?: Database["public"]["Enums"]["report_status"]
+          title?: string
           type?: string
+          updated_at?: string
+          user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "reports_current_version_id_fkey"
+            columns: ["current_version_id"]
+            isOneToOne: false
+            referencedRelation: "report_versions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       settings: {
         Row: {
@@ -572,6 +677,14 @@ export type Database = {
       dam_status: "active" | "maintenance"
       load_status: "pending" | "completed" | "cancelled"
       load_type: "incoming" | "outgoing"
+      report_audit_action:
+        | "created"
+        | "updated"
+        | "deleted"
+        | "restored"
+        | "downloaded"
+      report_file_type: "pdf" | "xlsx" | "docx"
+      report_status: "draft" | "active" | "archived"
       truck_status: "idle" | "en_route" | "waiting" | "offloading"
     }
     CompositeTypes: {
@@ -704,6 +817,15 @@ export const Constants = {
       dam_status: ["active", "maintenance"],
       load_status: ["pending", "completed", "cancelled"],
       load_type: ["incoming", "outgoing"],
+      report_audit_action: [
+        "created",
+        "updated",
+        "deleted",
+        "restored",
+        "downloaded",
+      ],
+      report_file_type: ["pdf", "xlsx", "docx"],
+      report_status: ["draft", "active", "archived"],
       truck_status: ["idle", "en_route", "waiting", "offloading"],
     },
   },

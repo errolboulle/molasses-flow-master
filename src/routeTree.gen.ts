@@ -21,17 +21,22 @@ import { Route as DamsRouteImport } from './routes/dams'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuditRouteImport } from './routes/audit'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ReportsIdRouteImport } from './routes/reports.$id'
 import { Route as MovementsNewRouteImport } from './routes/movements.new'
 import { Route as ApiTrucksRouteImport } from './routes/api.trucks'
+import { Route as ApiReportsRouteImport } from './routes/api.reports'
 import { Route as ApiLoadsRouteImport } from './routes/api.loads'
 import { Route as ApiDamsRouteImport } from './routes/api.dams'
 import { Route as ApiAuditLogsRouteImport } from './routes/api.audit-logs'
 import { Route as ApiTrucksIdRouteImport } from './routes/api.trucks.$id'
+import { Route as ApiReportsIdRouteImport } from './routes/api.reports.$id'
 import { Route as ApiDashboardSummaryRouteImport } from './routes/api.dashboard.summary'
 import { Route as ApiDamsIdRouteImport } from './routes/api.dams.$id'
 import { Route as ApiAuthRegisterRouteImport } from './routes/api.auth.register'
 import { Route as ApiAuthLoginRouteImport } from './routes/api.auth.login'
 import { Route as ApiAdminUsersRouteImport } from './routes/api.admin.users'
+import { Route as ApiReportsIdVersionsRouteImport } from './routes/api.reports.$id.versions'
+import { Route as ApiReportsIdDownloadRouteImport } from './routes/api.reports.$id.download'
 
 const WeighBridgeRoute = WeighBridgeRouteImport.update({
   id: '/weigh-bridge',
@@ -93,6 +98,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ReportsIdRoute = ReportsIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => ReportsRoute,
+} as any)
 const MovementsNewRoute = MovementsNewRouteImport.update({
   id: '/new',
   path: '/new',
@@ -101,6 +111,11 @@ const MovementsNewRoute = MovementsNewRouteImport.update({
 const ApiTrucksRoute = ApiTrucksRouteImport.update({
   id: '/api/trucks',
   path: '/api/trucks',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiReportsRoute = ApiReportsRouteImport.update({
+  id: '/api/reports',
+  path: '/api/reports',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiLoadsRoute = ApiLoadsRouteImport.update({
@@ -122,6 +137,11 @@ const ApiTrucksIdRoute = ApiTrucksIdRouteImport.update({
   id: '/$id',
   path: '/$id',
   getParentRoute: () => ApiTrucksRoute,
+} as any)
+const ApiReportsIdRoute = ApiReportsIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => ApiReportsRoute,
 } as any)
 const ApiDashboardSummaryRoute = ApiDashboardSummaryRouteImport.update({
   id: '/api/dashboard/summary',
@@ -148,6 +168,16 @@ const ApiAdminUsersRoute = ApiAdminUsersRouteImport.update({
   path: '/api/admin/users',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiReportsIdVersionsRoute = ApiReportsIdVersionsRouteImport.update({
+  id: '/versions',
+  path: '/versions',
+  getParentRoute: () => ApiReportsIdRoute,
+} as any)
+const ApiReportsIdDownloadRoute = ApiReportsIdDownloadRouteImport.update({
+  id: '/download',
+  path: '/download',
+  getParentRoute: () => ApiReportsIdRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -158,21 +188,26 @@ export interface FileRoutesByFullPath {
   '/history': typeof HistoryRoute
   '/movements': typeof MovementsRouteWithChildren
   '/onboarding': typeof OnboardingRoute
-  '/reports': typeof ReportsRoute
+  '/reports': typeof ReportsRouteWithChildren
   '/settings': typeof SettingsRoute
   '/users': typeof UsersRoute
   '/weigh-bridge': typeof WeighBridgeRoute
   '/api/audit-logs': typeof ApiAuditLogsRoute
   '/api/dams': typeof ApiDamsRouteWithChildren
   '/api/loads': typeof ApiLoadsRoute
+  '/api/reports': typeof ApiReportsRouteWithChildren
   '/api/trucks': typeof ApiTrucksRouteWithChildren
   '/movements/new': typeof MovementsNewRoute
+  '/reports/$id': typeof ReportsIdRoute
   '/api/admin/users': typeof ApiAdminUsersRoute
   '/api/auth/login': typeof ApiAuthLoginRoute
   '/api/auth/register': typeof ApiAuthRegisterRoute
   '/api/dams/$id': typeof ApiDamsIdRoute
   '/api/dashboard/summary': typeof ApiDashboardSummaryRoute
+  '/api/reports/$id': typeof ApiReportsIdRouteWithChildren
   '/api/trucks/$id': typeof ApiTrucksIdRoute
+  '/api/reports/$id/download': typeof ApiReportsIdDownloadRoute
+  '/api/reports/$id/versions': typeof ApiReportsIdVersionsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -183,21 +218,26 @@ export interface FileRoutesByTo {
   '/history': typeof HistoryRoute
   '/movements': typeof MovementsRouteWithChildren
   '/onboarding': typeof OnboardingRoute
-  '/reports': typeof ReportsRoute
+  '/reports': typeof ReportsRouteWithChildren
   '/settings': typeof SettingsRoute
   '/users': typeof UsersRoute
   '/weigh-bridge': typeof WeighBridgeRoute
   '/api/audit-logs': typeof ApiAuditLogsRoute
   '/api/dams': typeof ApiDamsRouteWithChildren
   '/api/loads': typeof ApiLoadsRoute
+  '/api/reports': typeof ApiReportsRouteWithChildren
   '/api/trucks': typeof ApiTrucksRouteWithChildren
   '/movements/new': typeof MovementsNewRoute
+  '/reports/$id': typeof ReportsIdRoute
   '/api/admin/users': typeof ApiAdminUsersRoute
   '/api/auth/login': typeof ApiAuthLoginRoute
   '/api/auth/register': typeof ApiAuthRegisterRoute
   '/api/dams/$id': typeof ApiDamsIdRoute
   '/api/dashboard/summary': typeof ApiDashboardSummaryRoute
+  '/api/reports/$id': typeof ApiReportsIdRouteWithChildren
   '/api/trucks/$id': typeof ApiTrucksIdRoute
+  '/api/reports/$id/download': typeof ApiReportsIdDownloadRoute
+  '/api/reports/$id/versions': typeof ApiReportsIdVersionsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -209,21 +249,26 @@ export interface FileRoutesById {
   '/history': typeof HistoryRoute
   '/movements': typeof MovementsRouteWithChildren
   '/onboarding': typeof OnboardingRoute
-  '/reports': typeof ReportsRoute
+  '/reports': typeof ReportsRouteWithChildren
   '/settings': typeof SettingsRoute
   '/users': typeof UsersRoute
   '/weigh-bridge': typeof WeighBridgeRoute
   '/api/audit-logs': typeof ApiAuditLogsRoute
   '/api/dams': typeof ApiDamsRouteWithChildren
   '/api/loads': typeof ApiLoadsRoute
+  '/api/reports': typeof ApiReportsRouteWithChildren
   '/api/trucks': typeof ApiTrucksRouteWithChildren
   '/movements/new': typeof MovementsNewRoute
+  '/reports/$id': typeof ReportsIdRoute
   '/api/admin/users': typeof ApiAdminUsersRoute
   '/api/auth/login': typeof ApiAuthLoginRoute
   '/api/auth/register': typeof ApiAuthRegisterRoute
   '/api/dams/$id': typeof ApiDamsIdRoute
   '/api/dashboard/summary': typeof ApiDashboardSummaryRoute
+  '/api/reports/$id': typeof ApiReportsIdRouteWithChildren
   '/api/trucks/$id': typeof ApiTrucksIdRoute
+  '/api/reports/$id/download': typeof ApiReportsIdDownloadRoute
+  '/api/reports/$id/versions': typeof ApiReportsIdVersionsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -243,14 +288,19 @@ export interface FileRouteTypes {
     | '/api/audit-logs'
     | '/api/dams'
     | '/api/loads'
+    | '/api/reports'
     | '/api/trucks'
     | '/movements/new'
+    | '/reports/$id'
     | '/api/admin/users'
     | '/api/auth/login'
     | '/api/auth/register'
     | '/api/dams/$id'
     | '/api/dashboard/summary'
+    | '/api/reports/$id'
     | '/api/trucks/$id'
+    | '/api/reports/$id/download'
+    | '/api/reports/$id/versions'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -268,14 +318,19 @@ export interface FileRouteTypes {
     | '/api/audit-logs'
     | '/api/dams'
     | '/api/loads'
+    | '/api/reports'
     | '/api/trucks'
     | '/movements/new'
+    | '/reports/$id'
     | '/api/admin/users'
     | '/api/auth/login'
     | '/api/auth/register'
     | '/api/dams/$id'
     | '/api/dashboard/summary'
+    | '/api/reports/$id'
     | '/api/trucks/$id'
+    | '/api/reports/$id/download'
+    | '/api/reports/$id/versions'
   id:
     | '__root__'
     | '/'
@@ -293,14 +348,19 @@ export interface FileRouteTypes {
     | '/api/audit-logs'
     | '/api/dams'
     | '/api/loads'
+    | '/api/reports'
     | '/api/trucks'
     | '/movements/new'
+    | '/reports/$id'
     | '/api/admin/users'
     | '/api/auth/login'
     | '/api/auth/register'
     | '/api/dams/$id'
     | '/api/dashboard/summary'
+    | '/api/reports/$id'
     | '/api/trucks/$id'
+    | '/api/reports/$id/download'
+    | '/api/reports/$id/versions'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -312,13 +372,14 @@ export interface RootRouteChildren {
   HistoryRoute: typeof HistoryRoute
   MovementsRoute: typeof MovementsRouteWithChildren
   OnboardingRoute: typeof OnboardingRoute
-  ReportsRoute: typeof ReportsRoute
+  ReportsRoute: typeof ReportsRouteWithChildren
   SettingsRoute: typeof SettingsRoute
   UsersRoute: typeof UsersRoute
   WeighBridgeRoute: typeof WeighBridgeRoute
   ApiAuditLogsRoute: typeof ApiAuditLogsRoute
   ApiDamsRoute: typeof ApiDamsRouteWithChildren
   ApiLoadsRoute: typeof ApiLoadsRoute
+  ApiReportsRoute: typeof ApiReportsRouteWithChildren
   ApiTrucksRoute: typeof ApiTrucksRouteWithChildren
   ApiAdminUsersRoute: typeof ApiAdminUsersRoute
   ApiAuthLoginRoute: typeof ApiAuthLoginRoute
@@ -412,6 +473,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/reports/$id': {
+      id: '/reports/$id'
+      path: '/$id'
+      fullPath: '/reports/$id'
+      preLoaderRoute: typeof ReportsIdRouteImport
+      parentRoute: typeof ReportsRoute
+    }
     '/movements/new': {
       id: '/movements/new'
       path: '/new'
@@ -424,6 +492,13 @@ declare module '@tanstack/react-router' {
       path: '/api/trucks'
       fullPath: '/api/trucks'
       preLoaderRoute: typeof ApiTrucksRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/reports': {
+      id: '/api/reports'
+      path: '/api/reports'
+      fullPath: '/api/reports'
+      preLoaderRoute: typeof ApiReportsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/loads': {
@@ -453,6 +528,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/trucks/$id'
       preLoaderRoute: typeof ApiTrucksIdRouteImport
       parentRoute: typeof ApiTrucksRoute
+    }
+    '/api/reports/$id': {
+      id: '/api/reports/$id'
+      path: '/$id'
+      fullPath: '/api/reports/$id'
+      preLoaderRoute: typeof ApiReportsIdRouteImport
+      parentRoute: typeof ApiReportsRoute
     }
     '/api/dashboard/summary': {
       id: '/api/dashboard/summary'
@@ -489,6 +571,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAdminUsersRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/reports/$id/versions': {
+      id: '/api/reports/$id/versions'
+      path: '/versions'
+      fullPath: '/api/reports/$id/versions'
+      preLoaderRoute: typeof ApiReportsIdVersionsRouteImport
+      parentRoute: typeof ApiReportsIdRoute
+    }
+    '/api/reports/$id/download': {
+      id: '/api/reports/$id/download'
+      path: '/download'
+      fullPath: '/api/reports/$id/download'
+      preLoaderRoute: typeof ApiReportsIdDownloadRouteImport
+      parentRoute: typeof ApiReportsIdRoute
+    }
   }
 }
 
@@ -504,6 +600,17 @@ const MovementsRouteWithChildren = MovementsRoute._addFileChildren(
   MovementsRouteChildren,
 )
 
+interface ReportsRouteChildren {
+  ReportsIdRoute: typeof ReportsIdRoute
+}
+
+const ReportsRouteChildren: ReportsRouteChildren = {
+  ReportsIdRoute: ReportsIdRoute,
+}
+
+const ReportsRouteWithChildren =
+  ReportsRoute._addFileChildren(ReportsRouteChildren)
+
 interface ApiDamsRouteChildren {
   ApiDamsIdRoute: typeof ApiDamsIdRoute
 }
@@ -514,6 +621,32 @@ const ApiDamsRouteChildren: ApiDamsRouteChildren = {
 
 const ApiDamsRouteWithChildren =
   ApiDamsRoute._addFileChildren(ApiDamsRouteChildren)
+
+interface ApiReportsIdRouteChildren {
+  ApiReportsIdDownloadRoute: typeof ApiReportsIdDownloadRoute
+  ApiReportsIdVersionsRoute: typeof ApiReportsIdVersionsRoute
+}
+
+const ApiReportsIdRouteChildren: ApiReportsIdRouteChildren = {
+  ApiReportsIdDownloadRoute: ApiReportsIdDownloadRoute,
+  ApiReportsIdVersionsRoute: ApiReportsIdVersionsRoute,
+}
+
+const ApiReportsIdRouteWithChildren = ApiReportsIdRoute._addFileChildren(
+  ApiReportsIdRouteChildren,
+)
+
+interface ApiReportsRouteChildren {
+  ApiReportsIdRoute: typeof ApiReportsIdRouteWithChildren
+}
+
+const ApiReportsRouteChildren: ApiReportsRouteChildren = {
+  ApiReportsIdRoute: ApiReportsIdRouteWithChildren,
+}
+
+const ApiReportsRouteWithChildren = ApiReportsRoute._addFileChildren(
+  ApiReportsRouteChildren,
+)
 
 interface ApiTrucksRouteChildren {
   ApiTrucksIdRoute: typeof ApiTrucksIdRoute
@@ -536,13 +669,14 @@ const rootRouteChildren: RootRouteChildren = {
   HistoryRoute: HistoryRoute,
   MovementsRoute: MovementsRouteWithChildren,
   OnboardingRoute: OnboardingRoute,
-  ReportsRoute: ReportsRoute,
+  ReportsRoute: ReportsRouteWithChildren,
   SettingsRoute: SettingsRoute,
   UsersRoute: UsersRoute,
   WeighBridgeRoute: WeighBridgeRoute,
   ApiAuditLogsRoute: ApiAuditLogsRoute,
   ApiDamsRoute: ApiDamsRouteWithChildren,
   ApiLoadsRoute: ApiLoadsRoute,
+  ApiReportsRoute: ApiReportsRouteWithChildren,
   ApiTrucksRoute: ApiTrucksRouteWithChildren,
   ApiAdminUsersRoute: ApiAdminUsersRoute,
   ApiAuthLoginRoute: ApiAuthLoginRoute,
