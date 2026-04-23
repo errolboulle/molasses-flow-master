@@ -48,6 +48,6 @@ export async function findDuplicateMovementReference(form: Record<string, string
 
 export function duplicateFieldFromDatabaseError(error: any) {
   const text = `${error?.message ?? ""} ${error?.details ?? ""}`;
-  const entry = duplicateFields.find((field) => text.includes(field) || text.includes(`movements_unique_${field}`));
+  const entry = duplicateFields.find((field) => text.includes(field) || text.includes(`movements_unique_${field}`) || text.includes(duplicateFieldLabels[field]));
   return entry ? { field: entry, label: duplicateFieldLabels[entry] } : null;
 }
