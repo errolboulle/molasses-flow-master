@@ -16,9 +16,9 @@ const metadataSchema = z.object({
 
 function parseReportFile(file: File) {
   const fileType = allowedFiles[file.type as keyof typeof allowedFiles];
-  if (!fileType) return { error: "Only PDF, XLSX, and DOCX reports are allowed" } as const;
-  if (file.size <= 0 || file.size > MAX_REPORT_FILE_SIZE) return { error: "Report file must be between 1 byte and 25 MB" } as const;
-  return { fileType } as const;
+  if (!fileType) return { ok: false, error: "Only PDF, XLSX, and DOCX reports are allowed" } as const;
+  if (file.size <= 0 || file.size > MAX_REPORT_FILE_SIZE) return { ok: false, error: "Report file must be between 1 byte and 25 MB" } as const;
+  return { ok: true, fileType } as const;
 }
 
 export const Route = createFileRoute("/api/reports")({
@@ -51,7 +51,7 @@ export const Route = createFileRoute("/api/reports")({
         const file = formData.get("file");
         if (!(file instanceof File)) return jsonError("Report file is required", 400);
         const checked = parseReportFile(file);
-        if ("error" in checked) return jsonError(checked.error, 400);
+        if (!checked.ok) return jsonError(checked.error, 400);
 
         const client = getAuthedClient(auth.token);
         const { data: report, error: reportError } = await (client as any)
