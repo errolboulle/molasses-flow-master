@@ -1,7 +1,7 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState, type FocusEvent, type FormEvent, type KeyboardEvent } from "react";
-import { ArrowDownToLine, ArrowUpFromLine, CheckCircle2, Gauge, RotateCcw } from "lucide-react";
+import { ArrowDownToLine, ArrowLeft, ArrowUpFromLine, CheckCircle2, Gauge, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -305,9 +305,16 @@ function WeighBridgeModePage() {
             <p className="text-sm text-muted-foreground">Fast keyboard entry for continuous truck movements.</p>
           </div>
         </div>
-        <div className={cn("flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-sm font-semibold transition-all", savedPulse && "border-success bg-success/10 text-success")}>
-          {savedPulse ? <CheckCircle2 className="h-4 w-4" /> : <ModeIcon className="h-4 w-4" />}
-          {savedPulse ? "Saved — next truck" : movementType === "incoming" ? "Incoming active" : "Outgoing active"}
+        <div className="flex flex-wrap items-center gap-2">
+          <div className={cn("flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-sm font-semibold transition-all", savedPulse && "border-success bg-success/10 text-success")}>
+            {savedPulse ? <CheckCircle2 className="h-4 w-4" /> : <ModeIcon className="h-4 w-4" />}
+            {savedPulse ? "Saved — next truck" : movementType === "incoming" ? "Incoming active" : "Outgoing active"}
+          </div>
+          <Button asChild type="button" variant="outline" className="gap-2">
+            <Link to="/movements">
+              <ArrowLeft className="h-4 w-4" /> Exit mode
+            </Link>
+          </Button>
         </div>
       </div>
 
