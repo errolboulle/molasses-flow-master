@@ -110,22 +110,41 @@ function DamFormDialog({ dam, onClose }: { dam?: Dam; onClose: () => void }) {
   const qc = useQueryClient();
   const [name, setName] = useState(dam?.name ?? "");
   const [capacity, setCapacity] = useState(dam?.capacity_tons?.toString() ?? "");
+  const [startingBalance, setStartingBalance] = useState(dam?.starting_balance_tons?.toString() ?? "0");
   const [notes, setNotes] = useState(dam?.notes ?? "");
   const [saving, setSaving] = useState(false);
 
   const submit = async () => {
     setSaving(true);
     try {
-      const payload = {
-        name: name.trim(),
-        capacity_tons: capacity ? parseFloat(capacity) : null,
-        notes: notes.trim() || null,
-      };
+      const trimmedStart = startingBalance.trim();
+      const startingValue = trimmedStart === "" ? 0 : parseFloat(trimmedStart);
+      if (isNaN(startingValue) || startingValue < 0) throw new Error("Starting balance must be 0 or greater");
+
       if (dam) {
+        // Editing: only adjust starting balance + carry the delta into current volume so the
+        // app-wide rule (current = starting + Σin − Σout ± adjustments) stays intact.
+        const previousStart = Number(dam.starting_balance_tons ?? 0);
+        const delta = startingValue - previousStart;
+        const payload = {
+          name: name.trim(),
+          capacity_tons: capacity ? parseFloat(capacity) : null,
+          notes: notes.trim() || null,
+          starting_balance_tons: startingValue,
+          ...(delta !== 0 ? { current_volume_tons: Number(dam.current_volume_tons ?? 0) + delta } : {}),
+        };
         const { error } = await supabase.from("dams").update(payload).eq("id", dam.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("dams").insert(payload);
+        // Creating: seed both starting balance and current volume so future movements
+        // build on the correct opening number — same rule applied to every dam.
+        const { error } = await supabase.from("dams").insert({
+          name: name.trim(),
+          capacity_tons: capacity ? parseFloat(capacity) : null,
+          notes: notes.trim() || null,
+          starting_balance_tons: startingValue,
+          current_volume_tons: startingValue,
+        });
         if (error) throw error;
       }
       await qc.invalidateQueries({ queryKey: ["dams"] });
@@ -138,12 +157,17 @@ function DamFormDialog({ dam, onClose }: { dam?: Dam; onClose: () => void }) {
     <DialogContent>
       <DialogHeader>
         <DialogTitle>{dam ? "Edit dam" : "Add dam"}</DialogTitle>
-        <DialogDescription>{dam ? "Update dam details." : "Create a new storage dam."}</DialogDescription>
+        <DialogDescription>{dam ? "Update dam details. Changing the starting balance shifts the current volume by the same amount so movement totals stay correct." : "Create a new storage dam. Enter any stock already in it as the starting balance."}</DialogDescription>
       </DialogHeader>
       <div className="space-y-4 py-2">
         <div className="space-y-2">
           <Label>Name</Label>
           <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Dam 4" />
+        </div>
+        <div className="space-y-2">
+          <Label>Starting balance (tons)</Label>
+          <Input type="number" step="0.001" min="0" value={startingBalance} onChange={(e) => setStartingBalance(e.target.value)} placeholder="0.000" />
+          <p className="text-xs text-muted-foreground">Opening stock used by every report: <span className="font-mono">current = starting + incoming − outgoing ± adjustments</span>.</p>
         </div>
         <div className="space-y-2">
           <Label>Capacity (tons, optional)</Label>
