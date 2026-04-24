@@ -478,7 +478,7 @@ function WeighBridgeModePage() {
       </section>
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-        <section className="rounded-lg border border-border bg-card p-4 shadow-sm">
+        <section className="rounded-lg border border-border bg-card p-4 shadow-sm src-mill-section [&_.fast-control]:bg-white [&_.fast-control]:text-slate-900 [&_.fast-control]:border-slate-300 [&_.fast-control]:placeholder:text-slate-500 [&_.fast-control:focus-visible]:border-primary [&_input.fast-control]:[color-scheme:light]">
           <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-muted-foreground">Source Mill</h2>
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
             <FastInput label="Date of departure" name="src_date_of_departure" type="date" value={form.src_date_of_departure} activeField={activeField} onFocus={handleFocus} onChange={(value) => set("src_date_of_departure", value)} />
