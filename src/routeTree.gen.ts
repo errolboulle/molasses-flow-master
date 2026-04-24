@@ -14,7 +14,6 @@ import { Route as UsersRouteImport } from './routes/users'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as ReportsRouteImport } from './routes/reports'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
-import { Route as MovementsRouteImport } from './routes/movements'
 import { Route as HistoryRouteImport } from './routes/history'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as DamsRouteImport } from './routes/dams'
@@ -22,7 +21,6 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuditRouteImport } from './routes/audit'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ReportsIdRouteImport } from './routes/reports.$id'
-import { Route as MovementsNewRouteImport } from './routes/movements.new'
 import { Route as ApiTrucksRouteImport } from './routes/api.trucks'
 import { Route as ApiReportsRouteImport } from './routes/api.reports'
 import { Route as ApiLoadsRouteImport } from './routes/api.loads'
@@ -63,11 +61,6 @@ const OnboardingRoute = OnboardingRouteImport.update({
   path: '/onboarding',
   getParentRoute: () => rootRouteImport,
 } as any)
-const MovementsRoute = MovementsRouteImport.update({
-  id: '/movements',
-  path: '/movements',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const HistoryRoute = HistoryRouteImport.update({
   id: '/history',
   path: '/history',
@@ -102,11 +95,6 @@ const ReportsIdRoute = ReportsIdRouteImport.update({
   id: '/$id',
   path: '/$id',
   getParentRoute: () => ReportsRoute,
-} as any)
-const MovementsNewRoute = MovementsNewRouteImport.update({
-  id: '/new',
-  path: '/new',
-  getParentRoute: () => MovementsRoute,
 } as any)
 const ApiTrucksRoute = ApiTrucksRouteImport.update({
   id: '/api/trucks',
@@ -186,7 +174,6 @@ export interface FileRoutesByFullPath {
   '/dams': typeof DamsRoute
   '/dashboard': typeof DashboardRoute
   '/history': typeof HistoryRoute
-  '/movements': typeof MovementsRouteWithChildren
   '/onboarding': typeof OnboardingRoute
   '/reports': typeof ReportsRouteWithChildren
   '/settings': typeof SettingsRoute
@@ -197,7 +184,6 @@ export interface FileRoutesByFullPath {
   '/api/loads': typeof ApiLoadsRoute
   '/api/reports': typeof ApiReportsRouteWithChildren
   '/api/trucks': typeof ApiTrucksRouteWithChildren
-  '/movements/new': typeof MovementsNewRoute
   '/reports/$id': typeof ReportsIdRoute
   '/api/admin/users': typeof ApiAdminUsersRoute
   '/api/auth/login': typeof ApiAuthLoginRoute
@@ -216,7 +202,6 @@ export interface FileRoutesByTo {
   '/dams': typeof DamsRoute
   '/dashboard': typeof DashboardRoute
   '/history': typeof HistoryRoute
-  '/movements': typeof MovementsRouteWithChildren
   '/onboarding': typeof OnboardingRoute
   '/reports': typeof ReportsRouteWithChildren
   '/settings': typeof SettingsRoute
@@ -227,7 +212,6 @@ export interface FileRoutesByTo {
   '/api/loads': typeof ApiLoadsRoute
   '/api/reports': typeof ApiReportsRouteWithChildren
   '/api/trucks': typeof ApiTrucksRouteWithChildren
-  '/movements/new': typeof MovementsNewRoute
   '/reports/$id': typeof ReportsIdRoute
   '/api/admin/users': typeof ApiAdminUsersRoute
   '/api/auth/login': typeof ApiAuthLoginRoute
@@ -247,7 +231,6 @@ export interface FileRoutesById {
   '/dams': typeof DamsRoute
   '/dashboard': typeof DashboardRoute
   '/history': typeof HistoryRoute
-  '/movements': typeof MovementsRouteWithChildren
   '/onboarding': typeof OnboardingRoute
   '/reports': typeof ReportsRouteWithChildren
   '/settings': typeof SettingsRoute
@@ -258,7 +241,6 @@ export interface FileRoutesById {
   '/api/loads': typeof ApiLoadsRoute
   '/api/reports': typeof ApiReportsRouteWithChildren
   '/api/trucks': typeof ApiTrucksRouteWithChildren
-  '/movements/new': typeof MovementsNewRoute
   '/reports/$id': typeof ReportsIdRoute
   '/api/admin/users': typeof ApiAdminUsersRoute
   '/api/auth/login': typeof ApiAuthLoginRoute
@@ -279,7 +261,6 @@ export interface FileRouteTypes {
     | '/dams'
     | '/dashboard'
     | '/history'
-    | '/movements'
     | '/onboarding'
     | '/reports'
     | '/settings'
@@ -290,7 +271,6 @@ export interface FileRouteTypes {
     | '/api/loads'
     | '/api/reports'
     | '/api/trucks'
-    | '/movements/new'
     | '/reports/$id'
     | '/api/admin/users'
     | '/api/auth/login'
@@ -309,7 +289,6 @@ export interface FileRouteTypes {
     | '/dams'
     | '/dashboard'
     | '/history'
-    | '/movements'
     | '/onboarding'
     | '/reports'
     | '/settings'
@@ -320,7 +299,6 @@ export interface FileRouteTypes {
     | '/api/loads'
     | '/api/reports'
     | '/api/trucks'
-    | '/movements/new'
     | '/reports/$id'
     | '/api/admin/users'
     | '/api/auth/login'
@@ -339,7 +317,6 @@ export interface FileRouteTypes {
     | '/dams'
     | '/dashboard'
     | '/history'
-    | '/movements'
     | '/onboarding'
     | '/reports'
     | '/settings'
@@ -350,7 +327,6 @@ export interface FileRouteTypes {
     | '/api/loads'
     | '/api/reports'
     | '/api/trucks'
-    | '/movements/new'
     | '/reports/$id'
     | '/api/admin/users'
     | '/api/auth/login'
@@ -370,7 +346,6 @@ export interface RootRouteChildren {
   DamsRoute: typeof DamsRoute
   DashboardRoute: typeof DashboardRoute
   HistoryRoute: typeof HistoryRoute
-  MovementsRoute: typeof MovementsRouteWithChildren
   OnboardingRoute: typeof OnboardingRoute
   ReportsRoute: typeof ReportsRouteWithChildren
   SettingsRoute: typeof SettingsRoute
@@ -424,13 +399,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OnboardingRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/movements': {
-      id: '/movements'
-      path: '/movements'
-      fullPath: '/movements'
-      preLoaderRoute: typeof MovementsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/history': {
       id: '/history'
       path: '/history'
@@ -479,13 +447,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/reports/$id'
       preLoaderRoute: typeof ReportsIdRouteImport
       parentRoute: typeof ReportsRoute
-    }
-    '/movements/new': {
-      id: '/movements/new'
-      path: '/new'
-      fullPath: '/movements/new'
-      preLoaderRoute: typeof MovementsNewRouteImport
-      parentRoute: typeof MovementsRoute
     }
     '/api/trucks': {
       id: '/api/trucks'
@@ -588,18 +549,6 @@ declare module '@tanstack/react-router' {
   }
 }
 
-interface MovementsRouteChildren {
-  MovementsNewRoute: typeof MovementsNewRoute
-}
-
-const MovementsRouteChildren: MovementsRouteChildren = {
-  MovementsNewRoute: MovementsNewRoute,
-}
-
-const MovementsRouteWithChildren = MovementsRoute._addFileChildren(
-  MovementsRouteChildren,
-)
-
 interface ReportsRouteChildren {
   ReportsIdRoute: typeof ReportsIdRoute
 }
@@ -667,7 +616,6 @@ const rootRouteChildren: RootRouteChildren = {
   DamsRoute: DamsRoute,
   DashboardRoute: DashboardRoute,
   HistoryRoute: HistoryRoute,
-  MovementsRoute: MovementsRouteWithChildren,
   OnboardingRoute: OnboardingRoute,
   ReportsRoute: ReportsRouteWithChildren,
   SettingsRoute: SettingsRoute,

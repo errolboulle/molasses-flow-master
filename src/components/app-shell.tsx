@@ -33,7 +33,7 @@ import {
 const navItems = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["admin", "operator", "supervisor", "viewer"] },
   { to: "/dams", label: "Dams", icon: Database, roles: ["admin", "operator", "supervisor", "viewer"] },
-  { to: "/movements", label: "Movements", icon: TruckIcon, roles: ["admin", "operator", "supervisor", "viewer"] },
+  
   { to: "/weigh-bridge", label: "Weigh Bridge Mode", icon: Gauge, roles: ["admin", "operator", "supervisor"] },
   { to: "/history", label: "History", icon: History, roles: ["admin", "operator", "supervisor", "viewer"] },
   { to: "/reports", label: "Reports", icon: BarChart3, roles: ["admin", "operator", "supervisor", "viewer"] },
