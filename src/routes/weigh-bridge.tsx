@@ -185,14 +185,91 @@ function WeighBridgeModePage() {
     fields[nextIndex]?.focus();
   };
 
+  const moveFocusDirectional = (direction: "up" | "down" | "left" | "right") => {
+    const fields = focusableFields();
+    const current = document.activeElement as HTMLElement | null;
+    if (!current || !fields.includes(current)) {
+      fields[0]?.focus();
+      return;
+    }
+    const currentRect = current.getBoundingClientRect();
+    const currentCx = currentRect.left + currentRect.width / 2;
+    const currentCy = currentRect.top + currentRect.height / 2;
+
+    let best: { element: HTMLElement; score: number } | null = null;
+    for (const field of fields) {
+      if (field === current) continue;
+      const rect = field.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+      const dx = cx - currentCx;
+      const dy = cy - currentCy;
+
+      let primary = 0;
+      let secondary = 0;
+      if (direction === "down") {
+        if (dy <= 4) continue;
+        primary = dy;
+        secondary = Math.abs(dx);
+      } else if (direction === "up") {
+        if (dy >= -4) continue;
+        primary = -dy;
+        secondary = Math.abs(dx);
+      } else if (direction === "right") {
+        if (dx <= 4) continue;
+        primary = dx;
+        secondary = Math.abs(dy);
+      } else {
+        if (dx >= -4) continue;
+        primary = -dx;
+        secondary = Math.abs(dy);
+      }
+      // Weight perpendicular distance heavier so we prefer aligned fields
+      const score = primary + secondary * 2;
+      if (!best || score < best.score) best = { element: field, score };
+    }
+    best?.element.focus();
+  };
+
   const handleKeyDown = (event: KeyboardEvent<HTMLFormElement>) => {
+    const target = event.target as HTMLElement;
+    const tag = target.tagName;
+    const type = (target as HTMLInputElement).type;
+    // Allow native left/right caret movement inside text-like inputs unless modifier used
+    const isTextInput =
+      (tag === "INPUT" && ["text", "search", "tel", "url", "email", "password", "number", "date", "time", "datetime-local", "month", "week", ""].includes(type)) ||
+      tag === "TEXTAREA";
+
     if (event.key === "ArrowDown") {
       event.preventDefault();
-      moveFocus(1);
+      moveFocusDirectional("down");
+      return;
     }
     if (event.key === "ArrowUp") {
       event.preventDefault();
-      moveFocus(-1);
+      moveFocusDirectional("up");
+      return;
+    }
+    if (event.key === "ArrowRight") {
+      if (isTextInput && !event.ctrlKey && !event.metaKey) {
+        const input = target as HTMLInputElement | HTMLTextAreaElement;
+        const len = (input.value ?? "").length;
+        const pos = input.selectionEnd ?? len;
+        if (pos < len) return; // let caret move within field
+      }
+      event.preventDefault();
+      moveFocusDirectional("right");
+      return;
+    }
+    if (event.key === "ArrowLeft") {
+      if (isTextInput && !event.ctrlKey && !event.metaKey) {
+        const input = target as HTMLInputElement | HTMLTextAreaElement;
+        const pos = input.selectionStart ?? 0;
+        if (pos > 0) return; // let caret move within field
+      }
+      event.preventDefault();
+      moveFocusDirectional("left");
+      return;
     }
   };
 
