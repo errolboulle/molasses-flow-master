@@ -69,8 +69,7 @@ function addDamSheet(wb: XLSX.WorkBook, dam: Dam, allDams: Dam[], rows: Movement
 
   // Row 2: Dam name centered across full width
   const r2 = new Array(TOTAL_COLS).fill("");
-  const damLabel = `${dam.name.toUpperCase()}  ·  DAM 1 / DAM 2 / DAM 3`;
-  r2[0] = damLabel;
+  r2[0] = dam.name.toUpperCase();
   aoa.push(r2);
 
   // Row 3: spacer
