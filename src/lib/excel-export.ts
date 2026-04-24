@@ -1,6 +1,6 @@
 import * as XLSX from "xlsx-js-style";
 import type { Movement, Dam } from "./types";
-import { LEFT_COLS, RIGHT_COLS } from "./report-layout";
+import { LEFT_COLS, RIGHT_COLS, buildDamReportRows } from "./report-layout";
 
 const THIN = { style: "thin", color: { rgb: "000000" } };
 const MEDIUM = { style: "medium", color: { rgb: "000000" } };
