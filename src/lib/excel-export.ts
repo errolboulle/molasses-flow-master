@@ -290,15 +290,9 @@ function addSummarySheet(wb: XLSX.WorkBook, dams: Dam[], movements: Movement[]) 
   let tIn = 0, tOut = 0, tOpen = 0, tNett = 0;
   for (const d of dams) {
     const rows = movements.filter((m) => m.dam_id === d.id);
-    let inSum = 0, outSum = 0;
-    for (const m of rows) {
-      const q = Number(m.quantity_tons) || 0;
-      if (m.movement_type === "incoming") inSum += q; else outSum += q;
-    }
-    const opening = Number(d.current_volume_tons ?? 0);
-    const nett = opening + inSum - outSum;
-    aoa.push([d.name, opening, inSum, outSum, nett]);
-    tOpen += opening; tIn += inSum; tOut += outSum; tNett += nett;
+    const report = buildDamReportRows(d, rows);
+    aoa.push([d.name, report.opening, report.totalIn, report.totalOut, report.closing]);
+    tOpen += report.opening; tIn += report.totalIn; tOut += report.totalOut; tNett += report.closing;
   }
   aoa.push([]);
   aoa.push(["TOTAL", tOpen, tIn, tOut, tNett]);
