@@ -62,7 +62,7 @@ const initialForm = (movementType: MovementType) => {
   };
 };
 
-const uppercaseFields = new Set(["src_vehicle_registration", "fgc_vehicle_registration", "src_haulier", "fgc_haulier", "src_mill", "fgc_zsm_operator"]);
+const uppercaseFields = new Set(["src_vehicle_registration", "fgc_vehicle_registration", "src_haulier", "fgc_haulier", "src_mill", "fgc_zsm_operator", "fgc_if_out_haulier"]);
 
 const normalizeFieldValue = (key: string, value: string) => (uppercaseFields.has(key) ? value.toUpperCase() : value);
 
