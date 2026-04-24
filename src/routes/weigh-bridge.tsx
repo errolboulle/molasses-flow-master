@@ -62,7 +62,7 @@ const initialForm = (movementType: MovementType) => {
   };
 };
 
-const uppercaseFields = new Set(["src_vehicle_registration", "fgc_vehicle_registration", "src_haulier", "fgc_haulier", "src_mill", "fgc_zsm_operator"]);
+const uppercaseFields = new Set(["src_vehicle_registration", "fgc_vehicle_registration", "src_haulier", "fgc_haulier", "src_mill", "fgc_zsm_operator", "fgc_if_out_haulier"]);
 
 const normalizeFieldValue = (key: string, value: string) => (uppercaseFields.has(key) ? value.toUpperCase() : value);
 
@@ -503,7 +503,7 @@ function WeighBridgeModePage() {
             <FastInput label="Time" name="fgc_time" type="time" value={form.fgc_time} activeField={activeField} onFocus={handleFocus} onChange={(value) => set("fgc_time", value)} />
             <FastAutocomplete label="Vehicle registration" name="fgc_vehicle_registration" value={form.fgc_vehicle_registration} activeField={activeField} suggestions={autocompleteOptions?.vehicleRegistrations ?? []} onFocus={handleFocus} onChange={(value) => set("fgc_vehicle_registration", value)} />
             <FastAutocomplete label="Haulier" name="fgc_haulier" value={form.fgc_haulier} activeField={activeField} suggestions={autocompleteOptions?.hauliers ?? []} onFocus={handleFocus} onChange={(value) => set("fgc_haulier", value)} />
-            <FastInput label="Consignment note number" name="fgc_consignment_note_number" value={form.fgc_consignment_note_number} activeField={activeField} duplicate={duplicateField === "fgc_consignment_note_number"} onFocus={handleFocus} onBlur={() => checkDuplicateOnBlur("fgc_consignment_note_number", form.fgc_consignment_note_number)} onChange={(value) => set("fgc_consignment_note_number", value)} />
+            <FastInput label="Delivery note" name="fgc_consignment_note_number" value={form.fgc_consignment_note_number} activeField={activeField} duplicate={duplicateField === "fgc_consignment_note_number"} onFocus={handleFocus} onBlur={() => checkDuplicateOnBlur("fgc_consignment_note_number", form.fgc_consignment_note_number)} onChange={(value) => set("fgc_consignment_note_number", value)} />
             <FastInput label="ZSM weighbridge number" name="fgc_zsm_weighbridge_number" value={form.fgc_zsm_weighbridge_number} activeField={activeField} duplicate={duplicateField === "fgc_zsm_weighbridge_number"} onFocus={handleFocus} onBlur={() => checkDuplicateOnBlur("fgc_zsm_weighbridge_number", form.fgc_zsm_weighbridge_number)} onChange={(value) => set("fgc_zsm_weighbridge_number", value)} />
             <FastInput label="Gross mass (tons)" name="fgc_gross_mass" type="number" step="0.001" value={form.fgc_gross_mass} activeField={activeField} onFocus={handleFocus} onChange={(value) => set("fgc_gross_mass", value)} />
             <FastInput label="Tare mass (tons)" name="fgc_tare_mass" type="number" step="0.001" value={form.fgc_tare_mass} activeField={activeField} onFocus={handleFocus} onChange={(value) => set("fgc_tare_mass", value)} />
@@ -516,8 +516,8 @@ function WeighBridgeModePage() {
                 <option value="Out">Out</option>
               </select>
             </FastField>
-            <FastInput label="ZSM operator" name="fgc_zsm_operator" value={form.fgc_zsm_operator} activeField={activeField} onFocus={handleFocus} onChange={(value) => set("fgc_zsm_operator", value)} />
-            <FastInput label="If Out — haulier" name="fgc_if_out_haulier" value={form.fgc_if_out_haulier} activeField={activeField} onFocus={handleFocus} onChange={(value) => set("fgc_if_out_haulier", value)} />
+            <FastAutocomplete label="ZSM operator" name="fgc_zsm_operator" value={form.fgc_zsm_operator} activeField={activeField} suggestions={autocompleteOptions?.zsmOperators ?? []} onFocus={handleFocus} onChange={(value) => set("fgc_zsm_operator", value)} />
+            <FastAutocomplete label="If Out — haulier" name="fgc_if_out_haulier" value={form.fgc_if_out_haulier} activeField={activeField} suggestions={autocompleteOptions?.ifOutHauliers ?? []} onFocus={handleFocus} onChange={(value) => set("fgc_if_out_haulier", value)} />
           </div>
         </section>
       </div>
