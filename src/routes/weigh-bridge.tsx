@@ -496,7 +496,7 @@ function WeighBridgeModePage() {
           </div>
         </section>
 
-        <section className="rounded-lg border border-border bg-card p-4 shadow-sm">
+        <section className="rounded-lg border border-border bg-card p-4 shadow-sm fgc-section [&_.fast-control]:bg-green-100 [&_.fast-control]:text-slate-900 [&_.fast-control]:border-green-300 [&_.fast-control]:placeholder:text-slate-500 [&_.fast-control:focus-visible]:border-primary [&_input.fast-control]:[color-scheme:light]">
           <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-muted-foreground">FGC</h2>
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
             <FastInput label="Date of arrival" name="fgc_date_of_arrival" type="date" value={form.fgc_date_of_arrival} activeField={activeField} onFocus={handleFocus} onChange={(value) => set("fgc_date_of_arrival", value)} />
