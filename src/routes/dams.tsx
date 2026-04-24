@@ -126,15 +126,13 @@ function DamFormDialog({ dam, onClose }: { dam?: Dam; onClose: () => void }) {
         // app-wide rule (current = starting + Σin − Σout ± adjustments) stays intact.
         const previousStart = Number(dam.starting_balance_tons ?? 0);
         const delta = startingValue - previousStart;
-        const payload: Record<string, unknown> = {
+        const payload = {
           name: name.trim(),
           capacity_tons: capacity ? parseFloat(capacity) : null,
           notes: notes.trim() || null,
           starting_balance_tons: startingValue,
+          ...(delta !== 0 ? { current_volume_tons: Number(dam.current_volume_tons ?? 0) + delta } : {}),
         };
-        if (delta !== 0) {
-          payload.current_volume_tons = Number(dam.current_volume_tons ?? 0) + delta;
-        }
         const { error } = await supabase.from("dams").update(payload).eq("id", dam.id);
         if (error) throw error;
       } else {
