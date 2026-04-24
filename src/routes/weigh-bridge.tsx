@@ -359,7 +359,7 @@ function WeighBridgeModePage() {
             {savedPulse ? "Saved — next truck" : movementType === "incoming" ? "Incoming active" : "Outgoing active"}
           </div>
           <Button asChild type="button" variant="outline" className="gap-2">
-            <Link to="/movements">
+            <Link to="/dashboard">
               <ArrowLeft className="h-4 w-4" /> Exit mode
             </Link>
           </Button>
