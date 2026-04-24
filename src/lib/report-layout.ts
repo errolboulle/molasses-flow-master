@@ -45,7 +45,7 @@ const num = (v: unknown): number | "" => {
 
 export function buildDamReportRows(dam: Dam, movements: Movement[]) {
   const sorted = [...movements].sort((a, b) => new Date(a.occurred_at).getTime() - new Date(b.occurred_at).getTime());
-  const opening = Number(dam.current_volume_tons ?? 0);
+  const opening = Number(dam.starting_balance_tons ?? 0);
   let nett = opening;
   let totalIn = 0;
   let totalOut = 0;
