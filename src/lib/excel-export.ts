@@ -50,9 +50,7 @@ function num(v: any): number | "" {
 }
 
 function addDamSheet(wb: XLSX.WorkBook, dam: Dam, allDams: Dam[], rows: Movement[]) {
-  const sorted = [...rows].sort(
-    (a, b) => new Date(a.occurred_at).getTime() - new Date(b.occurred_at).getTime()
-  );
+  const report = buildDamReportRows(dam, rows);
 
   const aoa: any[][] = [];
 
@@ -82,66 +80,24 @@ function addDamSheet(wb: XLSX.WorkBook, dam: Dam, allDams: Dam[], rows: Movement
   aoa.push(headerRow);
   const headerRowIdx = aoa.length - 1;
 
-  // Opening balance row (NETT seeded with current dam volume)
-  const opening = Number(dam.current_volume_tons ?? 0);
+  // Opening balance row (uses starting_balance_tons via buildDamReportRows)
   const openingRow = new Array(TOTAL_COLS).fill("");
   openingRow[LEFT_START] = "Opening Balance";
-  openingRow[NETT_COL] = opening;
+  openingRow[NETT_COL] = report.opening;
   aoa.push(openingRow);
   const openingRowIdx = aoa.length - 1;
 
-  // Data rows
-  let nett = opening;
-  let totalIn = 0;
-  let totalOut = 0;
+  // Data rows — use exact same rows as the on-screen preview
   const dataStart = aoa.length;
 
-  for (const m of sorted) {
-    const isIn = m.movement_type === "incoming";
-    const qty = Number(m.quantity_tons) || 0;
-    const inVal = isIn ? qty : 0;
-    const outVal = isIn ? 0 : qty;
-    nett = nett + inVal - outVal;
-    totalIn += inVal;
-    totalOut += outVal;
-
+  for (const reportRow of report.rows) {
     const row = new Array(TOTAL_COLS).fill("");
-
-    // LEFT (Source Mill / Departure)
-    row[LEFT_START + 0] = m.src_date_of_departure || "";
-    row[LEFT_START + 1] = m.src_time || "";
-    row[LEFT_START + 2] = m.src_vehicle_registration || "";
-    row[LEFT_START + 3] = m.src_haulier || "";
-    row[LEFT_START + 4] = m.src_delivery_note || "";
-    row[LEFT_START + 5] = m.src_mill_number || "";
-    row[LEFT_START + 6] = m.src_mill || "";
-    row[LEFT_START + 7] = num(m.src_gross_mass);
-    row[LEFT_START + 8] = num(m.src_tare_mass);
-    row[LEFT_START + 9] = num(m.src_net_mass);
-    row[LEFT_START + 10] = num(m.src_molasses_temperature);
-    row[LEFT_START + 11] = m.src_sample_number || "";
-
-    // RIGHT (FGC / Arrival)
-    row[RIGHT_START + 0] = m.fgc_date_of_arrival || "";
-    row[RIGHT_START + 1] = m.fgc_time || "";
-    row[RIGHT_START + 2] = m.fgc_vehicle_registration || "";
-    row[RIGHT_START + 3] = m.fgc_haulier || "";
-    row[RIGHT_START + 4] = m.fgc_consignment_note_number || "";
-    row[RIGHT_START + 5] = m.fgc_zsm_weighbridge_number || "";
-    row[RIGHT_START + 6] = num(m.fgc_gross_mass);
-    row[RIGHT_START + 7] = num(m.fgc_tare_mass);
-    row[RIGHT_START + 8] = num(m.fgc_net_mass);
-    row[RIGHT_START + 9] = num(m.fgc_variance);
-    row[RIGHT_START + 10] = num(m.fgc_brix);
-    row[RIGHT_START + 11] = m.fgc_in_out || (isIn ? "IN" : "OUT");
-    row[RIGHT_START + 12] = m.fgc_zsm_operator || "";
-    row[RIGHT_START + 13] = m.fgc_if_out_haulier || "";
-
-    // Running balance
-    row[IN_COL] = inVal || "";
-    row[OUT_COL] = outVal || "";
-    row[NETT_COL] = nett;
-
+    reportRow.left.forEach((v, i) => (row[LEFT_START + i] = v));
+    reportRow.right.forEach((v, i) => (row[RIGHT_START + i] = v));
+    // Replace the running totals (last 3 cells of right) with empty/numeric for IN/OUT empties
+    row[IN_COL] = reportRow.inVal || "";
+    row[OUT_COL] = reportRow.outVal || "";
+    row[NETT_COL] = reportRow.nett;
     aoa.push(row);
   }
   const dataEnd = aoa.length - 1;
@@ -150,9 +106,9 @@ function addDamSheet(wb: XLSX.WorkBook, dam: Dam, allDams: Dam[], rows: Movement
   aoa.push(new Array(TOTAL_COLS).fill(""));
   const totalsRow = new Array(TOTAL_COLS).fill("");
   totalsRow[RIGHT_START] = "TOTALS";
-  totalsRow[IN_COL] = totalIn;
-  totalsRow[OUT_COL] = totalOut;
-  totalsRow[NETT_COL] = nett;
+  totalsRow[IN_COL] = report.totalIn;
+  totalsRow[OUT_COL] = report.totalOut;
+  totalsRow[NETT_COL] = report.closing;
   aoa.push(totalsRow);
   const totalsRowIdx = aoa.length - 1;
 
