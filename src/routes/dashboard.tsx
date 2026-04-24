@@ -47,8 +47,8 @@ function DashboardPage() {
 
   const today = periodStart("today");
   const yesterday = periodStart("yesterday");
-  const todayIn = movements.filter((m) => m.movement_type === "incoming" && new Date(m.occurred_at) >= today);
-  const avgLoad = todayIn.length ? todayIn.reduce((s, m) => s + Number(m.quantity_tons), 0) / todayIn.length : 0;
+  const todayLoads = movements.filter((m) => new Date(m.occurred_at) >= today);
+  const avgLoad = todayLoads.length ? todayLoads.reduce((s, m) => s + Number(m.quantity_tons), 0) / todayLoads.length : 0;
   const insights = [
     ["Total variance today", varianceFor(today)],
     ["Total variance yesterday", varianceFor(yesterday, today)],
