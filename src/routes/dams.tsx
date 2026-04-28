@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ProtectedLayout } from "@/components/protected-layout";
-import { useDams, useSettings } from "@/lib/queries";
+import { useDams, useMovements, useSettings } from "@/lib/queries";
+import { buildDamReportRows } from "@/lib/report-layout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
