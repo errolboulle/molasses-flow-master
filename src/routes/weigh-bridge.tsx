@@ -231,10 +231,39 @@ function WeighBridgeModePage() {
     best?.element.focus();
   };
 
+  const enterFieldMap: Record<string, string> = {
+    src_vehicle_registration: "src_haulier",
+    src_mill_number: "src_mill",
+    src_tare_mass: "src_net_mass",
+    src_sample_number: "fgc_date_of_arrival",
+    fgc_vehicle_registration: "fgc_haulier",
+    fgc_zsm_weighbridge_number: "fgc_gross_mass",
+    fgc_net_mass_secondary: "fgc_brix",
+    fgc_brix: "fgc_zsm_operator",
+  };
+
+  const focusFieldByName = (name: string) => {
+    const element = formRef.current?.querySelector<HTMLElement>(`[data-field-name="${name}"]`);
+    if (element) {
+      element.focus();
+      if (element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement) element.select();
+    }
+  };
+
   const handleKeyDown = (event: KeyboardEvent<HTMLFormElement>) => {
     const target = event.target as HTMLElement;
     const tag = target.tagName;
     const type = (target as HTMLInputElement).type;
+
+    if (event.key === "Enter" && tag !== "TEXTAREA" && (target as HTMLButtonElement).type !== "submit") {
+      const fieldEl = target.closest<HTMLElement>("[data-field-name]");
+      const fieldName = fieldEl?.dataset.fieldName;
+      if (fieldName && enterFieldMap[fieldName]) {
+        event.preventDefault();
+        focusFieldByName(enterFieldMap[fieldName]);
+        return;
+      }
+    }
     // Allow native left/right caret movement inside text-like inputs unless modifier used
     const isTextInput =
       (tag === "INPUT" && ["text", "search", "tel", "url", "email", "password", "number", "date", "time", "datetime-local", "month", "week", ""].includes(type)) ||
