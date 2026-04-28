@@ -507,24 +507,26 @@ function WeighBridgeModePage() {
         </div>
       </section>
 
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-        <section className="rounded-lg border border-border bg-card p-4 shadow-sm src-mill-section [&_.fast-control]:bg-white [&_.fast-control]:text-slate-900 [&_.fast-control]:border-slate-300 [&_.fast-control]:placeholder:text-slate-500 [&_.fast-control:focus-visible]:border-primary [&_input.fast-control]:[color-scheme:light]">
-          <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-muted-foreground">Source Mill</h2>
-          <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
-            <FastInput label="Date of departure" name="src_date_of_departure" type="date" value={form.src_date_of_departure} activeField={activeField} onFocus={handleFocus} onChange={(value) => set("src_date_of_departure", value)} />
-            <FastInput label="Time" name="src_time" type="time" value={form.src_time} activeField={activeField} onFocus={handleFocus} onChange={(value) => set("src_time", value)} />
-            <FastAutocomplete label="Vehicle registration" name="src_vehicle_registration" value={form.src_vehicle_registration} activeField={activeField} suggestions={autocompleteOptions?.vehicleRegistrations ?? []} onFocus={handleFocus} onChange={(value) => set("src_vehicle_registration", value)} />
-            <FastAutocomplete label="Haulier" name="src_haulier" value={form.src_haulier} activeField={activeField} suggestions={autocompleteOptions?.hauliers ?? []} onFocus={handleFocus} onChange={(value) => set("src_haulier", value)} />
-            <FastInput label="Delivery note" name="src_delivery_note" value={form.src_delivery_note} activeField={activeField} duplicate={duplicateField === "src_delivery_note"} onFocus={handleFocus} onBlur={() => checkDuplicateOnBlur("src_delivery_note", form.src_delivery_note)} onChange={(value) => set("src_delivery_note", value)} />
-            <FastInput label="Mill number" name="src_mill_number" value={form.src_mill_number} activeField={activeField} duplicate={duplicateField === "src_mill_number"} onFocus={handleFocus} onBlur={() => checkDuplicateOnBlur("src_mill_number", form.src_mill_number)} onChange={(value) => set("src_mill_number", value)} />
-            <FastAutocomplete label="Mill" name="src_mill" value={form.src_mill} activeField={activeField} suggestions={autocompleteOptions?.mills ?? []} onFocus={handleFocus} onChange={(value) => set("src_mill", value)} />
-            <FastInput label="Gross mass (tons)" name="src_gross_mass" type="number" step="0.001" value={form.src_gross_mass} activeField={activeField} onFocus={handleFocus} onChange={(value) => set("src_gross_mass", value)} />
-            <FastInput label="Tare mass (tons)" name="src_tare_mass" type="number" step="0.001" value={form.src_tare_mass} activeField={activeField} onFocus={handleFocus} onChange={(value) => set("src_tare_mass", value)} />
-            <FastInput label="Net mass (tons, auto)" name="src_net_mass" type="number" step="0.001" value={isNaN(srcNet) ? "" : srcNet.toString()} activeField={activeField} onFocus={handleFocus} onChange={(value) => set("src_net_mass", value)} />
-            <FastInput label="Molasses temperature (°C)" name="src_molasses_temperature" type="number" step="0.01" value={form.src_molasses_temperature} activeField={activeField} onFocus={handleFocus} onChange={(value) => set("src_molasses_temperature", value)} />
-            <FastInput label="Sample number" name="src_sample_number" value={form.src_sample_number} activeField={activeField} duplicate={duplicateField === "src_sample_number"} onFocus={handleFocus} onBlur={() => checkDuplicateOnBlur("src_sample_number", form.src_sample_number)} onChange={(value) => set("src_sample_number", value)} />
-          </div>
-        </section>
+      <div className={cn("grid grid-cols-1 gap-4", movementType === "incoming" && "xl:grid-cols-2")}>
+        {movementType === "incoming" && (
+          <section className="rounded-lg border border-border bg-card p-4 shadow-sm src-mill-section [&_.fast-control]:bg-white [&_.fast-control]:text-slate-900 [&_.fast-control]:border-slate-300 [&_.fast-control]:placeholder:text-slate-500 [&_.fast-control:focus-visible]:border-primary [&_input.fast-control]:[color-scheme:light]">
+            <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-muted-foreground">Source Mill</h2>
+            <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
+              <FastInput label="Date of departure" name="src_date_of_departure" type="date" value={form.src_date_of_departure} activeField={activeField} onFocus={handleFocus} onChange={(value) => set("src_date_of_departure", value)} />
+              <FastInput label="Time" name="src_time" type="time" value={form.src_time} activeField={activeField} onFocus={handleFocus} onChange={(value) => set("src_time", value)} />
+              <FastAutocomplete label="Vehicle registration" name="src_vehicle_registration" value={form.src_vehicle_registration} activeField={activeField} suggestions={autocompleteOptions?.vehicleRegistrations ?? []} onFocus={handleFocus} onChange={(value) => set("src_vehicle_registration", value)} />
+              <FastAutocomplete label="Haulier" name="src_haulier" value={form.src_haulier} activeField={activeField} suggestions={autocompleteOptions?.hauliers ?? []} onFocus={handleFocus} onChange={(value) => set("src_haulier", value)} />
+              <FastInput label="Delivery note" name="src_delivery_note" value={form.src_delivery_note} activeField={activeField} duplicate={duplicateField === "src_delivery_note"} onFocus={handleFocus} onBlur={() => checkDuplicateOnBlur("src_delivery_note", form.src_delivery_note)} onChange={(value) => set("src_delivery_note", value)} />
+              <FastInput label="Mill number" name="src_mill_number" value={form.src_mill_number} activeField={activeField} duplicate={duplicateField === "src_mill_number"} onFocus={handleFocus} onBlur={() => checkDuplicateOnBlur("src_mill_number", form.src_mill_number)} onChange={(value) => set("src_mill_number", value)} />
+              <FastAutocomplete label="Mill" name="src_mill" value={form.src_mill} activeField={activeField} suggestions={autocompleteOptions?.mills ?? []} onFocus={handleFocus} onChange={(value) => set("src_mill", value)} />
+              <FastInput label="Gross mass (tons)" name="src_gross_mass" type="number" step="0.001" value={form.src_gross_mass} activeField={activeField} onFocus={handleFocus} onChange={(value) => set("src_gross_mass", value)} />
+              <FastInput label="Tare mass (tons)" name="src_tare_mass" type="number" step="0.001" value={form.src_tare_mass} activeField={activeField} onFocus={handleFocus} onChange={(value) => set("src_tare_mass", value)} />
+              <FastInput label="Net mass (tons, auto)" name="src_net_mass" type="number" step="0.001" value={isNaN(srcNet) ? "" : srcNet.toString()} activeField={activeField} onFocus={handleFocus} onChange={(value) => set("src_net_mass", value)} />
+              <FastInput label="Molasses temperature (°C)" name="src_molasses_temperature" type="number" step="0.01" value={form.src_molasses_temperature} activeField={activeField} onFocus={handleFocus} onChange={(value) => set("src_molasses_temperature", value)} />
+              <FastInput label="Sample number" name="src_sample_number" value={form.src_sample_number} activeField={activeField} duplicate={duplicateField === "src_sample_number"} onFocus={handleFocus} onBlur={() => checkDuplicateOnBlur("src_sample_number", form.src_sample_number)} onChange={(value) => set("src_sample_number", value)} />
+            </div>
+          </section>
+        )}
 
         <section className="rounded-lg border border-border bg-card p-4 shadow-sm fgc-section [&_.fast-control]:bg-green-100 [&_.fast-control]:text-slate-900 [&_.fast-control]:border-green-300 [&_.fast-control]:placeholder:text-slate-500 [&_.fast-control:focus-visible]:border-primary [&_input.fast-control]:[color-scheme:light]">
           <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-muted-foreground">FGC</h2>
