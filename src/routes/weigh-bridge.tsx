@@ -572,7 +572,7 @@ function WeighBridgeModePage() {
 
 function FastField({ label, name, activeField, children, className }: { label: string; name: string; activeField: string; children: React.ReactNode; className?: string }) {
   return (
-    <div className={cn("space-y-1.5 rounded-md border border-transparent p-1.5 transition-all", activeField === name && "border-primary bg-primary/8 shadow-[0_0_0_1px_var(--primary)]", className)}>
+    <div data-field-name={name} className={cn("space-y-1.5 rounded-md border border-transparent p-1.5 transition-all", activeField === name && "border-primary bg-primary/8 shadow-[0_0_0_1px_var(--primary)]", className)}>
       <Label className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">{label}</Label>
       {children}
     </div>
