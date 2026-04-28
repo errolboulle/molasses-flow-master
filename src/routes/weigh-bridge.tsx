@@ -126,6 +126,7 @@ function WeighBridgeModePage() {
       [key]: nextValue,
       ...(key === "src_vehicle_registration" ? { fgc_vehicle_registration: nextValue } : {}),
       ...(key === "src_haulier" ? { fgc_haulier: nextValue } : {}),
+      ...(key === "src_delivery_note" ? { fgc_consignment_note_number: nextValue } : {}),
     }));
   };
 
