@@ -84,7 +84,8 @@ function DamsPage() {
               </div>
             )}
           </Card>
-        ))}
+          );
+        })}
       </div>
 
       {editDam && (
