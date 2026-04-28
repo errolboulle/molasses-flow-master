@@ -24,6 +24,7 @@ export const Route = createFileRoute("/dams")({
 function DamsPage() {
   const { isAdmin } = useAuth();
   const { data: dams = [] } = useDams();
+  const { data: movements = [] } = useMovements();
   const { data: settings } = useSettings();
   const density = settings?.density_kg_per_l ?? 1.4;
   const [addOpen, setAddOpen] = useState(false);
