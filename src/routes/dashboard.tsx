@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { fmtTons, fmtLitres, fmtDateTime, tonsToLitres } from "@/lib/types";
 import { ArrowDownToLine, ArrowUpFromLine, BarChart3, Database, Droplet, Truck } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
+import { buildDamReportRows } from "@/lib/report-layout";
 import type { ReactNode } from "react";
 
 export const Route = createFileRoute("/dashboard")({
@@ -30,13 +31,15 @@ function DashboardPage() {
 
   const monthStart = periodStart("month");
   const damStats = dams.map((dam) => {
-    const monthMoves = movements.filter((m) => m.dam_id === dam.id && new Date(m.occurred_at) >= monthStart);
+    const damMoves = movements.filter((m) => m.dam_id === dam.id);
+    const reportNett = buildDamReportRows(dam, damMoves).closing;
+    const monthMoves = damMoves.filter((m) => new Date(m.occurred_at) >= monthStart);
     const totalIn = monthMoves.filter((m) => m.movement_type === "incoming").reduce((s, m) => s + Number(m.quantity_tons), 0);
     const totalOut = monthMoves.filter((m) => m.movement_type === "outgoing").reduce((s, m) => s + Number(m.quantity_tons), 0);
-    return { dam, totalIn, totalOut };
+    return { dam, totalIn, totalOut, reportNett };
   });
 
-  const totalCurrent = dams.reduce((s, d) => s + Number(d.current_volume_tons), 0);
+  const totalCurrent = damStats.reduce((s, d) => s + d.reportNett, 0);
   const totalIn = damStats.reduce((s, d) => s + d.totalIn, 0);
   const totalOut = damStats.reduce((s, d) => s + d.totalOut, 0);
 
@@ -76,9 +79,9 @@ function DashboardPage() {
             <SummaryCard label="Dispatched this month" value={fmtTons(totalOut)} icon={<ArrowUpFromLine className="h-5 w-5" />} accent="purple" />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-            {damStats.map(({ dam, totalIn, totalOut }) => {
+            {damStats.map(({ dam, totalIn, totalOut, reportNett }) => {
               const cap = Number(dam.capacity_tons ?? 0);
-              const cur = Number(dam.current_volume_tons);
+              const cur = reportNett;
               const pct = cap > 0 ? Math.min(100, (cur / cap) * 100) : 0;
               return (
                 <Card key={dam.id} className="p-5 bg-card/80 border-border hover:-translate-y-1 hover:border-primary/35" style={{ background: "var(--gradient-industrial)" }}>
