@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { fmtTons, fmtLitres, fmtDateTime, tonsToLitres } from "@/lib/types";
 import { ArrowDownToLine, ArrowUpFromLine, BarChart3, Database, Droplet, Truck } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
+import { buildDamReportRows } from "@/lib/report-layout";
 import type { ReactNode } from "react";
 
 export const Route = createFileRoute("/dashboard")({
