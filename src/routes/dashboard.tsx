@@ -79,9 +79,9 @@ function DashboardPage() {
             <SummaryCard label="Dispatched this month" value={fmtTons(totalOut)} icon={<ArrowUpFromLine className="h-5 w-5" />} accent="purple" />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-            {damStats.map(({ dam, totalIn, totalOut }) => {
+            {damStats.map(({ dam, totalIn, totalOut, reportNett }) => {
               const cap = Number(dam.capacity_tons ?? 0);
-              const cur = Number(dam.current_volume_tons);
+              const cur = reportNett;
               const pct = cap > 0 ? Math.min(100, (cur / cap) * 100) : 0;
               return (
                 <Card key={dam.id} className="p-5 bg-card/80 border-border hover:-translate-y-1 hover:border-primary/35" style={{ background: "var(--gradient-industrial)" }}>
