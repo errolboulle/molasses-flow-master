@@ -48,7 +48,12 @@ function DamsPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-        {dams.map((dam) => (
+        {dams.map((dam) => {
+          const damMoves = movements.filter((m) => m.dam_id === dam.id);
+          const reportNett = buildDamReportRows(dam, damMoves).closing;
+          const cap = Number(dam.capacity_tons ?? 0);
+          const pct = cap > 0 ? Math.min(100, (reportNett / cap) * 100) : 0;
+          return (
           <Card key={dam.id} className="p-5 hover:-translate-y-1 hover:border-primary/35">
             <div className="flex items-start justify-between mb-3">
               <div>
@@ -58,14 +63,14 @@ function DamsPage() {
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary"><Droplet className="h-5 w-5" /></div>
             </div>
             <div className="space-y-2 text-sm">
-              <Row label="Current" value={fmtTons(dam.current_volume_tons)} sub={fmtLitres(tonsToLitres(Number(dam.current_volume_tons), density))} />
+              <Row label="Current" value={fmtTons(reportNett)} sub={fmtLitres(tonsToLitres(reportNett, density))} />
               <Row label="Starting balance" value={fmtTons(dam.starting_balance_tons)} />
               <Row label="Capacity" value={dam.capacity_tons ? fmtTons(dam.capacity_tons) : "—"} />
             </div>
-            {dam.capacity_tons && Number(dam.capacity_tons) > 0 && (
+            {cap > 0 && (
               <div className="mt-4">
-                <div className="mb-1 flex justify-between text-xs text-muted-foreground"><span>Capacity used</span><span>{Math.min(100, (Number(dam.current_volume_tons) / Number(dam.capacity_tons)) * 100).toFixed(0)}%</span></div>
-                <Progress value={Math.min(100, (Number(dam.current_volume_tons) / Number(dam.capacity_tons)) * 100)} />
+                <div className="mb-1 flex justify-between text-xs text-muted-foreground"><span>Capacity used</span><span>{pct.toFixed(0)}%</span></div>
+                <Progress value={pct} />
               </div>
             )}
             {isAdmin && (
