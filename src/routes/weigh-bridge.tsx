@@ -243,7 +243,8 @@ function WeighBridgeModePage() {
   };
 
   const focusFieldByName = (name: string) => {
-    const element = formRef.current?.querySelector<HTMLElement>(`[data-field-name="${name}"]`);
+    const wrapper = formRef.current?.querySelector<HTMLElement>(`[data-field-name="${name}"]`);
+    const element = wrapper?.querySelector<HTMLElement>("input, select, textarea") ?? wrapper;
     if (element) {
       element.focus();
       if (element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement) element.select();
