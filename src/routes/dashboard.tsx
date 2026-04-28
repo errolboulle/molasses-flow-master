@@ -31,13 +31,15 @@ function DashboardPage() {
 
   const monthStart = periodStart("month");
   const damStats = dams.map((dam) => {
-    const monthMoves = movements.filter((m) => m.dam_id === dam.id && new Date(m.occurred_at) >= monthStart);
+    const damMoves = movements.filter((m) => m.dam_id === dam.id);
+    const reportNett = buildDamReportRows(dam, damMoves).closing;
+    const monthMoves = damMoves.filter((m) => new Date(m.occurred_at) >= monthStart);
     const totalIn = monthMoves.filter((m) => m.movement_type === "incoming").reduce((s, m) => s + Number(m.quantity_tons), 0);
     const totalOut = monthMoves.filter((m) => m.movement_type === "outgoing").reduce((s, m) => s + Number(m.quantity_tons), 0);
-    return { dam, totalIn, totalOut };
+    return { dam, totalIn, totalOut, reportNett };
   });
 
-  const totalCurrent = dams.reduce((s, d) => s + Number(d.current_volume_tons), 0);
+  const totalCurrent = damStats.reduce((s, d) => s + d.reportNett, 0);
   const totalIn = damStats.reduce((s, d) => s + d.totalIn, 0);
   const totalOut = damStats.reduce((s, d) => s + d.totalOut, 0);
 
