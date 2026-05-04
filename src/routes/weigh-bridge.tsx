@@ -543,7 +543,9 @@ function WeighBridgeModePage() {
             <FastInput label="Tare mass (tons)" name="fgc_tare_mass" type="number" step="0.001" value={form.fgc_tare_mass} activeField={activeField} onFocus={handleFocus} onChange={(value) => set("fgc_tare_mass", value)} />
             <FastInput label="Net mass (tons, auto)" name="fgc_net_mass_secondary" type="number" step="0.001" value={isNaN(fgcNet) ? "" : fgcNet.toString()} activeField={activeField} onFocus={handleFocus} onChange={(value) => set("fgc_net_mass", value)} />
             <FastInput label="Variance (Source − FGC)" name="fgc_variance" type="number" step="0.001" value={isNaN(variance) ? "" : variance.toString()} activeField={activeField} onFocus={handleFocus} readOnly />
-            <FastInput label="Brix" name="fgc_brix" type="number" step="0.01" value={form.fgc_brix} activeField={activeField} onFocus={handleFocus} onChange={(value) => set("fgc_brix", value)} />
+            {movementType === "incoming" && (
+              <FastInput label="Brix" name="fgc_brix" type="number" step="0.01" value={form.fgc_brix} activeField={activeField} onFocus={handleFocus} onChange={(value) => set("fgc_brix", value)} />
+            )}
             <FastField label="In/Out" name="fgc_in_out" activeField={activeField}>
               <select className="fast-control" value={form.fgc_in_out} onFocus={(event) => handleFocus(event, "fgc_in_out")} onChange={(event) => set("fgc_in_out", event.target.value)}>
                 <option value="In">In</option>
