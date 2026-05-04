@@ -551,7 +551,6 @@ function WeighBridgeModePage() {
               </select>
             </FastField>
             <FastAutocomplete label="ZSM operator" name="fgc_zsm_operator" value={form.fgc_zsm_operator} activeField={activeField} suggestions={autocompleteOptions?.zsmOperators ?? []} onFocus={handleFocus} onChange={(value) => set("fgc_zsm_operator", value)} />
-            <FastAutocomplete label="If Out — haulier" name="fgc_if_out_haulier" value={form.fgc_if_out_haulier} activeField={activeField} suggestions={autocompleteOptions?.ifOutHauliers ?? []} onFocus={handleFocus} onChange={(value) => set("fgc_if_out_haulier", value)} />
           </div>
         </section>
       </div>
