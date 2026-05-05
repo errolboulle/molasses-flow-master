@@ -188,8 +188,8 @@ function ScanPage() {
     title: string,
     subtitle: string,
     state: SlipState,
-    camRef: React.RefObject<HTMLInputElement>,
-    fileRef: React.RefObject<HTMLInputElement>,
+    camRef: React.RefObject<HTMLInputElement | null>,
+    fileRef: React.RefObject<HTMLInputElement | null>,
   ) => (
     <Card className="p-4">
       <div className="flex items-center justify-between mb-3">
