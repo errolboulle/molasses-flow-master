@@ -603,6 +603,25 @@ function WeighBridgeModePage() {
           {saving ? "Saving…" : "Enter · Save movement"}
         </Button>
       </div>
+
+      <AlertDialog open={!!pendingDuplicate} onOpenChange={(open) => { if (!open) denyDuplicate(); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Duplicate detected</AlertDialogTitle>
+            <AlertDialogDescription>
+              {pendingDuplicate?.message}
+              <br /><br />
+              Approve to save this movement anyway, or deny to discard it.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={denyDuplicate}>Deny</AlertDialogCancel>
+            <AlertDialogAction onClick={approveDuplicate} disabled={saving}>
+              {saving ? "Saving…" : "Approve & save"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </form>
   );
 }
