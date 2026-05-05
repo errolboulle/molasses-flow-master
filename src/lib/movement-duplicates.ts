@@ -2,15 +2,11 @@ import { supabase } from "@/integrations/supabase/client";
 
 export type DuplicateFieldName =
   | "src_delivery_note"
-  | "src_mill_number"
-  | "src_sample_number"
   | "fgc_consignment_note_number"
   | "fgc_zsm_weighbridge_number";
 
 export const duplicateFieldLabels: Record<DuplicateFieldName, string> = {
   src_delivery_note: "Delivery Note",
-  src_mill_number: "Mill Number",
-  src_sample_number: "Sample Number",
   fgc_consignment_note_number: "Consignment Note Number",
   fgc_zsm_weighbridge_number: "ZSM Weighbridge Number",
 };
