@@ -133,6 +133,7 @@ function ScanPage() {
         for (const k of Object.keys(ex || {})) if (ex[k] != null && ex[k] !== "") merged[k] = ex[k];
       }
       setFields(merged);
+      for (const k of DATE_KEYS) if (merged[k]) merged[k] = normalizeYmd(merged[k]);
       if (merged?.movement_type === "outgoing") setMovementType("outgoing");
       if (merged?.notes) setNotes(merged.notes);
       toast.success("Documents scanned. Please review every field before saving.");
