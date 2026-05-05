@@ -12,6 +12,7 @@ import { useDams } from "@/lib/queries";
 import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/integrations/supabase/client";
 import { parseExcelImport, findExistingDuplicates, type ParsedRow, type DuplicateInfo } from "@/lib/excel-import";
+import { forceInsertMovement } from "@/lib/movement-duplicates";
 import { fmtNum } from "@/lib/types";
 
 export const Route = createFileRoute("/import")({
