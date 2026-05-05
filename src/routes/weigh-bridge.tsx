@@ -12,7 +12,7 @@ import { SmartAutocompleteInput } from "@/components/smart-autocomplete-input";
 import { useAuth } from "@/lib/auth-context";
 import { useDams, useMovementAutocompleteOptions } from "@/lib/queries";
 import { cn } from "@/lib/utils";
-import { checkDuplicateMovementField, duplicateFieldFromDatabaseError, duplicateFieldLabels, extractDuplicateMessage, findDuplicateMovementReference, forceInsertMovement, formatDuplicateMessage, isDuplicateError, type DuplicateFieldName, type DuplicateMatch } from "@/lib/movement-duplicates";
+import { checkDuplicateMovementField, duplicateFieldFromDatabaseError, duplicateFieldLabels, extractDuplicateMessage, findDuplicateMovementReference, forceInsertMovement, formatDuplicateMessage, isDuplicateError, type DuplicateFieldName } from "@/lib/movement-duplicates";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { type Tables } from "@/integrations/supabase/types";
