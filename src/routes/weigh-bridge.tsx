@@ -12,7 +12,7 @@ import { SmartAutocompleteInput } from "@/components/smart-autocomplete-input";
 import { useAuth } from "@/lib/auth-context";
 import { useDams, useMovementAutocompleteOptions } from "@/lib/queries";
 import { cn } from "@/lib/utils";
-import { checkDuplicateMovementField, duplicateFieldFromDatabaseError, duplicateFieldLabels, findDuplicateMovementReference, type DuplicateFieldName } from "@/lib/movement-duplicates";
+import { checkDuplicateMovementField, duplicateFieldFromDatabaseError, duplicateFieldLabels, extractDuplicateMessage, findDuplicateMovementReference, formatDuplicateMessage, type DuplicateFieldName } from "@/lib/movement-duplicates";
 import { supabase } from "@/integrations/supabase/client";
 import { type Tables } from "@/integrations/supabase/types";
 
@@ -136,7 +136,7 @@ function WeighBridgeModePage() {
       const duplicate = await checkDuplicateMovementField(field, value);
       if (duplicate) {
         showDuplicateField(field);
-        toast.error(`Duplicate detected: ${duplicate.label} already exists`);
+        toast.error(formatDuplicateMessage(duplicate));
       }
     } catch (error) {
       console.error("Duplicate check failed:", error);
@@ -365,7 +365,7 @@ function WeighBridgeModePage() {
       const duplicate = await findDuplicateMovementReference(form);
       if (duplicate) {
         showDuplicateField(duplicate.field);
-        toast.error(`Duplicate detected: ${duplicate.label} already exists`);
+        toast.error(formatDuplicateMessage(duplicate));
         return;
       }
       const numOrNull = (value: string) => (value === "" ? null : parseFloat(value));
@@ -425,10 +425,11 @@ function WeighBridgeModePage() {
       window.requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: "smooth" }));
     } catch (error: any) {
       console.error("Weigh Bridge save failed:", error);
+      const dbDupMsg = extractDuplicateMessage(error);
       const duplicate = duplicateFieldFromDatabaseError(error);
-      if (duplicate) {
-        showDuplicateField(duplicate.field);
-        toast.error(`Duplicate detected: ${duplicate.label} already exists`);
+      if (duplicate || dbDupMsg) {
+        if (duplicate) showDuplicateField(duplicate.field);
+        toast.error(dbDupMsg ?? `Duplicate ${duplicate!.label}`);
         return;
       }
       toast.error(error?.message ?? "Failed to save movement");
