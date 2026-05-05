@@ -363,81 +363,110 @@ function WeighBridgeModePage() {
     }
 
     setSaving(true);
+    const numOrNull = (value: string) => (value === "" ? null : parseFloat(value));
+    const strOrNull = (value: string) => (value.trim() === "" ? null : value.trim());
+    const payload = {
+      dam_id: form.dam_id,
+      movement_type: movementType,
+      occurred_at: new Date().toISOString(),
+      quantity_tons: fgcNet,
+      driver_or_company: strOrNull(form.driver_or_company),
+      notes: strOrNull(form.notes),
+      created_by: user.id,
+      src_date_of_departure: strOrNull(form.src_date_of_departure),
+      src_time: strOrNull(form.src_time),
+      src_vehicle_registration: strOrNull(form.src_vehicle_registration),
+      src_haulier: strOrNull(form.src_haulier),
+      src_delivery_note: strOrNull(form.src_delivery_note),
+      src_mill_number: strOrNull(form.src_mill_number),
+      src_mill: strOrNull(form.src_mill),
+      src_gross_mass: numOrNull(form.src_gross_mass),
+      src_tare_mass: numOrNull(form.src_tare_mass),
+      src_net_mass: !isNaN(srcNet) ? srcNet : null,
+      src_molasses_temperature: numOrNull(form.src_molasses_temperature),
+      src_sample_number: strOrNull(form.src_sample_number),
+      fgc_date_of_arrival: strOrNull(form.fgc_date_of_arrival),
+      fgc_time: strOrNull(form.fgc_time),
+      fgc_vehicle_registration: strOrNull(form.fgc_vehicle_registration),
+      fgc_haulier: strOrNull(form.fgc_haulier),
+      fgc_consignment_note_number: strOrNull(form.fgc_consignment_note_number),
+      fgc_zsm_weighbridge_number: strOrNull(form.fgc_zsm_weighbridge_number),
+      fgc_gross_mass: numOrNull(form.fgc_gross_mass),
+      fgc_tare_mass: numOrNull(form.fgc_tare_mass),
+      fgc_net_mass: fgcNet,
+      fgc_variance: !isNaN(variance) ? variance : null,
+      fgc_brix: numOrNull(form.fgc_brix),
+      fgc_in_out: strOrNull(form.fgc_in_out),
+      fgc_zsm_operator: strOrNull(form.fgc_zsm_operator),
+      fgc_if_out_haulier: strOrNull(form.fgc_if_out_haulier),
+      fgc_in: movementType === "incoming" ? fgcNet : null,
+      fgc_out: movementType === "outgoing" ? fgcNet : null,
+      fgc_net: fgcNet,
+    };
+
     try {
       const duplicate = await findDuplicateMovementReference(form);
       if (duplicate) {
-        showDuplicateField(duplicate.field);
-        toast.error(formatDuplicateMessage(duplicate));
+        setPendingDuplicate({ message: formatDuplicateMessage(duplicate), payload });
+        setSaving(false);
         return;
       }
-      const numOrNull = (value: string) => (value === "" ? null : parseFloat(value));
-      const strOrNull = (value: string) => (value.trim() === "" ? null : value.trim());
-      const payload = {
-        dam_id: form.dam_id,
-        movement_type: movementType,
-        occurred_at: new Date().toISOString(),
-        quantity_tons: fgcNet,
-        driver_or_company: strOrNull(form.driver_or_company),
-        notes: strOrNull(form.notes),
-        created_by: user.id,
-        src_date_of_departure: strOrNull(form.src_date_of_departure),
-        src_time: strOrNull(form.src_time),
-        src_vehicle_registration: strOrNull(form.src_vehicle_registration),
-        src_haulier: strOrNull(form.src_haulier),
-        src_delivery_note: strOrNull(form.src_delivery_note),
-        src_mill_number: strOrNull(form.src_mill_number),
-        src_mill: strOrNull(form.src_mill),
-        src_gross_mass: numOrNull(form.src_gross_mass),
-        src_tare_mass: numOrNull(form.src_tare_mass),
-        src_net_mass: !isNaN(srcNet) ? srcNet : null,
-        src_molasses_temperature: numOrNull(form.src_molasses_temperature),
-        src_sample_number: strOrNull(form.src_sample_number),
-        fgc_date_of_arrival: strOrNull(form.fgc_date_of_arrival),
-        fgc_time: strOrNull(form.fgc_time),
-        fgc_vehicle_registration: strOrNull(form.fgc_vehicle_registration),
-        fgc_haulier: strOrNull(form.fgc_haulier),
-        fgc_consignment_note_number: strOrNull(form.fgc_consignment_note_number),
-        fgc_zsm_weighbridge_number: strOrNull(form.fgc_zsm_weighbridge_number),
-        fgc_gross_mass: numOrNull(form.fgc_gross_mass),
-        fgc_tare_mass: numOrNull(form.fgc_tare_mass),
-        fgc_net_mass: fgcNet,
-        fgc_variance: !isNaN(variance) ? variance : null,
-        fgc_brix: numOrNull(form.fgc_brix),
-        fgc_in_out: strOrNull(form.fgc_in_out),
-        fgc_zsm_operator: strOrNull(form.fgc_zsm_operator),
-        fgc_if_out_haulier: strOrNull(form.fgc_if_out_haulier),
-        fgc_in: movementType === "incoming" ? fgcNet : null,
-        fgc_out: movementType === "outgoing" ? fgcNet : null,
-        fgc_net: fgcNet,
-      };
 
       const { error } = await supabase.from("movements").insert(payload);
       if (error) throw error;
 
-      persistDefaults();
-      await Promise.all([
-        qc.invalidateQueries({ queryKey: ["movements"] }),
-        qc.invalidateQueries({ queryKey: ["dams"] }),
-        qc.invalidateQueries({ queryKey: ["settings"] }),
-      ]);
-      toast.success("Movement saved — ready for next truck");
-      setSavedPulse(true);
-      window.setTimeout(() => setSavedPulse(false), 1200);
-      resetForNextTruck();
-      window.requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: "smooth" }));
+      await finishSave();
     } catch (error: any) {
       console.error("Weigh Bridge save failed:", error);
       const dbDupMsg = extractDuplicateMessage(error);
+      if (isDuplicateError(error)) {
+        setPendingDuplicate({ message: dbDupMsg ?? "Duplicate detected", payload });
+        return;
+      }
       const duplicate = duplicateFieldFromDatabaseError(error);
-      if (duplicate || dbDupMsg) {
-        if (duplicate) showDuplicateField(duplicate.field);
-        toast.error(dbDupMsg ?? `Duplicate ${duplicate!.label}`);
+      if (duplicate) {
+        showDuplicateField(duplicate.field);
+        toast.error(`Duplicate ${duplicate.label}`);
         return;
       }
       toast.error(error?.message ?? "Failed to save movement");
     } finally {
       setSaving(false);
     }
+  };
+
+  const finishSave = async () => {
+    persistDefaults();
+    await Promise.all([
+      qc.invalidateQueries({ queryKey: ["movements"] }),
+      qc.invalidateQueries({ queryKey: ["dams"] }),
+      qc.invalidateQueries({ queryKey: ["settings"] }),
+    ]);
+    toast.success("Movement saved — ready for next truck");
+    setSavedPulse(true);
+    window.setTimeout(() => setSavedPulse(false), 1200);
+    resetForNextTruck();
+    window.requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: "smooth" }));
+  };
+
+  const approveDuplicate = async () => {
+    if (!pendingDuplicate) return;
+    setSaving(true);
+    try {
+      await forceInsertMovement(pendingDuplicate.payload);
+      setPendingDuplicate(null);
+      await finishSave();
+    } catch (error: any) {
+      console.error("Force insert failed:", error);
+      toast.error(error?.message ?? "Failed to save movement");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const denyDuplicate = () => {
+    setPendingDuplicate(null);
+    toast.info("Movement was not saved");
   };
 
   if (!canEntry) {
