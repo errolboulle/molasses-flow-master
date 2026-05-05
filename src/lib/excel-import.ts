@@ -103,9 +103,9 @@ const toDateStr = (v: unknown): string | null => {
 const toTimeStr = (v: unknown): string | null => {
   if (v == null || v === "") return null;
   if (v instanceof Date) {
-    const h = String(v.getHours()).padStart(2, "0");
-    const m = String(v.getMinutes()).padStart(2, "0");
-    const s = String(v.getSeconds()).padStart(2, "0");
+    const h = String(v.getUTCHours()).padStart(2, "0");
+    const m = String(v.getUTCMinutes()).padStart(2, "0");
+    const s = String(v.getUTCSeconds()).padStart(2, "0");
     return `${h}:${m}:${s}`;
   }
   if (typeof v === "number" && v >= 0 && v < 1) {
