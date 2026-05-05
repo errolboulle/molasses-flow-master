@@ -272,6 +272,7 @@ export type Database = {
           notes: string | null
           occurred_at: string
           quantity_tons: number
+          scanned_document_url: string | null
           src_date_of_departure: string | null
           src_delivery_note: string | null
           src_gross_mass: number | null
@@ -312,6 +313,7 @@ export type Database = {
           notes?: string | null
           occurred_at?: string
           quantity_tons: number
+          scanned_document_url?: string | null
           src_date_of_departure?: string | null
           src_delivery_note?: string | null
           src_gross_mass?: number | null
@@ -352,6 +354,7 @@ export type Database = {
           notes?: string | null
           occurred_at?: string
           quantity_tons?: number
+          scanned_document_url?: string | null
           src_date_of_departure?: string | null
           src_delivery_note?: string | null
           src_gross_mass?: number | null
@@ -699,6 +702,7 @@ export type Database = {
           notes: string | null
           occurred_at: string
           quantity_tons: number
+          scanned_document_url: string | null
           src_date_of_departure: string | null
           src_delivery_note: string | null
           src_gross_mass: number | null

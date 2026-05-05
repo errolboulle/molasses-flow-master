@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as WeighBridgeRouteImport } from './routes/weigh-bridge'
 import { Route as UsersRouteImport } from './routes/users'
 import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as ScanRouteImport } from './routes/scan'
 import { Route as ReportsRouteImport } from './routes/reports'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as InsightsRouteImport } from './routes/insights'
@@ -51,6 +52,11 @@ const UsersRoute = UsersRouteImport.update({
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ScanRoute = ScanRouteImport.update({
+  id: '/scan',
+  path: '/scan',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ReportsRoute = ReportsRouteImport.update({
@@ -190,6 +196,7 @@ export interface FileRoutesByFullPath {
   '/insights': typeof InsightsRoute
   '/onboarding': typeof OnboardingRoute
   '/reports': typeof ReportsRouteWithChildren
+  '/scan': typeof ScanRoute
   '/settings': typeof SettingsRoute
   '/users': typeof UsersRoute
   '/weigh-bridge': typeof WeighBridgeRoute
@@ -220,6 +227,7 @@ export interface FileRoutesByTo {
   '/insights': typeof InsightsRoute
   '/onboarding': typeof OnboardingRoute
   '/reports': typeof ReportsRouteWithChildren
+  '/scan': typeof ScanRoute
   '/settings': typeof SettingsRoute
   '/users': typeof UsersRoute
   '/weigh-bridge': typeof WeighBridgeRoute
@@ -251,6 +259,7 @@ export interface FileRoutesById {
   '/insights': typeof InsightsRoute
   '/onboarding': typeof OnboardingRoute
   '/reports': typeof ReportsRouteWithChildren
+  '/scan': typeof ScanRoute
   '/settings': typeof SettingsRoute
   '/users': typeof UsersRoute
   '/weigh-bridge': typeof WeighBridgeRoute
@@ -283,6 +292,7 @@ export interface FileRouteTypes {
     | '/insights'
     | '/onboarding'
     | '/reports'
+    | '/scan'
     | '/settings'
     | '/users'
     | '/weigh-bridge'
@@ -313,6 +323,7 @@ export interface FileRouteTypes {
     | '/insights'
     | '/onboarding'
     | '/reports'
+    | '/scan'
     | '/settings'
     | '/users'
     | '/weigh-bridge'
@@ -343,6 +354,7 @@ export interface FileRouteTypes {
     | '/insights'
     | '/onboarding'
     | '/reports'
+    | '/scan'
     | '/settings'
     | '/users'
     | '/weigh-bridge'
@@ -374,6 +386,7 @@ export interface RootRouteChildren {
   InsightsRoute: typeof InsightsRoute
   OnboardingRoute: typeof OnboardingRoute
   ReportsRoute: typeof ReportsRouteWithChildren
+  ScanRoute: typeof ScanRoute
   SettingsRoute: typeof SettingsRoute
   UsersRoute: typeof UsersRoute
   WeighBridgeRoute: typeof WeighBridgeRoute
@@ -409,6 +422,13 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/scan': {
+      id: '/scan'
+      path: '/scan'
+      fullPath: '/scan'
+      preLoaderRoute: typeof ScanRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/reports': {
@@ -660,6 +680,7 @@ const rootRouteChildren: RootRouteChildren = {
   InsightsRoute: InsightsRoute,
   OnboardingRoute: OnboardingRoute,
   ReportsRoute: ReportsRouteWithChildren,
+  ScanRoute: ScanRoute,
   SettingsRoute: SettingsRoute,
   UsersRoute: UsersRoute,
   WeighBridgeRoute: WeighBridgeRoute,
