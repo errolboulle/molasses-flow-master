@@ -670,6 +670,55 @@ export type Database = {
         }
         Returns: boolean
       }
+      insert_movement_force: {
+        Args: { payload: Json }
+        Returns: {
+          created_at: string
+          created_by: string | null
+          dam_id: string
+          driver_or_company: string | null
+          fgc_brix: number | null
+          fgc_consignment_note_number: string | null
+          fgc_date_of_arrival: string | null
+          fgc_gross_mass: number | null
+          fgc_haulier: string | null
+          fgc_if_out_haulier: string | null
+          fgc_in: number | null
+          fgc_in_out: string | null
+          fgc_net: number | null
+          fgc_net_mass: number | null
+          fgc_out: number | null
+          fgc_tare_mass: number | null
+          fgc_time: string | null
+          fgc_variance: number | null
+          fgc_vehicle_registration: string | null
+          fgc_zsm_operator: string | null
+          fgc_zsm_weighbridge_number: string | null
+          id: string
+          movement_type: string
+          notes: string | null
+          occurred_at: string
+          quantity_tons: number
+          src_date_of_departure: string | null
+          src_delivery_note: string | null
+          src_gross_mass: number | null
+          src_haulier: string | null
+          src_mill: string | null
+          src_mill_number: string | null
+          src_molasses_temperature: number | null
+          src_net_mass: number | null
+          src_sample_number: string | null
+          src_tare_mass: number | null
+          src_time: string | null
+          src_vehicle_registration: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "movements"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       is_active: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
