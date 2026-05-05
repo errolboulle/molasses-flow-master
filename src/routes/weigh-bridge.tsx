@@ -94,6 +94,7 @@ function WeighBridgeModePage() {
   const [duplicateField, setDuplicateField] = useState<DuplicateFieldName | null>(null);
   const [damSearch, setDamSearch] = useState("");
   const [truckSearch, setTruckSearch] = useState("");
+  const [pendingDuplicate, setPendingDuplicate] = useState<{ message: string; payload: Record<string, any> } | null>(null);
 
   useEffect(() => {
     const saved = window.localStorage.getItem(STORAGE_KEY);
