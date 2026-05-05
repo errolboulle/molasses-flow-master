@@ -19,7 +19,7 @@ export const Route = createFileRoute("/import")({
 });
 
 async function fetchAllMovementRefs() {
-  const cols = "src_delivery_note,src_mill_number,src_sample_number,fgc_consignment_note_number,fgc_zsm_weighbridge_number";
+  const cols = "src_delivery_note,fgc_consignment_note_number,fgc_zsm_weighbridge_number";
   const pageSize = 1000;
   let from = 0;
   const all: any[] = [];
