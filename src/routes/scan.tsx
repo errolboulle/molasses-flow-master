@@ -24,6 +24,7 @@ export const Route = createFileRoute("/scan")({
 });
 
 type ExtractedFields = Record<string, any>;
+type SlipKind = "mill" | "fgc";
 
 const FIELDS: { key: string; label: string; type: "text" | "number" | "date" | "time" }[] = [
   { key: "src_date_of_departure", label: "SRC Date of departure", type: "date" },
@@ -62,16 +63,21 @@ function fileToBase64(file: File): Promise<string> {
   });
 }
 
+type SlipState = { file: File | null; previewUrl: string | null; isPdf: boolean };
+const emptySlip: SlipState = { file: null, previewUrl: null, isPdf: false };
+
 function ScanPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { data: dams = [] } = useDams();
-  const fileRef = useRef<HTMLInputElement>(null);
-  const cameraRef = useRef<HTMLInputElement>(null);
 
-  const [file, setFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [isPdf, setIsPdf] = useState(false);
+  const millCamRef = useRef<HTMLInputElement>(null);
+  const millFileRef = useRef<HTMLInputElement>(null);
+  const fgcCamRef = useRef<HTMLInputElement>(null);
+  const fgcFileRef = useRef<HTMLInputElement>(null);
+
+  const [mill, setMill] = useState<SlipState>(emptySlip);
+  const [fgc, setFgc] = useState<SlipState>(emptySlip);
   const [extracting, setExtracting] = useState(false);
   const [saving, setSaving] = useState(false);
   const [fields, setFields] = useState<ExtractedFields | null>(null);
@@ -79,27 +85,42 @@ function ScanPage() {
   const [damId, setDamId] = useState("");
   const [notes, setNotes] = useState("");
 
-  const handleFile = async (f: File) => {
-    setFile(f);
-    setIsPdf(f.type === "application/pdf");
-    setPreviewUrl(URL.createObjectURL(f));
+  const setSlip = (which: SlipKind, f: File) => {
+    const state: SlipState = { file: f, previewUrl: URL.createObjectURL(f), isPdf: f.type === "application/pdf" };
+    if (which === "mill") setMill(state); else setFgc(state);
     setFields(null);
   };
 
+  const clearSlip = (which: SlipKind) => {
+    if (which === "mill") setMill(emptySlip); else setFgc(emptySlip);
+  };
+
+  const hasAny = !!(mill.file || fgc.file);
+
   const handleExtract = async () => {
-    if (!file) return;
-    if (file.type === "application/pdf") {
-      toast.error("PDF detected — OCR works best on images. Please upload a photo/screenshot of the page.");
+    if (!hasAny) return;
+    if (mill.isPdf || fgc.isPdf) {
+      toast.error("PDF detected — OCR works best on images. Please upload photos/screenshots.");
       return;
     }
     setExtracting(true);
     try {
-      const b64 = await fileToBase64(file);
-      const { fields: extracted } = await extractScannedDocument({ data: { imageBase64: b64, mimeType: file.type } });
-      setFields(extracted || {});
-      if (extracted?.movement_type === "outgoing") setMovementType("outgoing");
-      if (extracted?.notes) setNotes(extracted.notes);
-      toast.success("Document scanned. Please review every field before saving.");
+      const merged: ExtractedFields = {};
+      if (mill.file) {
+        const b64 = await fileToBase64(mill.file);
+        const { fields: ex } = await extractScannedDocument({ data: { imageBase64: b64, mimeType: mill.file.type, slipType: "mill" } });
+        for (const k of Object.keys(ex || {})) if (ex[k] != null && ex[k] !== "") merged[k] = ex[k];
+      }
+      if (fgc.file) {
+        const b64 = await fileToBase64(fgc.file);
+        const { fields: ex } = await extractScannedDocument({ data: { imageBase64: b64, mimeType: fgc.file.type, slipType: "fgc" } });
+        // FGC values take priority for fgc_* fields; non-empty wins
+        for (const k of Object.keys(ex || {})) if (ex[k] != null && ex[k] !== "") merged[k] = ex[k];
+      }
+      setFields(merged);
+      if (merged?.movement_type === "outgoing") setMovementType("outgoing");
+      if (merged?.notes) setNotes(merged.notes);
+      toast.success("Documents scanned. Please review every field before saving.");
     } catch (e: any) {
       toast.error(e?.message || "Could not extract document");
     } finally {
@@ -116,21 +137,19 @@ function ScanPage() {
     if (!qty || qty <= 0) { toast.error("FGC Net mass is required and must be > 0"); return; }
     setSaving(true);
     try {
-      // upload image
+      // Upload first available slip image (prefer FGC, fall back to mill)
       let scanUrl: string | null = null;
-      if (file) {
-        const path = `${user?.id || "anon"}/${Date.now()}-${file.name}`.replace(/\s+/g, "_");
-        const { error: upErr } = await supabase.storage.from("scanned-documents").upload(path, file, { upsert: false });
+      const uploadFile = fgc.file || mill.file;
+      if (uploadFile) {
+        const path = `${user?.id || "anon"}/${Date.now()}-${uploadFile.name}`.replace(/\s+/g, "_");
+        const { error: upErr } = await supabase.storage.from("scanned-documents").upload(path, uploadFile, { upsert: false });
         if (upErr) throw upErr;
         scanUrl = path;
       }
 
-      // Only include known movement columns from the extracted fields
       const allowedFromFields = new Set(FIELDS.map((f) => f.key));
       const cleanFields: Record<string, any> = {};
-      for (const k of Object.keys(fields)) {
-        if (allowedFromFields.has(k)) cleanFields[k] = fields[k];
-      }
+      for (const k of Object.keys(fields)) if (allowedFromFields.has(k)) cleanFields[k] = fields[k];
 
       const payload: Record<string, any> = {
         ...cleanFields,
@@ -142,10 +161,8 @@ function ScanPage() {
         fgc_in_out: movementType === "incoming" ? "In" : "Out",
         scanned_document_url: scanUrl,
       };
-      // strip empty strings
       for (const k of Object.keys(payload)) if (payload[k] === "") payload[k] = null;
 
-      // duplicate check
       const stringForm: Record<string, string> = {};
       for (const k of Object.keys(payload)) stringForm[k] = payload[k] == null ? "" : String(payload[k]);
       const dup = await findDuplicateMovementReference(stringForm);
@@ -166,61 +183,103 @@ function ScanPage() {
     }
   };
 
+  const renderSlipCard = (
+    which: SlipKind,
+    title: string,
+    subtitle: string,
+    state: SlipState,
+    camRef: React.RefObject<HTMLInputElement>,
+    fileRef: React.RefObject<HTMLInputElement>,
+  ) => (
+    <Card className="p-4">
+      <div className="flex items-center justify-between mb-3">
+        <div>
+          <h3 className="font-semibold text-sm">{title}</h3>
+          <p className="text-xs text-muted-foreground">{subtitle}</p>
+        </div>
+        {state.file && <Badge variant="outline">Ready</Badge>}
+      </div>
+      <input ref={camRef} type="file" accept="image/*" capture="environment" hidden onChange={(e) => e.target.files?.[0] && setSlip(which, e.target.files[0])} />
+      <input ref={fileRef} type="file" accept="image/*,application/pdf" hidden onChange={(e) => e.target.files?.[0] && setSlip(which, e.target.files[0])} />
+      {!state.previewUrl ? (
+        <div className="flex flex-col items-center gap-3 py-8 border border-dashed rounded-lg">
+          <p className="text-xs text-muted-foreground">No photo yet</p>
+          <div className="flex gap-2">
+            <Button size="sm" onClick={() => camRef.current?.click()}><Camera className="h-4 w-4" /> Take photo</Button>
+            <Button size="sm" variant="outline" onClick={() => fileRef.current?.click()}><Upload className="h-4 w-4" /> Upload</Button>
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          <div className="rounded-lg overflow-hidden border bg-muted/30 max-h-[40vh] flex items-center justify-center">
+            {state.isPdf ? (
+              <div className="flex items-center gap-2 p-8 text-muted-foreground"><FileText className="h-6 w-6" /> {state.file?.name}</div>
+            ) : (
+              <img src={state.previewUrl} alt={`${title} preview`} className="max-h-[40vh] object-contain" />
+            )}
+          </div>
+          <div className="flex justify-end">
+            <Button size="sm" variant="outline" onClick={() => clearSlip(which)}>Replace</Button>
+          </div>
+        </div>
+      )}
+    </Card>
+  );
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
         <ScanLine className="h-7 w-7 text-primary" />
         <div>
           <h1 className="text-2xl font-bold">Scan Document</h1>
-          <p className="text-sm text-muted-foreground">Upload or photograph a delivery / weighbridge document. Review every field before saving.</p>
+          <p className="text-sm text-muted-foreground">Scan the Mill slip and the FGC weighbridge slip. You can upload either or both — fields from each will be merged for review.</p>
         </div>
       </div>
 
       {!fields && (
-        <Card className="p-6">
-          {!previewUrl ? (
-            <div className="flex flex-col items-center gap-4 py-10">
-              <p className="text-sm text-muted-foreground">Take a photo or upload an image / PDF</p>
-              <div className="flex flex-wrap gap-3 justify-center">
-                <input ref={cameraRef} type="file" accept="image/*" capture="environment" hidden onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])} />
-                <input ref={fileRef} type="file" accept="image/*,application/pdf" hidden onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])} />
-                <Button onClick={() => cameraRef.current?.click()}><Camera className="h-4 w-4" /> Take photo</Button>
-                <Button variant="outline" onClick={() => fileRef.current?.click()}><Upload className="h-4 w-4" /> Upload file</Button>
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <div className="rounded-lg overflow-hidden border bg-muted/30 max-h-[60vh] flex items-center justify-center">
-                {isPdf ? (
-                  <div className="flex items-center gap-2 p-10 text-muted-foreground"><FileText className="h-8 w-8" /> {file?.name}</div>
-                ) : (
-                  <img src={previewUrl} alt="Scan preview" className="max-h-[60vh] object-contain" />
-                )}
-              </div>
-              <div className="flex gap-2 justify-end">
-                <Button variant="outline" onClick={() => { setFile(null); setPreviewUrl(null); }}>Change file</Button>
-                <Button onClick={handleExtract} disabled={extracting}>
-                  {extracting ? <><Loader2 className="h-4 w-4 animate-spin" /> Extracting…</> : <>Extract data</>}
-                </Button>
-              </div>
-            </div>
-          )}
-        </Card>
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {renderSlipCard("mill", "Mill slip (SRC)", "Source mill / departure document", mill, millCamRef, millFileRef)}
+            {renderSlipCard("fgc", "FGC slip", "FGC weighbridge / arrival document", fgc, fgcCamRef, fgcFileRef)}
+          </div>
+          <div className="flex justify-end">
+            <Button onClick={handleExtract} disabled={!hasAny || extracting}>
+              {extracting ? <><Loader2 className="h-4 w-4 animate-spin" /> Extracting…</> : <>Extract data from {mill.file && fgc.file ? "both slips" : "slip"}</>}
+            </Button>
+          </div>
+        </>
       )}
 
       {fields && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card className="p-4 lg:sticky lg:top-4 self-start">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="font-semibold text-sm">Original document</h3>
-              <Badge variant="outline">Reference only</Badge>
-            </div>
-            {previewUrl && !isPdf ? (
-              <img src={previewUrl} alt="Scan" className="w-full rounded-lg border max-h-[75vh] object-contain bg-muted/30" />
-            ) : (
-              <div className="p-10 text-center text-muted-foreground"><FileText className="h-8 w-8 mx-auto mb-2" /> {file?.name}</div>
+          <div className="space-y-4 lg:sticky lg:top-4 self-start">
+            {mill.file && (
+              <Card className="p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="font-semibold text-sm">Mill slip</h3>
+                  <Badge variant="outline">Reference</Badge>
+                </div>
+                {mill.previewUrl && !mill.isPdf ? (
+                  <img src={mill.previewUrl} alt="Mill slip" className="w-full rounded-lg border max-h-[40vh] object-contain bg-muted/30" />
+                ) : (
+                  <div className="p-6 text-center text-muted-foreground"><FileText className="h-6 w-6 mx-auto mb-2" /> {mill.file?.name}</div>
+                )}
+              </Card>
             )}
-          </Card>
+            {fgc.file && (
+              <Card className="p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="font-semibold text-sm">FGC slip</h3>
+                  <Badge variant="outline">Reference</Badge>
+                </div>
+                {fgc.previewUrl && !fgc.isPdf ? (
+                  <img src={fgc.previewUrl} alt="FGC slip" className="w-full rounded-lg border max-h-[40vh] object-contain bg-muted/30" />
+                ) : (
+                  <div className="p-6 text-center text-muted-foreground"><FileText className="h-6 w-6 mx-auto mb-2" /> {fgc.file?.name}</div>
+                )}
+              </Card>
+            )}
+          </div>
 
           <Card className="p-4">
             <div className="flex items-center justify-between mb-3">
@@ -275,8 +334,8 @@ function ScanPage() {
             </div>
 
             <div className="flex gap-2 justify-end mt-5 pt-4 border-t">
-              <Button variant="outline" onClick={() => { setFields(null); setFile(null); setPreviewUrl(null); }} disabled={saving}>
-                <X className="h-4 w-4" /> Cancel
+              <Button variant="outline" onClick={() => { setFields(null); }} disabled={saving}>
+                <X className="h-4 w-4" /> Back
               </Button>
               <Button onClick={handleSave} disabled={saving}>
                 {saving ? <><Loader2 className="h-4 w-4 animate-spin" /> Saving…</> : <><Check className="h-4 w-4" /> Confirm & Save</>}
