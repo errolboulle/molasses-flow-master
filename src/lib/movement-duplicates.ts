@@ -88,3 +88,15 @@ export function extractDuplicateMessage(error: any): string | null {
   if (msg.startsWith("Duplicate detected:")) return msg.replace(/^Duplicate detected:\s*/, "Duplicate ");
   return null;
 }
+
+export function isDuplicateError(error: any): boolean {
+  const msg = String(error?.message ?? "");
+  return msg.startsWith("Duplicate detected:");
+}
+
+/** Insert a movement bypassing the duplicate-check trigger (user approved). */
+export async function forceInsertMovement(payload: Record<string, any>) {
+  const { data, error } = await (supabase.rpc as any)("insert_movement_force", { payload });
+  if (error) throw error;
+  return data;
+}
