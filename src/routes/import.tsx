@@ -18,11 +18,32 @@ export const Route = createFileRoute("/import")({
   component: () => <ProtectedLayout><ImportPage /></ProtectedLayout>,
 });
 
+async function fetchAllMovementRefs() {
+  const cols = "src_delivery_note,src_mill_number,src_sample_number,fgc_consignment_note_number,fgc_zsm_weighbridge_number";
+  const pageSize = 1000;
+  let from = 0;
+  const all: any[] = [];
+  // Loop pages until fewer than pageSize rows are returned
+  // Supabase caps at 1000 per request — paginate explicitly to cover all rows
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    const { data, error } = await supabase
+      .from("movements")
+      .select(cols)
+      .range(from, from + pageSize - 1);
+    if (error) throw error;
+    if (!data || data.length === 0) break;
+    all.push(...data);
+    if (data.length < pageSize) break;
+    from += pageSize;
+  }
+  return all;
+}
+
 function ImportPage() {
   const { user } = useAuth();
   const qc = useQueryClient();
   const { data: dams = [] } = useDams();
-  const { data: movements = [] } = useMovements();
   const fileRef = useRef<HTMLInputElement>(null);
   const [parsing, setParsing] = useState(false);
   const [importing, setImporting] = useState(false);
@@ -39,7 +60,8 @@ function ImportPage() {
     try {
       const buf = await file.arrayBuffer();
       const { rows: parsed, warnings: w } = parseExcelImport(buf, dams);
-      const d = findExistingDuplicates(parsed, movements);
+      const existing = await fetchAllMovementRefs();
+      const d = findExistingDuplicates(parsed, existing);
       setRows(parsed);
       setWarnings(w);
       setDupes(d);
