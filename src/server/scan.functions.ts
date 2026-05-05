@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 
-type ExtractInput = { imageBase64: string; mimeType: string };
+type SlipType = "mill" | "fgc" | "any";
+type ExtractInput = { imageBase64: string; mimeType: string; slipType?: SlipType };
 
 const SYSTEM_PROMPT = `You extract weighbridge / delivery document data from a scanned image.
 Return ONLY valid JSON matching this schema (use null for unknown):
@@ -53,7 +54,15 @@ export const extractScannedDocument = createServerFn({ method: "POST" })
           {
             role: "user",
             content: [
-              { type: "text", text: "Extract structured fields from this document. Respond with JSON only." },
+              {
+                type: "text",
+                text:
+                  data.slipType === "mill"
+                    ? "This is a SOURCE MILL slip. Only fill src_* fields (and movement_type / driver if visible). Leave fgc_* fields as null. Respond with JSON only."
+                    : data.slipType === "fgc"
+                    ? "This is an FGC weighbridge slip. Only fill fgc_* fields (and movement_type / driver if visible). Leave src_* fields as null. Respond with JSON only."
+                    : "Extract structured fields from this document. Respond with JSON only.",
+              },
               { type: "image_url", image_url: { url: `data:${data.mimeType};base64,${data.imageBase64}` } },
             ],
           },
