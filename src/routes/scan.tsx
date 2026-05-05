@@ -63,6 +63,21 @@ function fileToBase64(file: File): Promise<string> {
   });
 }
 
+// Slips print dates as YEAR-MONTH-DAY. Normalize any reasonable variant to ISO YYYY-MM-DD.
+function normalizeYmd(v: any): string {
+  if (v == null || v === "") return "";
+  const s = String(v).trim();
+  const m = s.match(/^(\d{2}|\d{4})[\/\-.](\d{1,2})[\/\-.](\d{1,2})/);
+  if (!m) return s;
+  let [, y, mo, d] = m;
+  if (y.length === 2) y = "20" + y;
+  const mm = mo.padStart(2, "0");
+  const dd = d.padStart(2, "0");
+  return `${y}-${mm}-${dd}`;
+}
+
+const DATE_KEYS = ["src_date_of_departure", "fgc_date_of_arrival"];
+
 type SlipState = { file: File | null; previewUrl: string | null; isPdf: boolean };
 const emptySlip: SlipState = { file: null, previewUrl: null, isPdf: false };
 
