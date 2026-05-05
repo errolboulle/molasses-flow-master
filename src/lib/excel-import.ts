@@ -218,8 +218,6 @@ export function parseExcelImport(buf: ArrayBuffer, dams: Dam[]): ParseResult {
 
 const DUP_FIELDS = [
   "src_delivery_note",
-  "src_mill_number",
-  "src_sample_number",
   "fgc_consignment_note_number",
   "fgc_zsm_weighbridge_number",
 ] as const;
