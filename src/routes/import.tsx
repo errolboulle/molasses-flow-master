@@ -118,7 +118,7 @@ function ImportPage() {
       dam_id: row.damId,
       movement_type: row.movementType,
       occurred_at: row.fgc_date_of_arrival
-        ? new Date(`${row.fgc_date_of_arrival}T${row.fgc_time ?? "00:00:00"}`).toISOString()
+        ? new Date(`${row.fgc_date_of_arrival}T${row.fgc_time ?? "00:00:00"}Z`).toISOString()
         : new Date().toISOString(),
       quantity_tons: row.fgc_net_mass,
       created_by: user.id,
