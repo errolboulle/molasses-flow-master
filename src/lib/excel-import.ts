@@ -53,14 +53,18 @@ export type ParseResult = {
 
 const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, "");
 
+// xlsx returns Excel dates as JS Date pinned to UTC midnight when cellDates:true.
+// Always read UTC components so we don't shift days based on the viewer's timezone.
+const dateToYmd = (d: Date): string => {
+  const y = d.getUTCFullYear();
+  const m = String(d.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(d.getUTCDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+};
+
 const toStr = (v: unknown): string | null => {
   if (v == null || v === "") return null;
-  if (v instanceof Date) {
-    const y = v.getFullYear();
-    const m = String(v.getMonth() + 1).padStart(2, "0");
-    const d = String(v.getDate()).padStart(2, "0");
-    return `${y}-${m}-${d}`;
-  }
+  if (v instanceof Date) return dateToYmd(v);
   return String(v).trim() || null;
 };
 
@@ -70,30 +74,15 @@ const toNum = (v: unknown): number | null => {
   return Number.isFinite(n) ? n : null;
 };
 
-// Format a JS Date using its LOCAL components to YYYY-MM-DD (no UTC shift).
-const dateToLocalYmd = (d: Date): string => {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
-};
-
-// Excel date serial → ISO date string (YYYY-MM-DD)
+// Excel date serial → ISO date string (YYYY-MM-DD).
 // Source slips/exports use YEAR-MONTH-DAY ordering. Never assume DD/MM or MM/DD.
 const toDateStr = (v: unknown): string | null => {
   if (v == null || v === "") return null;
-  if (v instanceof Date) return dateToLocalYmd(v);
+  if (v instanceof Date) return dateToYmd(v);
   if (typeof v === "number") {
-    // Excel epoch: 1899-12-30. Build a UTC date then read its UTC parts so
-    // we get the calendar date the user typed regardless of local timezone.
     const ms = Math.round((v - 25569) * 86400 * 1000);
     const d = new Date(ms);
-    if (Number.isFinite(d.getTime())) {
-      const y = d.getUTCFullYear();
-      const m = String(d.getUTCMonth() + 1).padStart(2, "0");
-      const day = String(d.getUTCDate()).padStart(2, "0");
-      return `${y}-${m}-${day}`;
-    }
+    if (Number.isFinite(d.getTime())) return dateToYmd(d);
   }
   const s = String(v).trim();
   if (!s) return null;
