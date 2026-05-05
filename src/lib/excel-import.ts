@@ -65,26 +65,55 @@ const toNum = (v: unknown): number | null => {
   return Number.isFinite(n) ? n : null;
 };
 
+// Format a JS Date using its LOCAL components to YYYY-MM-DD (no UTC shift).
+const dateToLocalYmd = (d: Date): string => {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+};
+
 // Excel date serial → ISO date string (YYYY-MM-DD)
+// Source slips/exports use YEAR-MONTH-DAY ordering. Never assume DD/MM or MM/DD.
 const toDateStr = (v: unknown): string | null => {
   if (v == null || v === "") return null;
-  if (v instanceof Date) return v.toISOString().slice(0, 10);
+  if (v instanceof Date) return dateToLocalYmd(v);
   if (typeof v === "number") {
-    // Excel epoch: 1899-12-30
+    // Excel epoch: 1899-12-30. Build a UTC date then read its UTC parts so
+    // we get the calendar date the user typed regardless of local timezone.
     const ms = Math.round((v - 25569) * 86400 * 1000);
     const d = new Date(ms);
-    if (Number.isFinite(d.getTime())) return d.toISOString().slice(0, 10);
+    if (Number.isFinite(d.getTime())) {
+      const y = d.getUTCFullYear();
+      const m = String(d.getUTCMonth() + 1).padStart(2, "0");
+      const day = String(d.getUTCDate()).padStart(2, "0");
+      return `${y}-${m}-${day}`;
+    }
   }
   const s = String(v).trim();
   if (!s) return null;
-  const d = new Date(s);
-  if (!Number.isNaN(d.getTime())) return d.toISOString().slice(0, 10);
+  // YYYY-MM-DD or YYYY/MM/DD or YY-MM-DD (slips print year first)
+  const ymd = s.match(/^(\d{2}|\d{4})[\/\-.](\d{1,2})[\/\-.](\d{1,2})/);
+  if (ymd) {
+    let [, y, m, d] = ymd;
+    if (y.length === 2) y = "20" + y;
+    const mn = parseInt(m, 10);
+    const dn = parseInt(d, 10);
+    if (mn >= 1 && mn <= 12 && dn >= 1 && dn <= 31) {
+      return `${y}-${String(mn).padStart(2, "0")}-${String(dn).padStart(2, "0")}`;
+    }
+  }
   return s;
 };
 
 const toTimeStr = (v: unknown): string | null => {
   if (v == null || v === "") return null;
-  if (v instanceof Date) return v.toTimeString().slice(0, 8);
+  if (v instanceof Date) {
+    const h = String(v.getHours()).padStart(2, "0");
+    const m = String(v.getMinutes()).padStart(2, "0");
+    const s = String(v.getSeconds()).padStart(2, "0");
+    return `${h}:${m}:${s}`;
+  }
   if (typeof v === "number" && v >= 0 && v < 1) {
     const total = Math.round(v * 86400);
     const h = String(Math.floor(total / 3600)).padStart(2, "0");
