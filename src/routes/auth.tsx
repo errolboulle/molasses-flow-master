@@ -57,7 +57,7 @@ function AuthPage() {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="inline-flex h-14 w-14 rounded-xl bg-gradient-to-br from-primary to-purple items-center justify-center font-bold text-2xl text-primary-foreground mb-4 shadow-xl">F</div>
-          <h1 className="text-2xl font-bold">FGC Molasses Storage Manager</h1>
+          <h1 className="text-2xl font-bold">Flow Ops</h1>
           <p className="text-sm text-muted-foreground mt-1">Industrial molasses inventory & reconciliation</p>
         </div>
         <Card className="p-6 bg-card/80 backdrop-blur border-border">
