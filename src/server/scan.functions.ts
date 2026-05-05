@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 
-type ExtractInput = { imageBase64: string; mimeType: string };
+type SlipType = "mill" | "fgc" | "any";
+type ExtractInput = { imageBase64: string; mimeType: string; slipType?: SlipType };
 
 const SYSTEM_PROMPT = `You extract weighbridge / delivery document data from a scanned image.
 Return ONLY valid JSON matching this schema (use null for unknown):
