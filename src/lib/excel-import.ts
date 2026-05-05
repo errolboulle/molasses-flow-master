@@ -220,52 +220,83 @@ const DUP_FIELDS = [
   "src_delivery_note",
   "fgc_consignment_note_number",
   "fgc_zsm_weighbridge_number",
+  "src_mill_number",
+  "src_sample_number",
 ] as const;
 
-export type DuplicateInfo = { field: string; value: string };
+const DUP_FIELD_LABELS: Record<(typeof DUP_FIELDS)[number], string> = {
+  src_delivery_note: "Delivery Note",
+  fgc_consignment_note_number: "Consignment Note Number",
+  fgc_zsm_weighbridge_number: "ZSM Weighbridge Number",
+  src_mill_number: "Mill Number",
+  src_sample_number: "Sample Number",
+};
+
+export type DuplicateInfo = {
+  field: string;
+  value: string;
+  location?: string;
+};
+
+function describeExisting(m: Record<string, any>): string {
+  const parts: string[] = [];
+  const date = m.fgc_date_of_arrival ?? m.src_date_of_departure ?? (m.occurred_at ? String(m.occurred_at).slice(0, 10) : null);
+  if (date) parts.push(String(date));
+  const veh = m.fgc_vehicle_registration ?? m.src_vehicle_registration;
+  if (veh) parts.push(`vehicle ${veh}`);
+  return parts.length ? ` (already in ${parts.join(", ")})` : "";
+}
 
 export function findExistingDuplicates(
   rows: ParsedRow[],
   existing: Array<Record<string, any>>,
 ): Map<number, DuplicateInfo> {
-  // Build lookup sets per field
-  const sets: Record<string, Set<string>> = {};
-  for (const f of DUP_FIELDS) sets[f] = new Set();
+  // Build lookup maps per field → first matching existing row
+  const maps: Record<string, Map<string, Record<string, any>>> = {};
+  for (const f of DUP_FIELDS) maps[f] = new Map();
   for (const m of existing) {
     for (const f of DUP_FIELDS) {
       const v = m[f];
       if (v != null && String(v).trim() !== "") {
-        sets[f].add(String(v).trim().toLowerCase());
+        const key = String(v).trim().toLowerCase();
+        if (!maps[f].has(key)) maps[f].set(key, m);
       }
     }
   }
   const result = new Map<number, DuplicateInfo>();
+  const labelOf = (f: string) => DUP_FIELD_LABELS[f as keyof typeof DUP_FIELD_LABELS] ?? f;
   rows.forEach((r, idx) => {
     for (const f of DUP_FIELDS) {
       const v = (r as any)[f];
       if (v != null && String(v).trim() !== "") {
         const key = String(v).trim().toLowerCase();
-        if (sets[f].has(key)) {
-          result.set(idx, { field: f, value: String(v) });
+        const match = maps[f].get(key);
+        if (match) {
+          result.set(idx, { field: labelOf(f), value: String(v), location: describeExisting(match) });
           return;
         }
       }
     }
   });
   // Also detect duplicates within the file itself
-  const seen: Record<string, Set<string>> = {};
-  for (const f of DUP_FIELDS) seen[f] = new Set();
+  const seen: Record<string, Map<string, ParsedRow>> = {};
+  for (const f of DUP_FIELDS) seen[f] = new Map();
   rows.forEach((r, idx) => {
     if (result.has(idx)) return;
     for (const f of DUP_FIELDS) {
       const v = (r as any)[f];
       if (v != null && String(v).trim() !== "") {
         const key = String(v).trim().toLowerCase();
-        if (seen[f].has(key)) {
-          result.set(idx, { field: f, value: String(v) });
+        const prior = seen[f].get(key);
+        if (prior) {
+          result.set(idx, {
+            field: labelOf(f),
+            value: String(v),
+            location: ` (also on ${prior.damName} row ${prior.sheetRow})`,
+          });
           return;
         }
-        seen[f].add(key);
+        seen[f].set(key, r);
       }
     }
   });
