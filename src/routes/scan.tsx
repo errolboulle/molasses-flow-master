@@ -125,7 +125,15 @@ function ScanPage() {
         scanUrl = path;
       }
 
+      // Only include known movement columns from the extracted fields
+      const allowedFromFields = new Set(FIELDS.map((f) => f.key));
+      const cleanFields: Record<string, any> = {};
+      for (const k of Object.keys(fields)) {
+        if (allowedFromFields.has(k)) cleanFields[k] = fields[k];
+      }
+
       const payload: Record<string, any> = {
+        ...cleanFields,
         dam_id: damId,
         movement_type: movementType,
         occurred_at: new Date().toISOString(),
@@ -133,7 +141,6 @@ function ScanPage() {
         notes: notes || null,
         fgc_in_out: movementType === "incoming" ? "In" : "Out",
         scanned_document_url: scanUrl,
-        ...fields,
       };
       // strip empty strings
       for (const k of Object.keys(payload)) if (payload[k] === "") payload[k] = null;
