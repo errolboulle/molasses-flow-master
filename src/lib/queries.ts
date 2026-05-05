@@ -32,14 +32,29 @@ export function useMovements(filters?: {
   return useQuery({
     queryKey: ["movements", filters],
     queryFn: async () => {
-      let q = supabase.from("movements").select("*").order("occurred_at", { ascending: false });
-      if (filters?.damId) q = q.eq("dam_id", filters.damId);
-      if (filters?.type) q = q.eq("movement_type", filters.type);
-      if (filters?.from) q = q.gte("occurred_at", filters.from);
-      if (filters?.to) q = q.lte("occurred_at", filters.to);
-      const { data, error } = await q;
-      if (error) throw error;
-      return data;
+      const pageSize = 1000;
+      const all: any[] = [];
+      let from = 0;
+      // Paginate to bypass Supabase's per-request 1000-row cap
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        let q = supabase
+          .from("movements")
+          .select("*")
+          .order("occurred_at", { ascending: false })
+          .range(from, from + pageSize - 1);
+        if (filters?.damId) q = q.eq("dam_id", filters.damId);
+        if (filters?.type) q = q.eq("movement_type", filters.type);
+        if (filters?.from) q = q.gte("occurred_at", filters.from);
+        if (filters?.to) q = q.lte("occurred_at", filters.to);
+        const { data, error } = await q;
+        if (error) throw error;
+        if (!data || data.length === 0) break;
+        all.push(...data);
+        if (data.length < pageSize) break;
+        from += pageSize;
+      }
+      return all;
     },
   });
 }
