@@ -257,9 +257,10 @@ function ImportPage() {
           <Card className="overflow-hidden">
             <div className="flex items-center justify-between border-b border-border p-4">
               <div className="font-semibold">Preview</div>
-              <Button onClick={handleImport} disabled={importing || newRows.length === 0}>
+              <Button onClick={handleImport} disabled={importing || totalToImport === 0}>
                 {importing ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-                Import {newRows.length} new movement{newRows.length === 1 ? "" : "s"}
+                Import {totalToImport} movement{totalToImport === 1 ? "" : "s"}
+                {approvedRows.length > 0 ? ` (${approvedRows.length} approved dup)` : ""}
               </Button>
             </div>
             <ScrollArea className="h-[480px]">
@@ -276,15 +277,18 @@ function ImportPage() {
                     <th className="px-3 py-2">Sample #</th>
                     <th className="px-3 py-2 text-right">FGC Net (t)</th>
                     <th className="px-3 py-2">Reason skipped</th>
+                    <th className="px-3 py-2">Action</th>
                   </tr>
                 </thead>
                 <tbody>
                   {rows.map((r, i) => {
                     const dup = dupes.get(i);
+                    const approved = approvedDupes.has(i);
                     return (
-                      <tr key={i} className={`border-t border-border ${dup ? "bg-muted/40 text-muted-foreground" : ""}`}>
+                      <tr key={i} className={`border-t border-border ${dup && !approved ? "bg-muted/40 text-muted-foreground" : ""} ${approved ? "bg-warning/10" : ""}`}>
                         <td className="px-3 py-2">
-                          {dup ? <Badge variant="outline" className="gap-1"><XCircle className="h-3 w-3" /> Skip</Badge>
+                          {approved ? <Badge className="gap-1 bg-warning/20 text-warning border-warning/40"><CheckCircle2 className="h-3 w-3" /> Approved</Badge>
+                            : dup ? <Badge variant="outline" className="gap-1"><XCircle className="h-3 w-3" /> Skip</Badge>
                             : <Badge className="gap-1 bg-success/20 text-success border-success/40"><CheckCircle2 className="h-3 w-3" /> New</Badge>}
                         </td>
                         <td className="px-3 py-2">{r.damName}</td>
@@ -296,6 +300,13 @@ function ImportPage() {
                         <td className="px-3 py-2">{r.src_sample_number ?? "—"}</td>
                         <td className="px-3 py-2 text-right tabular-nums">{fmtNum(r.fgc_net_mass)}</td>
                         <td className="px-3 py-2">{dup ? `${dup.field} = ${dup.value}${dup.location ?? ""}` : ""}</td>
+                        <td className="px-3 py-2">
+                          {dup && (
+                            <Button size="sm" variant={approved ? "outline" : "secondary"} onClick={() => toggleApprove(i)}>
+                              {approved ? "Deny" : "Approve"}
+                            </Button>
+                          )}
+                        </td>
                       </tr>
                     );
                   })}
