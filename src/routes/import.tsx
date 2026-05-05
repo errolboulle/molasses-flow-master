@@ -96,8 +96,8 @@ function ImportPage() {
       toast.error("You must be signed in");
       return;
     }
-    if (newRows.length === 0) {
-      toast.warning("No new movements to import");
+    if (totalToImport === 0) {
+      toast.warning("No movements to import");
       return;
     }
     setImporting(true);
@@ -105,50 +105,61 @@ function ImportPage() {
     let failed = 0;
     const errors: string[] = [];
 
-    for (const row of newRows) {
-      const payload = {
-        dam_id: row.damId,
-        movement_type: row.movementType,
-        occurred_at: row.fgc_date_of_arrival
-          ? new Date(`${row.fgc_date_of_arrival}T${row.fgc_time ?? "00:00:00"}`).toISOString()
-          : new Date().toISOString(),
-        quantity_tons: row.fgc_net_mass,
-        created_by: user.id,
-        src_date_of_departure: row.src_date_of_departure,
-        src_time: row.src_time,
-        src_vehicle_registration: row.src_vehicle_registration,
-        src_haulier: row.src_haulier,
-        src_delivery_note: row.src_delivery_note,
-        src_mill_number: row.src_mill_number,
-        src_mill: row.src_mill,
-        src_gross_mass: row.src_gross_mass,
-        src_tare_mass: row.src_tare_mass,
-        src_net_mass: row.src_net_mass,
-        src_molasses_temperature: row.src_molasses_temperature,
-        src_sample_number: row.src_sample_number,
-        fgc_date_of_arrival: row.fgc_date_of_arrival,
-        fgc_time: row.fgc_time,
-        fgc_vehicle_registration: row.fgc_vehicle_registration,
-        fgc_haulier: row.fgc_haulier,
-        fgc_consignment_note_number: row.fgc_consignment_note_number,
-        fgc_zsm_weighbridge_number: row.fgc_zsm_weighbridge_number,
-        fgc_gross_mass: row.fgc_gross_mass,
-        fgc_tare_mass: row.fgc_tare_mass,
-        fgc_net_mass: row.fgc_net_mass,
-        fgc_variance: row.fgc_variance,
-        fgc_brix: row.fgc_brix,
-        fgc_in_out: row.fgc_in_out ?? (row.movementType === "incoming" ? "IN" : "OUT"),
-        fgc_zsm_operator: row.fgc_zsm_operator,
-        fgc_in: row.movementType === "incoming" ? row.fgc_net_mass : null,
-        fgc_out: row.movementType === "outgoing" ? row.fgc_net_mass : null,
-        fgc_net: row.fgc_net_mass,
-      };
-      const { error } = await supabase.from("movements").insert(payload);
+    const buildPayload = (row: ParsedRow) => ({
+      dam_id: row.damId,
+      movement_type: row.movementType,
+      occurred_at: row.fgc_date_of_arrival
+        ? new Date(`${row.fgc_date_of_arrival}T${row.fgc_time ?? "00:00:00"}`).toISOString()
+        : new Date().toISOString(),
+      quantity_tons: row.fgc_net_mass,
+      created_by: user.id,
+      src_date_of_departure: row.src_date_of_departure,
+      src_time: row.src_time,
+      src_vehicle_registration: row.src_vehicle_registration,
+      src_haulier: row.src_haulier,
+      src_delivery_note: row.src_delivery_note,
+      src_mill_number: row.src_mill_number,
+      src_mill: row.src_mill,
+      src_gross_mass: row.src_gross_mass,
+      src_tare_mass: row.src_tare_mass,
+      src_net_mass: row.src_net_mass,
+      src_molasses_temperature: row.src_molasses_temperature,
+      src_sample_number: row.src_sample_number,
+      fgc_date_of_arrival: row.fgc_date_of_arrival,
+      fgc_time: row.fgc_time,
+      fgc_vehicle_registration: row.fgc_vehicle_registration,
+      fgc_haulier: row.fgc_haulier,
+      fgc_consignment_note_number: row.fgc_consignment_note_number,
+      fgc_zsm_weighbridge_number: row.fgc_zsm_weighbridge_number,
+      fgc_gross_mass: row.fgc_gross_mass,
+      fgc_tare_mass: row.fgc_tare_mass,
+      fgc_net_mass: row.fgc_net_mass,
+      fgc_variance: row.fgc_variance,
+      fgc_brix: row.fgc_brix,
+      fgc_in_out: row.fgc_in_out ?? (row.movementType === "incoming" ? "IN" : "OUT"),
+      fgc_zsm_operator: row.fgc_zsm_operator,
+      fgc_in: row.movementType === "incoming" ? row.fgc_net_mass : null,
+      fgc_out: row.movementType === "outgoing" ? row.fgc_net_mass : null,
+      fgc_net: row.fgc_net_mass,
+    });
+
+    for (const { r: row } of newRows) {
+      const { error } = await supabase.from("movements").insert(buildPayload(row));
       if (error) {
         failed++;
         errors.push(`${row.damName} row ${row.sheetRow}: ${error.message}`);
       } else {
         inserted++;
+      }
+    }
+
+    for (const { r: row } of approvedRows) {
+      try {
+        await forceInsertMovement(buildPayload(row));
+        inserted++;
+      } catch (e: any) {
+        failed++;
+        errors.push(`${row.damName} row ${row.sheetRow} (approved duplicate): ${e?.message ?? e}`);
       }
     }
 
@@ -158,7 +169,7 @@ function ImportPage() {
     ]);
 
     if (failed === 0) {
-      toast.success(`Imported ${inserted} new movement${inserted === 1 ? "" : "s"}`);
+      toast.success(`Imported ${inserted} movement${inserted === 1 ? "" : "s"}`);
       reset();
     } else {
       toast.error(`Imported ${inserted}, ${failed} failed`);
