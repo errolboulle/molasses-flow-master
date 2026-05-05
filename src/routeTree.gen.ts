@@ -14,6 +14,7 @@ import { Route as UsersRouteImport } from './routes/users'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as ReportsRouteImport } from './routes/reports'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
+import { Route as InsightsRouteImport } from './routes/insights'
 import { Route as ImportRouteImport } from './routes/import'
 import { Route as HistoryRouteImport } from './routes/history'
 import { Route as DashboardRouteImport } from './routes/dashboard'
@@ -60,6 +61,11 @@ const ReportsRoute = ReportsRouteImport.update({
 const OnboardingRoute = OnboardingRouteImport.update({
   id: '/onboarding',
   path: '/onboarding',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InsightsRoute = InsightsRouteImport.update({
+  id: '/insights',
+  path: '/insights',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ImportRoute = ImportRouteImport.update({
@@ -181,6 +187,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof DashboardRoute
   '/history': typeof HistoryRoute
   '/import': typeof ImportRoute
+  '/insights': typeof InsightsRoute
   '/onboarding': typeof OnboardingRoute
   '/reports': typeof ReportsRouteWithChildren
   '/settings': typeof SettingsRoute
@@ -210,6 +217,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof DashboardRoute
   '/history': typeof HistoryRoute
   '/import': typeof ImportRoute
+  '/insights': typeof InsightsRoute
   '/onboarding': typeof OnboardingRoute
   '/reports': typeof ReportsRouteWithChildren
   '/settings': typeof SettingsRoute
@@ -240,6 +248,7 @@ export interface FileRoutesById {
   '/dashboard': typeof DashboardRoute
   '/history': typeof HistoryRoute
   '/import': typeof ImportRoute
+  '/insights': typeof InsightsRoute
   '/onboarding': typeof OnboardingRoute
   '/reports': typeof ReportsRouteWithChildren
   '/settings': typeof SettingsRoute
@@ -271,6 +280,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/history'
     | '/import'
+    | '/insights'
     | '/onboarding'
     | '/reports'
     | '/settings'
@@ -300,6 +310,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/history'
     | '/import'
+    | '/insights'
     | '/onboarding'
     | '/reports'
     | '/settings'
@@ -329,6 +340,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/history'
     | '/import'
+    | '/insights'
     | '/onboarding'
     | '/reports'
     | '/settings'
@@ -359,6 +371,7 @@ export interface RootRouteChildren {
   DashboardRoute: typeof DashboardRoute
   HistoryRoute: typeof HistoryRoute
   ImportRoute: typeof ImportRoute
+  InsightsRoute: typeof InsightsRoute
   OnboardingRoute: typeof OnboardingRoute
   ReportsRoute: typeof ReportsRouteWithChildren
   SettingsRoute: typeof SettingsRoute
@@ -410,6 +423,13 @@ declare module '@tanstack/react-router' {
       path: '/onboarding'
       fullPath: '/onboarding'
       preLoaderRoute: typeof OnboardingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/insights': {
+      id: '/insights'
+      path: '/insights'
+      fullPath: '/insights'
+      preLoaderRoute: typeof InsightsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/import': {
@@ -637,6 +657,7 @@ const rootRouteChildren: RootRouteChildren = {
   DashboardRoute: DashboardRoute,
   HistoryRoute: HistoryRoute,
   ImportRoute: ImportRoute,
+  InsightsRoute: InsightsRoute,
   OnboardingRoute: OnboardingRoute,
   ReportsRoute: ReportsRouteWithChildren,
   SettingsRoute: SettingsRoute,

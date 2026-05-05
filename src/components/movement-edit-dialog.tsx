@@ -96,7 +96,7 @@ export function MovementEditDialog({
         if (v === "" || v == null) { payload[f.key as string] = null; continue; }
         payload[f.key as string] = f.type === "number" ? Number(v) : v;
       }
-      const { error } = await supabase.from("movements").update(payload).eq("id", movement.id);
+      const { error } = await supabase.from("movements").update(payload as any).eq("id", movement.id);
       if (error) throw error;
       await Promise.all([
         qc.invalidateQueries({ queryKey: ["movements"] }),
