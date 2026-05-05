@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
-import { useDams, useMovements } from "@/lib/queries";
+import { useDams } from "@/lib/queries";
 import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/integrations/supabase/client";
 import { parseExcelImport, findExistingDuplicates, type ParsedRow, type DuplicateInfo } from "@/lib/excel-import";
