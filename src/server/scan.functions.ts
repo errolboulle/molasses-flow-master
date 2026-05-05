@@ -33,7 +33,14 @@ Return ONLY valid JSON matching this schema (use null for unknown):
   "notes": string | null,
   "raw_text": string
 }
-Masses are in tonnes. If document shows kilograms, convert to tonnes (divide by 1000).`;
+Masses are in tonnes. If document shows kilograms, convert to tonnes (divide by 1000).
+
+DATE PARSING — CRITICAL:
+- Dates printed on these slips are ALWAYS in YEAR-MONTH-DAY order (e.g. "2026-05-04", "26/05/04", "26-05-04", "2026/05/04").
+- The first component is the YEAR, the second is the MONTH (1-12), the third is the DAY (1-31).
+- NEVER assume DD/MM/YYYY or MM/DD/YYYY. Do not swap month and day.
+- Always output dates as strict ISO "YYYY-MM-DD" with 4-digit year (prepend "20" if year is 2 digits).
+- If you cannot confidently read the date, return null instead of guessing.`;
 
 export const extractScannedDocument = createServerFn({ method: "POST" })
   .inputValidator((data: ExtractInput) => {
