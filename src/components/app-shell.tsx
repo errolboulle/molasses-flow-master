@@ -19,6 +19,7 @@ import {
   UserCircle,
   Gauge,
   Upload,
+  TrendingUp,
 } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
@@ -37,6 +38,7 @@ const navItems = [
   
   { to: "/weigh-bridge", label: "Weigh Bridge Mode", icon: Gauge, roles: ["admin", "operator", "supervisor"] },
   { to: "/history", label: "History", icon: History, roles: ["admin", "operator", "supervisor", "viewer"] },
+  { to: "/insights", label: "Insights", icon: TrendingUp, roles: ["admin", "operator", "supervisor", "viewer"] },
   { to: "/reports", label: "Reports", icon: BarChart3, roles: ["admin", "operator", "supervisor", "viewer"] },
   { to: "/import", label: "Import Excel", icon: Upload, roles: ["admin", "operator"] },
   { to: "/audit", label: "Audit Log", icon: ScrollText, roles: ["admin", "operator", "supervisor", "viewer"] },
