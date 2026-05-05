@@ -52,8 +52,11 @@ function ImportPage() {
   const [rows, setRows] = useState<ParsedRow[]>([]);
   const [warnings, setWarnings] = useState<string[]>([]);
   const [dupes, setDupes] = useState<Map<number, DuplicateInfo>>(new Map());
+  const [approvedDupes, setApprovedDupes] = useState<Set<number>>(new Set());
 
-  const newRows = useMemo(() => rows.filter((_, i) => !dupes.has(i)), [rows, dupes]);
+  const newRows = useMemo(() => rows.map((r, i) => ({ r, i })).filter(({ i }) => !dupes.has(i)), [rows, dupes]);
+  const approvedRows = useMemo(() => rows.map((r, i) => ({ r, i })).filter(({ i }) => dupes.has(i) && approvedDupes.has(i)), [rows, dupes, approvedDupes]);
+  const totalToImport = newRows.length + approvedRows.length;
 
   const handleFile = async (file: File) => {
     setParsing(true);
