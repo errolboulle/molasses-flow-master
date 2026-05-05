@@ -151,6 +151,21 @@ export function parseExcelImport(buf: ArrayBuffer, dams: Dam[]): ParseResult {
 
       if (!fgcNet || fgcNet <= 0) continue; // empty / non-data row
 
+      // Skip totals/summary rows: real movement rows always have a date and at least
+      // one reference number. Summary rows (Total / Average) have only numeric aggregates.
+      const srcDate = toDateStr(row[LEFT_START + 0]);
+      const fgcDate = toDateStr(row[RIGHT_START + 0]);
+      const delNote = toStr(row[LEFT_START + 4]);
+      const millNo = toStr(row[LEFT_START + 5]);
+      const consignNo = toStr(row[RIGHT_START + 4]);
+      const weighNo = toStr(row[RIGHT_START + 5]);
+      const hasDate = !!(srcDate || fgcDate);
+      const hasRef = !!(delNote || millNo || consignNo || weighNo);
+      if (!hasDate || !hasRef) {
+        warnings.push(`${sheetName} row ${r + 1}: skipped (looks like a totals/summary row, no date or reference).`);
+        continue;
+      }
+
       let movementType: "incoming" | "outgoing" | null = null;
       if (inVal && inVal > 0) movementType = "incoming";
       else if (outVal && outVal > 0) movementType = "outgoing";
