@@ -19,7 +19,7 @@ export const Route = createFileRoute("/import")({
 });
 
 async function fetchAllMovementRefs() {
-  const cols = "src_delivery_note,fgc_consignment_note_number,fgc_zsm_weighbridge_number";
+  const cols = "src_delivery_note,fgc_consignment_note_number,fgc_zsm_weighbridge_number,src_mill_number,src_sample_number,fgc_date_of_arrival,src_date_of_departure,occurred_at,fgc_vehicle_registration,src_vehicle_registration";
   const pageSize = 1000;
   let from = 0;
   const all: any[] = [];
@@ -271,7 +271,7 @@ function ImportPage() {
                         <td className="px-3 py-2">{r.src_delivery_note ?? "—"}</td>
                         <td className="px-3 py-2">{r.src_sample_number ?? "—"}</td>
                         <td className="px-3 py-2 text-right tabular-nums">{fmtNum(r.fgc_net_mass)}</td>
-                        <td className="px-3 py-2">{dup ? `${dup.field} = ${dup.value}` : ""}</td>
+                        <td className="px-3 py-2">{dup ? `${dup.field} = ${dup.value}${dup.location ?? ""}` : ""}</td>
                       </tr>
                     );
                   })}
