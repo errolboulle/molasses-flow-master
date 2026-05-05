@@ -53,12 +53,12 @@ export type ParseResult = {
 
 const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, "");
 
-// xlsx returns Excel dates as JS Date pinned to UTC midnight when cellDates:true.
-// Always read UTC components so we don't shift days based on the viewer's timezone.
+// xlsx with cellDates:true returns JS Dates anchored to LOCAL midnight.
+// Read local components so the calendar date matches the cell.
 const dateToYmd = (d: Date): string => {
-  const y = d.getUTCFullYear();
-  const m = String(d.getUTCMonth() + 1).padStart(2, "0");
-  const day = String(d.getUTCDate()).padStart(2, "0");
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
   return `${y}-${m}-${day}`;
 };
 
@@ -75,14 +75,17 @@ const toNum = (v: unknown): number | null => {
 };
 
 // Excel date serial → ISO date string (YYYY-MM-DD).
-// Source slips/exports use YEAR-MONTH-DAY ordering. Never assume DD/MM or MM/DD.
+// Slips/exports use YEAR-MONTH-DAY ordering. Never assume DD/MM or MM/DD.
 const toDateStr = (v: unknown): string | null => {
   if (v == null || v === "") return null;
   if (v instanceof Date) return dateToYmd(v);
   if (typeof v === "number") {
-    const ms = Math.round((v - 25569) * 86400 * 1000);
-    const d = new Date(ms);
-    if (Number.isFinite(d.getTime())) return dateToYmd(d);
+    // Excel epoch 1899-12-30. xlsx serial → local-midnight Date.
+    const days = Math.round(v);
+    const ms = (days - 25569) * 86400 * 1000;
+    const utc = new Date(ms);
+    const local = new Date(utc.getUTCFullYear(), utc.getUTCMonth(), utc.getUTCDate());
+    return dateToYmd(local);
   }
   const s = String(v).trim();
   if (!s) return null;
@@ -103,9 +106,9 @@ const toDateStr = (v: unknown): string | null => {
 const toTimeStr = (v: unknown): string | null => {
   if (v == null || v === "") return null;
   if (v instanceof Date) {
-    const h = String(v.getUTCHours()).padStart(2, "0");
-    const m = String(v.getUTCMinutes()).padStart(2, "0");
-    const s = String(v.getUTCSeconds()).padStart(2, "0");
+    const h = String(v.getHours()).padStart(2, "0");
+    const m = String(v.getMinutes()).padStart(2, "0");
+    const s = String(v.getSeconds()).padStart(2, "0");
     return `${h}:${m}:${s}`;
   }
   if (typeof v === "number" && v >= 0 && v < 1) {
