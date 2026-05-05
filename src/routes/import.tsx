@@ -88,7 +88,16 @@ function ImportPage() {
     setRows([]);
     setWarnings([]);
     setDupes(new Map());
+    setApprovedDupes(new Set());
     if (fileRef.current) fileRef.current.value = "";
+  };
+
+  const toggleApprove = (i: number) => {
+    setApprovedDupes((prev) => {
+      const next = new Set(prev);
+      if (next.has(i)) next.delete(i); else next.add(i);
+      return next;
+    });
   };
 
   const handleImport = async () => {
