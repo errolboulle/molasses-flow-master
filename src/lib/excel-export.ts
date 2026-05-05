@@ -1,341 +1,387 @@
 import * as XLSX from "xlsx-js-style";
 import type { Movement, Dam } from "./types";
-import { LEFT_COLS, RIGHT_COLS, buildDamReportRows } from "./report-layout";
 
-const THIN = { style: "thin", color: { rgb: "000000" } };
-const MEDIUM = { style: "medium", color: { rgb: "000000" } };
+// =============================================================================
+// Excel export — mirrors the FGC 2025 Weighbridge & Dam Records template exactly
+//
+// Layout per dam sheet (30 columns, A..AD):
+//   Row 1: Title "MOLASSES RECORDS FOR FGC 2025/26" merged A1:AA1
+//   Row 2: A2 "DAM X" (red), C2 "TOTAL STORED MOLASSES =", G2:J2 merged formula
+//   Row 3: A3:J3 "SOURCE MILL" | N3:AA3 "FGC Record" | AB3:AD3 "MOLASSES STORED"
+//   Row 4: Headers (amber for source, blue for FGC + stored)
+//   Row 5+: Data with live formulas (J=H-I, V=T-U, W=V-J, AB/AC IF, AD running)
+//   Row N+1 (totals): AVERAGE / SUBTOTAL / SUM
+//   Row N+2: labels  Row N+3..6: Allowable Variance + truck stats
+// Column M is a thin spacer (width ~1.7).
+// =============================================================================
+
+const THIN = { style: "thin", color: { rgb: "000000" } } as const;
+const MEDIUM = { style: "medium", color: { rgb: "000000" } } as const;
 const ALL_THIN = { top: THIN, bottom: THIN, left: THIN, right: THIN };
 const ALL_MEDIUM = { top: MEDIUM, bottom: MEDIUM, left: MEDIUM, right: MEDIUM };
 
-const sanitizeSheet = (name: string) => name.replace(/[\\/?*\[\]:]/g, "_").slice(0, 31);
+// Template colours (sampled from the original workbook)
+const SRC_AMBER = "FFC000";   // source mill header
+const FGC_BLUE = "0070C0";    // FGC + MOLASSES STORED header
+const HEADER_WHITE = "FFFFFF";
+const SUBTOTAL_GREY = "D9D9D9";
+
+const sanitizeSheet = (name: string) => name.replace(/[\\/?*[\]:]/g, "_").slice(0, 31);
 const cellRef = (r: number, c: number) => XLSX.utils.encode_cell({ r, c });
 
-function styleCell(ws: XLSX.WorkSheet, r: number, c: number, style: any, value?: any) {
+// Column indices (0-based)
+const COL = {
+  // SOURCE MILL (A..L)
+  A: 0, B: 1, C: 2, D: 3, E: 4, F: 5, G: 6, H: 7, I: 8, J: 9, K: 10, L: 11,
+  // gap
+  M: 12,
+  // FGC (N..AA)
+  N: 13, O: 14, P: 15, Q: 16, R: 17, S: 18, T: 19, U: 20, V: 21, W: 22, X: 23, Y: 24, Z: 25, AA: 26,
+  // MOLASSES STORED (AB..AD)
+  AB: 27, AC: 28, AD: 29,
+};
+const TOTAL_COLS = 30;
+
+const COL_WIDTHS: Record<number, number> = {
+  0: 14.3, 1: 7.4, 2: 14.7, 3: 7.4, 4: 11.6, 5: 14.6, 6: 13.3, 7: 9.1, 8: 8.1, 9: 12.1, 10: 11.1, 11: 11.0,
+  12: 1.7,
+  13: 14.3, 14: 7.4, 15: 17.1, 16: 8.7, 17: 13.9, 18: 10.4, 19: 8.4, 20: 8.1, 21: 16.0, 22: 13.6, 23: 8.0, 24: 6.1, 25: 14.9, 26: 7.0,
+  27: 12.6, 28: 12.3, 29: 15.4,
+};
+
+const SRC_HEADERS = [
+  "Date of Departure", "Time", "Vehicle Registration", "Haulier", "Del Note",
+  "MILL NUMBER /CONSIGN", "Mill", "Gross Mass", "Tare Mass", "Nett Mass",
+  "Molasses  Temp", "Sample Number",
+];
+const FGC_HEADERS = [
+  "ARRIVAL DATE", "Time", "Vehicle Registration", "Haulier", "Consignment Note No/",
+  "ZSM Weighbridge No", "Gross Mass", "Tare Mass", "Nettmass", "Variance",
+  "BRIX", "IN/OUT", "ZSM Operator", "IF OUT, Haulier",
+];
+const STORED_HEADERS = ["IN", "OUT", "NETT"];
+
+function setCell(ws: XLSX.WorkSheet, r: number, c: number, value: any, style?: any, formula?: string, numFmt?: string) {
   const ref = cellRef(r, c);
-  if (!ws[ref]) {
-    ws[ref] = { t: typeof value === "number" ? "n" : "s", v: value ?? "" };
-  } else if (value !== undefined) {
-    ws[ref].v = value;
-    ws[ref].t = typeof value === "number" ? "n" : "s";
+  const cell: any = {};
+  if (formula) {
+    cell.t = "n";
+    cell.f = formula;
+    if (value !== undefined) cell.v = value;
+  } else if (value === undefined || value === null || value === "") {
+    cell.t = "s";
+    cell.v = "";
+  } else if (typeof value === "number") {
+    cell.t = "n";
+    cell.v = value;
+  } else if (value instanceof Date) {
+    cell.t = "d";
+    cell.v = value;
+    if (!numFmt) numFmt = "yyyy-mm-dd";
+  } else {
+    cell.t = "s";
+    cell.v = String(value);
   }
-  ws[ref].s = { ...(ws[ref].s || {}), ...style };
+  cell.s = { ...(style || {}) };
+  if (numFmt) cell.s.numFmt = numFmt;
+  ws[ref] = cell;
 }
 
-// ===== Column layout =====
-const GAP_WIDTH = 3;
-const LEFT_START = 0;
-const LEFT_END = LEFT_COLS.length - 1;                  // 11
-const GAP_COL = LEFT_END + 1;                           // 12
-const RIGHT_START = GAP_COL + 1;                        // 13
-const RIGHT_END = RIGHT_START + RIGHT_COLS.length - 1;  // 29
-const TOTAL_COLS = RIGHT_END + 1;                       // 30
+function fmtTimeStr(v: any): string {
+  if (!v) return "";
+  // Accept Date/string; render HH:MM
+  if (v instanceof Date) {
+    return v.toTimeString().slice(0, 5);
+  }
+  const s = String(v);
+  // ISO datetime -> take HH:MM
+  const m = s.match(/T(\d{2}:\d{2})/);
+  if (m) return m[1];
+  // already HH:MM[:SS]
+  const m2 = s.match(/^(\d{2}:\d{2})/);
+  if (m2) return m2[1];
+  return s;
+}
 
-const IN_COL = RIGHT_END - 2;
-const OUT_COL = RIGHT_END - 1;
-const NETT_COL = RIGHT_END;
-
-// Colors
-const SRC_BLUE = "BFDBFE";
-const FGC_GREEN = "BBF7D0";
-const TITLE_BG = "FDE68A";
-const HEADER_GREY = "E5E7EB";
-const NETT_GREY = "F3F4F6";
-const IN_GREEN = "DCFCE7";
-const OUT_RED = "FEE2E2";
+function asDate(v: any): Date | "" {
+  if (!v) return "";
+  if (v instanceof Date) return v;
+  const d = new Date(v);
+  return isNaN(d.getTime()) ? "" : d;
+}
 
 function num(v: any): number | "" {
   if (v == null || v === "") return "";
   const n = Number(v);
-  return isNaN(n) ? "" : n;
+  return Number.isFinite(n) ? n : "";
 }
 
-function addDamSheet(wb: XLSX.WorkBook, dam: Dam, allDams: Dam[], rows: Movement[]) {
-  const report = buildDamReportRows(dam, rows);
+function addDamSheet(wb: XLSX.WorkBook, dam: Dam, movements: Movement[], damIndex: number) {
+  const ws: XLSX.WorkSheet = {};
+  const merges: XLSX.Range[] = [];
+  const rowHeights: { hpt: number }[] = [];
 
-  const aoa: any[][] = [];
+  // Sort movements
+  const sorted = [...movements].sort(
+    (a, b) => new Date(a.occurred_at).getTime() - new Date(b.occurred_at).getTime()
+  );
 
-  // Row 0: SOURCE MILL (left) | gap | FGC (right)
-  const r0 = new Array(TOTAL_COLS).fill("");
-  r0[LEFT_START] = "SOURCE MILL";
-  r0[RIGHT_START] = "FGC";
-  aoa.push(r0);
-
-  // Row 1: MOLASSES RECORDS FOR FGC 2025/26 (centered across full width)
-  const r1 = new Array(TOTAL_COLS).fill("");
-  r1[0] = "MOLASSES RECORDS FOR FGC 2025/26";
-  aoa.push(r1);
-
-  // Row 2: Dam name centered across full width
-  const r2 = new Array(TOTAL_COLS).fill("");
-  r2[0] = dam.name.toUpperCase();
-  aoa.push(r2);
-
-  // Row 3: spacer
-  aoa.push(new Array(TOTAL_COLS).fill(""));
-
-  // Row 4: Column headers
-  const headerRow = new Array(TOTAL_COLS).fill("");
-  LEFT_COLS.forEach((c, i) => (headerRow[LEFT_START + i] = c.header));
-  RIGHT_COLS.forEach((c, i) => (headerRow[RIGHT_START + i] = c.header));
-  aoa.push(headerRow);
-  const headerRowIdx = aoa.length - 1;
-
-  // Opening balance row (uses starting_balance_tons via buildDamReportRows)
-  const openingRow = new Array(TOTAL_COLS).fill("");
-  openingRow[LEFT_START] = "Opening Balance";
-  openingRow[NETT_COL] = report.opening;
-  aoa.push(openingRow);
-  const openingRowIdx = aoa.length - 1;
-
-  // Data rows — use exact same rows as the on-screen preview
-  const dataStart = aoa.length;
-
-  for (const reportRow of report.rows) {
-    const row = new Array(TOTAL_COLS).fill("");
-    reportRow.left.forEach((v, i) => (row[LEFT_START + i] = v));
-    reportRow.right.forEach((v, i) => (row[RIGHT_START + i] = v));
-    // Replace the running totals (last 3 cells of right) with empty/numeric for IN/OUT empties
-    row[IN_COL] = reportRow.inVal || "";
-    row[OUT_COL] = reportRow.outVal || "";
-    row[NETT_COL] = reportRow.nett;
-    aoa.push(row);
-  }
-  const dataEnd = aoa.length - 1;
-
-  // Spacer + Totals row
-  aoa.push(new Array(TOTAL_COLS).fill(""));
-  const totalsRow = new Array(TOTAL_COLS).fill("");
-  totalsRow[RIGHT_START] = "TOTALS";
-  totalsRow[IN_COL] = report.totalIn;
-  totalsRow[OUT_COL] = report.totalOut;
-  totalsRow[NETT_COL] = report.closing;
-  aoa.push(totalsRow);
-  const totalsRowIdx = aoa.length - 1;
-
-  const ws = XLSX.utils.aoa_to_sheet(aoa);
-
-  // Column widths (incl. gap)
-  const cols: { wch: number }[] = [];
-  LEFT_COLS.forEach((c) => cols.push({ wch: c.width }));
-  cols.push({ wch: GAP_WIDTH });
-  RIGHT_COLS.forEach((c) => cols.push({ wch: c.width }));
-  ws["!cols"] = cols;
-
-  ws["!merges"] = ws["!merges"] || [];
-  ws["!rows"] = ws["!rows"] || [];
-
-  // Row 0: SOURCE MILL (merged left) + FGC (merged right)
-  ws["!merges"].push({ s: { r: 0, c: LEFT_START }, e: { r: 0, c: LEFT_END } });
-  ws["!merges"].push({ s: { r: 0, c: RIGHT_START }, e: { r: 0, c: RIGHT_END } });
-  styleCell(ws, 0, LEFT_START, {
-    font: { bold: true, sz: 14, color: { rgb: "1E3A8A" } },
+  // ---------- Row 1: Title ----------
+  setCell(ws, 0, 0, "       MOLASSES RECORDS FOR FGC 2025/26", {
+    font: { bold: true, sz: 24, color: { rgb: "000000" } },
     alignment: { horizontal: "left", vertical: "center" },
-    fill: { patternType: "solid", fgColor: { rgb: SRC_BLUE } },
-    border: ALL_MEDIUM,
   });
-  styleCell(ws, 0, RIGHT_START, {
-    font: { bold: true, sz: 14, color: { rgb: "065F46" } },
-    alignment: { horizontal: "right", vertical: "center" },
-    fill: { patternType: "solid", fgColor: { rgb: FGC_GREEN } },
-    border: ALL_MEDIUM,
-  });
-  ws["!rows"][0] = { hpt: 26 };
+  merges.push({ s: { r: 0, c: 0 }, e: { r: 0, c: 26 } });
+  rowHeights[0] = { hpt: 31.5 };
 
-  // Row 1: title across full width
-  ws["!merges"].push({ s: { r: 1, c: 0 }, e: { r: 1, c: TOTAL_COLS - 1 } });
-  styleCell(ws, 1, 0, {
-    font: { bold: true, sz: 18, color: { rgb: "111827" } },
-    alignment: { horizontal: "center", vertical: "center" },
-    fill: { patternType: "solid", fgColor: { rgb: TITLE_BG } },
-    border: ALL_MEDIUM,
-  });
-  ws["!rows"][1] = { hpt: 32 };
-
-  // Row 2: dam label across full width
-  ws["!merges"].push({ s: { r: 2, c: 0 }, e: { r: 2, c: TOTAL_COLS - 1 } });
-  styleCell(ws, 2, 0, {
-    font: { bold: true, sz: 12, color: { rgb: "111827" } },
-    alignment: { horizontal: "center", vertical: "center" },
-    fill: { patternType: "solid", fgColor: { rgb: HEADER_GREY } },
-    border: ALL_THIN,
-  });
-  ws["!rows"][2] = { hpt: 22 };
-
-  // Header row styling
-  for (let c = 0; c < TOTAL_COLS; c++) {
-    if (c === GAP_COL) continue;
-    const isLeft = c <= LEFT_END;
-    const isInOutNett = c === IN_COL || c === OUT_COL || c === NETT_COL;
-    let fill = isLeft ? SRC_BLUE : FGC_GREEN;
-    if (isInOutNett) fill = "FEF3C7";
-    styleCell(ws, headerRowIdx, c, {
-      font: { bold: true, sz: 11, color: { rgb: "111827" } },
-      alignment: { horizontal: "center", vertical: "center", wrapText: true },
-      fill: { patternType: "solid", fgColor: { rgb: fill } },
-      border: ALL_MEDIUM,
-    });
-  }
-  ws["!rows"][headerRowIdx] = { hpt: 36 };
-
-  // Opening balance row
-  ws["!merges"].push({ s: { r: openingRowIdx, c: LEFT_START }, e: { r: openingRowIdx, c: LEFT_END } });
-  ws["!merges"].push({ s: { r: openingRowIdx, c: RIGHT_START }, e: { r: openingRowIdx, c: OUT_COL } });
-  styleCell(ws, openingRowIdx, LEFT_START, {
-    font: { bold: true, italic: true },
+  // ---------- Row 2: Dam name + total stored ----------
+  const damLabel = `DAM ${damIndex + 1}`;
+  setCell(ws, 1, 0, damLabel, {
+    font: { bold: true, sz: 18, color: { rgb: "FF0000" } },
     alignment: { horizontal: "left", vertical: "center" },
-    fill: { patternType: "solid", fgColor: { rgb: NETT_GREY } },
+  });
+  setCell(ws, 1, 2, "TOTAL STORED MOLASSES =", {
+    font: { bold: true, sz: 12 },
+    alignment: { horizontal: "right", vertical: "center" },
+  });
+  // Placeholder formula to total NETT cell (filled below once we know last row)
+  rowHeights[1] = { hpt: 23.25 };
+
+  // ---------- Row 3: Section headers ----------
+  setCell(ws, 2, COL.A, "SOURCE MILL", {
+    font: { bold: true, sz: 16 },
+    alignment: { horizontal: "center", vertical: "center" },
     border: ALL_THIN,
   });
-  styleCell(ws, openingRowIdx, RIGHT_START, {
-    font: { bold: true, italic: true },
-    alignment: { horizontal: "right", vertical: "center" },
-    fill: { patternType: "solid", fgColor: { rgb: NETT_GREY } },
+  merges.push({ s: { r: 2, c: COL.A }, e: { r: 2, c: COL.J } });
+  setCell(ws, 2, COL.N, "FGC Record", {
+    font: { bold: true, sz: 16 },
+    alignment: { horizontal: "center", vertical: "center" },
     border: ALL_THIN,
-  }, "Opening NETT →");
-  styleCell(ws, openingRowIdx, NETT_COL, {
-    font: { bold: true },
-    alignment: { horizontal: "right", vertical: "center" },
-    fill: { patternType: "solid", fgColor: { rgb: NETT_GREY } },
+  });
+  merges.push({ s: { r: 2, c: COL.N }, e: { r: 2, c: COL.AA } });
+  setCell(ws, 2, COL.AB, "MOLASSES STORED", {
+    font: { bold: true, sz: 16, color: { rgb: "FF0000" } },
+    alignment: { horizontal: "center", vertical: "center" },
+    border: ALL_THIN,
+  });
+  merges.push({ s: { r: 2, c: COL.AB }, e: { r: 2, c: COL.AD } });
+  rowHeights[2] = { hpt: 22.5 };
+
+  // ---------- Row 4: Column headers ----------
+  const headerStyleFor = (fillRgb: string) => ({
+    font: { bold: true, sz: 11, color: { rgb: HEADER_WHITE } },
+    alignment: { horizontal: "center", vertical: "center", wrapText: true },
+    fill: { patternType: "solid", fgColor: { rgb: fillRgb } },
     border: ALL_MEDIUM,
-    numFmt: "#,##0.000",
+  });
+  SRC_HEADERS.forEach((h, i) => setCell(ws, 3, COL.A + i, h, headerStyleFor(SRC_AMBER)));
+  FGC_HEADERS.forEach((h, i) => setCell(ws, 3, COL.N + i, h, headerStyleFor(FGC_BLUE)));
+  STORED_HEADERS.forEach((h, i) => setCell(ws, 3, COL.AB + i, h, headerStyleFor(FGC_BLUE)));
+  rowHeights[3] = { hpt: 45.75 };
+
+  // ---------- Data rows (start at Excel row 5 → index 4) ----------
+  const dataStart = 4;
+  const opening = Number(dam.starting_balance_tons ?? 0);
+
+  const dataStyle = (opts: { numFmt?: string; align?: string } = {}) => ({
+    font: { sz: 10 },
+    alignment: { horizontal: opts.align || "center", vertical: "center", wrapText: true },
+    border: ALL_THIN,
+    ...(opts.numFmt ? { numFmt: opts.numFmt } : {}),
   });
 
-  // Data rows styling
-  for (let r = dataStart; r <= dataEnd; r++) {
-    for (let c = 0; c < TOTAL_COLS; c++) {
-      if (c === GAP_COL) continue;
-      const ref = cellRef(r, c);
-      if (!ws[ref]) ws[ref] = { t: "s", v: "" };
-      const v = ws[ref].v;
-      const isNumeric = typeof v === "number";
-      if (isNumeric) ws[ref].t = "n";
+  sorted.forEach((m, idx) => {
+    const r = dataStart + idx;
+    const excelRow = r + 1;
+    const isIn = m.movement_type === "incoming";
 
-      const inLeft = c <= LEFT_END;
-      const inRight = c >= RIGHT_START && c <= RIGHT_END;
-      const isIn = c === IN_COL;
-      const isOut = c === OUT_COL;
-      const isNett = c === NETT_COL;
+    // SOURCE (A..L)
+    setCell(ws, r, COL.A, asDate(m.src_date_of_departure), dataStyle(), undefined, "yyyy-mm-dd");
+    setCell(ws, r, COL.B, fmtTimeStr(m.src_time), dataStyle());
+    setCell(ws, r, COL.C, m.src_vehicle_registration || "", dataStyle());
+    setCell(ws, r, COL.D, m.src_haulier || "", dataStyle());
+    setCell(ws, r, COL.E, m.src_delivery_note || "", dataStyle());
+    setCell(ws, r, COL.F, m.src_mill_number || "", dataStyle());
+    setCell(ws, r, COL.G, m.src_mill || "", dataStyle());
+    setCell(ws, r, COL.H, num(m.src_gross_mass), dataStyle({ numFmt: "0.00", align: "right" }));
+    setCell(ws, r, COL.I, num(m.src_tare_mass), dataStyle({ numFmt: "0.00", align: "right" }));
+    // Nett Mass formula =H-I
+    setCell(ws, r, COL.J, undefined, dataStyle({ numFmt: "0.00", align: "right" }), `H${excelRow}-I${excelRow}`);
+    setCell(ws, r, COL.K, num(m.src_molasses_temperature), dataStyle({ numFmt: "0.0", align: "right" }));
+    setCell(ws, r, COL.L, m.src_sample_number || "", dataStyle());
 
-      const border: any = { ...ALL_THIN };
-      if (c === LEFT_END) border.right = MEDIUM;
-      if (c === RIGHT_START) border.left = MEDIUM;
-      if (c === RIGHT_END) border.right = MEDIUM;
+    // FGC (N..AA)
+    setCell(ws, r, COL.N, asDate(m.fgc_date_of_arrival), dataStyle(), undefined, "yyyy-mm-dd");
+    setCell(ws, r, COL.O, fmtTimeStr(m.fgc_time), dataStyle());
+    setCell(ws, r, COL.P, m.fgc_vehicle_registration || "", dataStyle());
+    setCell(ws, r, COL.Q, m.fgc_haulier || "", dataStyle());
+    setCell(ws, r, COL.R, m.fgc_consignment_note_number || "", dataStyle());
+    setCell(ws, r, COL.S, m.fgc_zsm_weighbridge_number || "", dataStyle());
+    setCell(ws, r, COL.T, num(m.fgc_gross_mass), dataStyle({ numFmt: "0.00", align: "right" }));
+    setCell(ws, r, COL.U, num(m.fgc_tare_mass), dataStyle({ numFmt: "0.00", align: "right" }));
+    // Nettmass formula =T-U
+    setCell(ws, r, COL.V, undefined, dataStyle({ numFmt: "0.00", align: "right" }), `T${excelRow}-U${excelRow}`);
+    // Variance =V-J
+    setCell(ws, r, COL.W, undefined, dataStyle({ numFmt: "0.00", align: "right" }), `V${excelRow}-J${excelRow}`);
+    setCell(ws, r, COL.X, num(m.fgc_brix), dataStyle({ numFmt: "0.0", align: "right" }));
+    setCell(ws, r, COL.Y, m.fgc_in_out || (isIn ? "in" : "out"), dataStyle());
+    setCell(ws, r, COL.Z, m.fgc_zsm_operator || "", dataStyle());
+    setCell(ws, r, COL.AA, m.fgc_if_out_haulier || "", dataStyle());
 
-      const style: any = {
-        alignment: { horizontal: isNumeric ? "right" : "left", vertical: "center", wrapText: true },
-        border,
-        font: { sz: 10 },
-      };
+    // MOLASSES STORED (AB/AC/AD)
+    setCell(ws, r, COL.AB, undefined, dataStyle({ numFmt: "0.00", align: "right" }), `IF(Y${excelRow}="In",V${excelRow},0)`);
+    setCell(ws, r, COL.AC, undefined, dataStyle({ numFmt: "0.00", align: "right" }), `IF(Y${excelRow}="Out",V${excelRow},0)`);
+    // NETT cumulative — first row uses opening balance
+    const nettFormula = idx === 0
+      ? `${opening}+AB${excelRow}-AC${excelRow}`
+      : `AD${excelRow - 1}+AB${excelRow}-AC${excelRow}`;
+    setCell(ws, r, COL.AD, undefined, dataStyle({ numFmt: "0.00", align: "right" }), nettFormula);
+  });
 
-      // Number formats for mass/numeric cols
-      if (inLeft && c >= LEFT_START + 7 && c <= LEFT_START + 10) style.numFmt = "#,##0.000";
-      if (inRight && c >= RIGHT_START + 6 && c <= RIGHT_START + 10) style.numFmt = "#,##0.000";
+  const lastDataRow = dataStart + Math.max(sorted.length - 1, 0); // 0-indexed
+  const totalsRowIdx = lastDataRow + 1; // one row right after last data
+  const labelRowIdx = totalsRowIdx + 1;
+  const allowanceRowIdx = labelRowIdx + 1;
+  const truckRowsStart = allowanceRowIdx + 1;
 
-      if (isIn) {
-        style.numFmt = "#,##0.000";
-        style.fill = { patternType: "solid", fgColor: { rgb: IN_GREEN } };
-        style.font = { bold: true, sz: 10 };
-      }
-      if (isOut) {
-        style.numFmt = "#,##0.000";
-        style.fill = { patternType: "solid", fgColor: { rgb: OUT_RED } };
-        style.font = { bold: true, sz: 10 };
-      }
-      if (isNett) {
-        style.numFmt = "#,##0.000";
-        style.fill = { patternType: "solid", fgColor: { rgb: NETT_GREY } };
-        style.font = { bold: true, sz: 10 };
-      }
+  // If no data rows, still place totals at row 5 (idx 4)
+  const totalsRow = sorted.length === 0 ? 4 : totalsRowIdx;
+  const totalsExcel = totalsRow + 1;
+  const firstDataExcel = dataStart + 1;
+  const lastDataExcel = sorted.length === 0 ? firstDataExcel : lastDataRow + 1;
 
-      ws[ref].s = style;
-    }
+  // ---------- Totals row (AVERAGE / SUBTOTAL / SUM) ----------
+  const totalStyle = {
+    font: { bold: true, sz: 11, color: { rgb: "FF0000" } },
+    alignment: { horizontal: "right", vertical: "center" },
+    fill: { patternType: "solid", fgColor: { rgb: SUBTOTAL_GREY } },
+    border: ALL_MEDIUM,
+    numFmt: "0.00",
+  };
+  if (sorted.length > 0) {
+    setCell(ws, totalsRow, COL.H, undefined, totalStyle, `AVERAGE(H${firstDataExcel}:H${lastDataExcel})`);
+    setCell(ws, totalsRow, COL.I, undefined, totalStyle, `AVERAGE(I${firstDataExcel}:I${lastDataExcel})`);
+    setCell(ws, totalsRow, COL.J, undefined, totalStyle, `SUBTOTAL(9,J${firstDataExcel}:J${lastDataExcel})`);
+    setCell(ws, totalsRow, COL.T, undefined, totalStyle, `AVERAGE(T${firstDataExcel}:T${lastDataExcel})`);
+    setCell(ws, totalsRow, COL.U, undefined, totalStyle, `AVERAGE(U${firstDataExcel}:U${lastDataExcel})`);
+    setCell(ws, totalsRow, COL.V, undefined, totalStyle, `SUBTOTAL(9,V${firstDataExcel}:V${lastDataExcel})`);
+    setCell(ws, totalsRow, COL.W, undefined, totalStyle, `SUBTOTAL(9,W${firstDataExcel}:W${lastDataExcel})`);
+    setCell(ws, totalsRow, COL.X, undefined, totalStyle, `AVERAGE(X${firstDataExcel}:X${lastDataExcel})`);
+    setCell(ws, totalsRow, COL.AB, undefined, totalStyle, `SUM(AB${firstDataExcel}:AB${lastDataExcel})`);
+    setCell(ws, totalsRow, COL.AC, undefined, totalStyle, `SUM(AC${firstDataExcel}:AC${lastDataExcel})`);
+    setCell(ws, totalsRow, COL.AD, undefined, totalStyle, `AB${totalsExcel}-AC${totalsExcel}`);
   }
 
-  // Totals row
-  ws["!merges"].push({ s: { r: totalsRowIdx, c: RIGHT_START }, e: { r: totalsRowIdx, c: IN_COL - 1 } });
-  for (let c = 0; c < TOTAL_COLS; c++) {
-    if (c === GAP_COL) continue;
-    const isVal = c === IN_COL || c === OUT_COL || c === NETT_COL;
-    let fill = c <= LEFT_END ? "F9FAFB" : "FEF3C7";
-    if (c === IN_COL) fill = IN_GREEN;
-    if (c === OUT_COL) fill = OUT_RED;
-    if (c === NETT_COL) fill = NETT_GREY;
-    styleCell(ws, totalsRowIdx, c, {
-      font: { bold: true, sz: 12 },
-      alignment: { horizontal: "right", vertical: "center" },
-      fill: { patternType: "solid", fgColor: { rgb: fill } },
-      border: ALL_MEDIUM,
-      ...(isVal ? { numFmt: "#,##0.000" } : {}),
-    });
-  }
+  // Fill row 2 G2:J2 total formula
+  setCell(ws, 1, COL.G, undefined, {
+    font: { bold: true, sz: 14, color: { rgb: "FF0000" } },
+    alignment: { horizontal: "center", vertical: "center" },
+    border: ALL_MEDIUM,
+    numFmt: "#,##0.00",
+  }, sorted.length > 0 ? `AD${totalsExcel}` : `${opening}`);
+  merges.push({ s: { r: 1, c: COL.G }, e: { r: 1, c: COL.J } });
 
-  // Style gap column (blank, no borders) for all rows used
-  for (let r = 0; r <= totalsRowIdx; r++) {
-    const ref = cellRef(r, GAP_COL);
-    if (!ws[ref]) ws[ref] = { t: "s", v: "" };
-    ws[ref].s = { fill: { patternType: "solid", fgColor: { rgb: "FFFFFF" } } };
-  }
+  // ---------- Label row (Average / Total / Allowable Variance) ----------
+  const labelStyle = {
+    font: { bold: true, sz: 11, color: { rgb: "002060" } },
+    alignment: { horizontal: "center", vertical: "center" },
+  };
+  setCell(ws, labelRowIdx, COL.H, "Average", labelStyle);
+  setCell(ws, labelRowIdx, COL.I, "Average", labelStyle);
+  setCell(ws, labelRowIdx, COL.J, "Total", labelStyle);
+  setCell(ws, labelRowIdx, COL.T, "Average", labelStyle);
+  setCell(ws, labelRowIdx, COL.U, "Average", labelStyle);
+  setCell(ws, labelRowIdx, COL.V, "Total", labelStyle);
+  setCell(ws, labelRowIdx, COL.W, "Total", labelStyle);
+  setCell(ws, labelRowIdx, COL.X, "Average", labelStyle);
+  setCell(ws, labelRowIdx, COL.Z, "Allowable Varience", labelStyle);
+  setCell(ws, labelRowIdx, COL.AA, 0.005, { ...labelStyle, numFmt: "0.000" });
+  setCell(ws, labelRowIdx, COL.AB, undefined, { ...labelStyle, numFmt: "0.00" }, `AB${totalsExcel}*AA${labelRowIdx + 1}`);
 
-  ws["!freeze"] = { xSplit: 0, ySplit: headerRowIdx + 1 };
+  // ---------- Allowable Variance line + Truck stats (left side & right side) ----------
+  setCell(ws, allowanceRowIdx, COL.H, "Allowable Varience", labelStyle);
+  setCell(ws, allowanceRowIdx, COL.I, 0.005, { ...labelStyle, numFmt: "0.000" });
+  setCell(ws, allowanceRowIdx, COL.J, undefined, { ...labelStyle, numFmt: "0.00" }, `J${totalsExcel}*I${allowanceRowIdx + 1}`);
+
+  // Truck stats block (Z..AB)
+  setCell(ws, allowanceRowIdx, COL.Z, "Ave truck in", labelStyle);
+  setCell(ws, allowanceRowIdx, COL.AB, undefined, { ...labelStyle, numFmt: "0.00" }, `IFERROR(AB${totalsExcel}/AB${truckRowsStart + 1},0)`);
+
+  setCell(ws, truckRowsStart, COL.Z, "No of trucks in", labelStyle);
+  setCell(ws, truckRowsStart, COL.AB, undefined, labelStyle, `COUNTIF(Y${firstDataExcel}:Y${lastDataExcel},"in")`);
+
+  setCell(ws, truckRowsStart + 1, COL.Z, "No of Trucks out", labelStyle);
+  setCell(ws, truckRowsStart + 1, COL.AB, undefined, labelStyle, `COUNTIF(Y${firstDataExcel}:Y${lastDataExcel},"out")`);
+
+  setCell(ws, truckRowsStart + 2, COL.Z, "Ave truck out", labelStyle);
+  setCell(ws, truckRowsStart + 2, COL.AB, undefined, { ...labelStyle, numFmt: "0.00" }, `IFERROR(AC${totalsExcel}/AB${truckRowsStart + 2},0)`);
+
+  // ---------- Sheet metadata ----------
+  ws["!ref"] = `A1:${cellRef(truckRowsStart + 2, COL.AD)}`;
+  ws["!cols"] = Array.from({ length: TOTAL_COLS }, (_, i) => ({ wch: COL_WIDTHS[i] ?? 10 }));
+  ws["!rows"] = rowHeights;
+  ws["!merges"] = merges;
+  ws["!freeze"] = { xSplit: 0, ySplit: 4 };
 
   XLSX.utils.book_append_sheet(wb, ws, sanitizeSheet(dam.name));
 }
 
-function addSummarySheet(wb: XLSX.WorkBook, dams: Dam[], movements: Movement[]) {
-  const aoa: any[][] = [];
-  aoa.push(["MOLASSES RECORDS FOR FGC 2025/26 — SUMMARY", "", "", "", ""]);
-  aoa.push([]);
-  aoa.push(["Dam", "Opening (tons)", "IN (tons)", "OUT (tons)", "NETT (tons)"]);
-
-  let tIn = 0, tOut = 0, tOpen = 0, tNett = 0;
-  for (const d of dams) {
-    const rows = movements.filter((m) => m.dam_id === d.id);
-    const report = buildDamReportRows(d, rows);
-    aoa.push([d.name, report.opening, report.totalIn, report.totalOut, report.closing]);
-    tOpen += report.opening; tIn += report.totalIn; tOut += report.totalOut; tNett += report.closing;
-  }
-  aoa.push([]);
-  aoa.push(["TOTAL", tOpen, tIn, tOut, tNett]);
-
-  const ws = XLSX.utils.aoa_to_sheet(aoa);
-  ws["!cols"] = [{ wch: 18 }, { wch: 16 }, { wch: 14 }, { wch: 14 }, { wch: 16 }];
-  ws["!merges"] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 4 } }];
-
-  styleCell(ws, 0, 0, {
-    font: { bold: true, sz: 16 },
+function addSummarySheet(wb: XLSX.WorkBook, dams: Dam[]) {
+  const headers = [
+    "", "Source Mill", "In ZSM", "Out Anchor", "Out ZSM",
+    "Balance Anc.", "Balance ZSM", "Varience in", "Varience out", "Allowable varience",
+  ];
+  const ws: XLSX.WorkSheet = {};
+  const headerStyle = {
+    font: { bold: true, sz: 11 },
     alignment: { horizontal: "center", vertical: "center" },
-    fill: { patternType: "solid", fgColor: { rgb: TITLE_BG } },
+    fill: { patternType: "solid", fgColor: { rgb: "D9D9D9" } },
     border: ALL_MEDIUM,
+  };
+  headers.forEach((h, i) => setCell(ws, 0, i, h, headerStyle));
+
+  const cellStyle = { font: { sz: 11 }, alignment: { horizontal: "right" }, border: ALL_THIN, numFmt: "#,##0.00" };
+  const labelStyle = { font: { bold: true, sz: 11 }, alignment: { horizontal: "left" }, border: ALL_THIN };
+
+  dams.forEach((d, idx) => {
+    const r = idx + 1;
+    const sheet = `'${sanitizeSheet(d.name)}'`;
+    setCell(ws, r, 0, d.name, labelStyle);
+    setCell(ws, r, 1, undefined, cellStyle, `IFERROR(${sheet}!J5:J10000,0)`); // placeholder; replaced below safer
+    // Safer: reference the totals NETT (AD column total) via SUM of in/out
+    // We'll compute from sheet via simple SUM ranges to avoid hardcoding totals row index.
+    setCell(ws, r, 1, undefined, cellStyle, `SUM(${sheet}!J5:J10000)`);
+    setCell(ws, r, 2, undefined, cellStyle, `SUM(${sheet}!AB5:AB10000)/2`); // /2 because totals row also gets summed
+    // Correct approach: exclude totals row by using fixed range for data only — but row count varies.
+    // Use SUMIF on column Y instead for IN/OUT to be robust.
+    setCell(ws, r, 2, undefined, cellStyle, `SUMIF(${sheet}!Y5:Y10000,"in",${sheet}!V5:V10000)`);
+    setCell(ws, r, 4, undefined, cellStyle, `SUMIF(${sheet}!Y5:Y10000,"out",${sheet}!V5:V10000)`);
+    setCell(ws, r, 5, undefined, cellStyle, `B${r + 1}-D${r + 1}`);
+    setCell(ws, r, 6, undefined, cellStyle, `C${r + 1}-E${r + 1}`);
+    setCell(ws, r, 7, undefined, cellStyle, `B${r + 1}-C${r + 1}`);
+    setCell(ws, r, 8, undefined, cellStyle, `D${r + 1}-E${r + 1}`);
+    setCell(ws, r, 9, undefined, cellStyle, `C${r + 1}*0.005`);
   });
-  for (let c = 0; c < 5; c++) {
-    styleCell(ws, 2, c, {
-      font: { bold: true, sz: 11 },
-      alignment: { horizontal: "center", vertical: "center" },
-      fill: { patternType: "solid", fgColor: { rgb: HEADER_GREY } },
-      border: ALL_MEDIUM,
-    });
-  }
-  for (let r = 3; r < 3 + dams.length; r++) {
-    for (let c = 0; c < 5; c++) {
-      const isNum = c >= 1;
-      styleCell(ws, r, c, {
-        alignment: { horizontal: isNum ? "right" : "left" },
-        border: ALL_THIN,
-        ...(isNum ? { numFmt: "#,##0.000" } : {}),
-      });
+
+  const tRow = dams.length + 1;
+  const totalStyle = { ...cellStyle, font: { bold: true, sz: 11 }, fill: { patternType: "solid", fgColor: { rgb: "FEF3C7" } } };
+  setCell(ws, tRow, 0, "Total", { ...labelStyle, font: { bold: true, sz: 11 } });
+  for (let c = 1; c <= 9; c++) {
+    if (c === 7 || c === 8 || c === 9) {
+      const colLetter = XLSX.utils.encode_col(c);
+      if (c === 7) setCell(ws, tRow, c, undefined, totalStyle, `B${tRow + 1}-C${tRow + 1}`);
+      else if (c === 8) setCell(ws, tRow, c, undefined, totalStyle, `D${tRow + 1}-E${tRow + 1}`);
+      else setCell(ws, tRow, c, undefined, totalStyle, `C${tRow + 1}*0.005`);
+      void colLetter;
+    } else {
+      const colLetter = XLSX.utils.encode_col(c);
+      setCell(ws, tRow, c, undefined, totalStyle, `SUM(${colLetter}2:${colLetter}${tRow})`);
     }
   }
-  const tRow = 3 + dams.length + 1;
-  for (let c = 0; c < 5; c++) {
-    styleCell(ws, tRow, c, {
-      font: { bold: true, sz: 12 },
-      alignment: { horizontal: c === 0 ? "left" : "right" },
-      fill: { patternType: "solid", fgColor: { rgb: "FEF3C7" } },
-      border: ALL_MEDIUM,
-      ...(c >= 1 ? { numFmt: "#,##0.000" } : {}),
-    });
-  }
 
+  ws["!ref"] = `A1:J${tRow + 1}`;
+  ws["!cols"] = [{ wch: 14 }, ...Array(9).fill({ wch: 13 })];
   XLSX.utils.book_append_sheet(wb, ws, "Summary");
 }
 
@@ -350,11 +396,11 @@ export async function exportMovementsToExcel(opts: {
   const allDams = opts.allDams ?? opts.dams;
 
   if (opts.perDamSheets) {
-    addSummarySheet(wb, allDams, opts.movements);
-    for (const dam of allDams) {
+    allDams.forEach((dam, idx) => {
       const rows = opts.movements.filter((m) => m.dam_id === dam.id);
-      addDamSheet(wb, dam, allDams, rows);
-    }
+      addDamSheet(wb, dam, rows, idx);
+    });
+    addSummarySheet(wb, allDams);
     if (allDams.length === 0) {
       const ws = XLSX.utils.aoa_to_sheet([["No data"]]);
       XLSX.utils.book_append_sheet(wb, ws, "Movements");
@@ -363,10 +409,11 @@ export async function exportMovementsToExcel(opts: {
     const dam = opts.dams[0];
     if (!dam) throw new Error("No dam selected");
     const rows = opts.movements.filter((m) => m.dam_id === dam.id);
-    addDamSheet(wb, dam, allDams, rows);
+    const idx = Math.max(0, allDams.findIndex((d) => d.id === dam.id));
+    addDamSheet(wb, dam, rows, idx);
   }
 
-  const buf = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+  const buf = XLSX.write(wb, { bookType: "xlsx", type: "array", cellDates: true });
   const blob = new Blob([buf], {
     type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   });
