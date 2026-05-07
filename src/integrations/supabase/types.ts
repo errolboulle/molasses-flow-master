@@ -142,6 +142,7 @@ export type Database = {
           current_volume_tons: number
           deleted_at: string | null
           id: string
+          is_demo: boolean
           location: string | null
           name: string
           notes: string | null
@@ -157,6 +158,7 @@ export type Database = {
           current_volume_tons?: number
           deleted_at?: string | null
           id?: string
+          is_demo?: boolean
           location?: string | null
           name: string
           notes?: string | null
@@ -172,6 +174,7 @@ export type Database = {
           current_volume_tons?: number
           deleted_at?: string | null
           id?: string
+          is_demo?: boolean
           location?: string | null
           name?: string
           notes?: string | null
@@ -189,6 +192,7 @@ export type Database = {
           deleted_at: string | null
           fgc_net_mass: number
           id: string
+          is_demo: boolean
           status: Database["public"]["Enums"]["load_status"]
           timestamp: string
           truck_id: string
@@ -204,6 +208,7 @@ export type Database = {
           deleted_at?: string | null
           fgc_net_mass: number
           id?: string
+          is_demo?: boolean
           status?: Database["public"]["Enums"]["load_status"]
           timestamp?: string
           truck_id: string
@@ -219,6 +224,7 @@ export type Database = {
           deleted_at?: string | null
           fgc_net_mass?: number
           id?: string
+          is_demo?: boolean
           status?: Database["public"]["Enums"]["load_status"]
           timestamp?: string
           truck_id?: string
@@ -268,6 +274,7 @@ export type Database = {
           fgc_zsm_operator: string | null
           fgc_zsm_weighbridge_number: string | null
           id: string
+          is_demo: boolean
           movement_type: string
           notes: string | null
           occurred_at: string
@@ -309,6 +316,7 @@ export type Database = {
           fgc_zsm_operator?: string | null
           fgc_zsm_weighbridge_number?: string | null
           id?: string
+          is_demo?: boolean
           movement_type: string
           notes?: string | null
           occurred_at?: string
@@ -350,6 +358,7 @@ export type Database = {
           fgc_zsm_operator?: string | null
           fgc_zsm_weighbridge_number?: string | null
           id?: string
+          is_demo?: boolean
           movement_type?: string
           notes?: string | null
           occurred_at?: string
@@ -579,6 +588,7 @@ export type Database = {
           deleted_at: string | null
           driver_name: string
           id: string
+          is_demo: boolean
           registration_number: string
           status: Database["public"]["Enums"]["truck_status"]
           transporter_company: string
@@ -589,6 +599,7 @@ export type Database = {
           deleted_at?: string | null
           driver_name: string
           id?: string
+          is_demo?: boolean
           registration_number: string
           status?: Database["public"]["Enums"]["truck_status"]
           transporter_company: string
@@ -599,6 +610,7 @@ export type Database = {
           deleted_at?: string | null
           driver_name?: string
           id?: string
+          is_demo?: boolean
           registration_number?: string
           status?: Database["public"]["Enums"]["truck_status"]
           transporter_company?: string
@@ -651,6 +663,7 @@ export type Database = {
           deleted_at: string | null
           fgc_net_mass: number
           id: string
+          is_demo: boolean
           status: Database["public"]["Enums"]["load_status"]
           timestamp: string
           truck_id: string
@@ -698,6 +711,7 @@ export type Database = {
           fgc_zsm_operator: string | null
           fgc_zsm_weighbridge_number: string | null
           id: string
+          is_demo: boolean
           movement_type: string
           notes: string | null
           occurred_at: string
@@ -724,6 +738,7 @@ export type Database = {
         }
       }
       is_active: { Args: { _user_id: string }; Returns: boolean }
+      is_demo_user: { Args: never; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "operator" | "viewer" | "supervisor" | "demo"
