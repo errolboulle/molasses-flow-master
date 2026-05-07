@@ -49,6 +49,7 @@ const navItems = [
 
 export function AppShell({ children }: { children: ReactNode }) {
   const { user, roles, signOut, isAdmin } = useAuth();
+  const isDemo = roles.includes("demo");
   const location = useLocation();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
