@@ -99,6 +99,14 @@ function Index() {
                 {signingIn ? "Signing in…" : "Sign in"} <ArrowRight className="h-4 w-4" />
               </Button>
             </form>
+            <div className="relative flex items-center gap-3">
+              <div className="h-px flex-1 bg-border/60" />
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">or</span>
+              <div className="h-px flex-1 bg-border/60" />
+            </div>
+            <Button type="button" variant="outline" size="lg" className="w-full justify-between" onClick={handleDemo} disabled={demoLoading}>
+              {demoLoading ? "Loading demo…" : "Try the demo (read-only)"} <ArrowRight className="h-4 w-4" />
+            </Button>
             <div className="grid grid-cols-2 gap-3 border-t border-border/70 pt-5">
               {features.map((feature) => {
                 const Icon = feature.icon;
