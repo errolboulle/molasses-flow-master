@@ -34,16 +34,15 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 const navItems = [
-  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["admin", "operator", "supervisor", "viewer"] },
-  { to: "/dams", label: "Dams", icon: Database, roles: ["admin", "operator", "supervisor", "viewer"] },
-  
+  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["admin", "operator", "supervisor", "viewer", "demo"] },
+  { to: "/dams", label: "Dams", icon: Database, roles: ["admin", "operator", "supervisor", "viewer", "demo"] },
   { to: "/weigh-bridge", label: "Weigh Bridge Mode", icon: Gauge, roles: ["admin", "operator", "supervisor"] },
   { to: "/scan", label: "Scan Document", icon: ScanLine, roles: ["admin", "operator"] },
-  { to: "/history", label: "History", icon: History, roles: ["admin", "operator", "supervisor", "viewer"] },
-  { to: "/insights", label: "Insights", icon: TrendingUp, roles: ["admin", "operator", "supervisor", "viewer"] },
-  { to: "/reports", label: "Reports", icon: BarChart3, roles: ["admin", "operator", "supervisor", "viewer"] },
+  { to: "/history", label: "History", icon: History, roles: ["admin", "operator", "supervisor", "viewer", "demo"] },
+  { to: "/insights", label: "Insights", icon: TrendingUp, roles: ["admin", "operator", "supervisor", "viewer", "demo"] },
+  { to: "/reports", label: "Reports", icon: BarChart3, roles: ["admin", "operator", "supervisor", "viewer", "demo"] },
   { to: "/import", label: "Import Excel", icon: Upload, roles: ["admin", "operator"] },
-  { to: "/audit", label: "Audit Log", icon: ScrollText, roles: ["admin", "operator", "supervisor", "viewer"] },
+  { to: "/audit", label: "Audit Log", icon: ScrollText, roles: ["admin", "operator", "supervisor", "viewer", "demo"] },
   { to: "/users", label: "Users", icon: Users, roles: ["admin"] },
   { to: "/settings", label: "Settings", icon: Settings, roles: ["admin"] },
 ] as const;
