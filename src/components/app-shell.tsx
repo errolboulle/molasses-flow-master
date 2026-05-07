@@ -34,22 +34,22 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 const navItems = [
-  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["admin", "operator", "supervisor", "viewer"] },
-  { to: "/dams", label: "Dams", icon: Database, roles: ["admin", "operator", "supervisor", "viewer"] },
-  
+  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["admin", "operator", "supervisor", "viewer", "demo"] },
+  { to: "/dams", label: "Dams", icon: Database, roles: ["admin", "operator", "supervisor", "viewer", "demo"] },
   { to: "/weigh-bridge", label: "Weigh Bridge Mode", icon: Gauge, roles: ["admin", "operator", "supervisor"] },
   { to: "/scan", label: "Scan Document", icon: ScanLine, roles: ["admin", "operator"] },
-  { to: "/history", label: "History", icon: History, roles: ["admin", "operator", "supervisor", "viewer"] },
-  { to: "/insights", label: "Insights", icon: TrendingUp, roles: ["admin", "operator", "supervisor", "viewer"] },
-  { to: "/reports", label: "Reports", icon: BarChart3, roles: ["admin", "operator", "supervisor", "viewer"] },
+  { to: "/history", label: "History", icon: History, roles: ["admin", "operator", "supervisor", "viewer", "demo"] },
+  { to: "/insights", label: "Insights", icon: TrendingUp, roles: ["admin", "operator", "supervisor", "viewer", "demo"] },
+  { to: "/reports", label: "Reports", icon: BarChart3, roles: ["admin", "operator", "supervisor", "viewer", "demo"] },
   { to: "/import", label: "Import Excel", icon: Upload, roles: ["admin", "operator"] },
-  { to: "/audit", label: "Audit Log", icon: ScrollText, roles: ["admin", "operator", "supervisor", "viewer"] },
+  { to: "/audit", label: "Audit Log", icon: ScrollText, roles: ["admin", "operator", "supervisor", "viewer", "demo"] },
   { to: "/users", label: "Users", icon: Users, roles: ["admin"] },
   { to: "/settings", label: "Settings", icon: Settings, roles: ["admin"] },
 ] as const;
 
 export function AppShell({ children }: { children: ReactNode }) {
   const { user, roles, signOut, isAdmin } = useAuth();
+  const isDemo = roles.includes("demo");
   const location = useLocation();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -177,6 +177,11 @@ export function AppShell({ children }: { children: ReactNode }) {
         </header>
 
         <main className="flex-1 overflow-y-auto pb-16 lg:pb-0">
+          {isDemo && (
+            <div className="border-b border-amber-500/30 bg-amber-500/10 px-4 py-2 text-center text-xs font-semibold text-amber-200 lg:px-8">
+              👀 You're in <span className="font-bold">Demo Mode</span> — feel free to explore. Changes are disabled.
+            </div>
+          )}
           <div className="container max-w-7xl mx-auto px-4 py-6 lg:px-8 lg:py-8">{children}</div>
         </main>
 

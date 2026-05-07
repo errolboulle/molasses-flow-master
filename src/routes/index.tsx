@@ -19,6 +19,7 @@ function Index() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [signingIn, setSigningIn] = useState(false);
+  const [demoLoading, setDemoLoading] = useState(false);
 
   const handleSignIn = async (event: FormEvent) => {
     event.preventDefault();
@@ -30,6 +31,18 @@ function Index() {
       return;
     }
     toast.success("Signed in");
+    navigate({ to: "/dashboard" });
+  };
+
+  const handleDemo = async () => {
+    setDemoLoading(true);
+    const { error } = await supabase.auth.signInWithPassword({ email: "demo@flowops.app", password: "Demo1234!" });
+    setDemoLoading(false);
+    if (error) {
+      toast.error("Demo unavailable: " + error.message);
+      return;
+    }
+    toast.success("Welcome to the demo");
     navigate({ to: "/dashboard" });
   };
 
@@ -86,6 +99,14 @@ function Index() {
                 {signingIn ? "Signing in…" : "Sign in"} <ArrowRight className="h-4 w-4" />
               </Button>
             </form>
+            <div className="relative flex items-center gap-3">
+              <div className="h-px flex-1 bg-border/60" />
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">or</span>
+              <div className="h-px flex-1 bg-border/60" />
+            </div>
+            <Button type="button" variant="outline" size="lg" className="w-full justify-between" onClick={handleDemo} disabled={demoLoading}>
+              {demoLoading ? "Loading demo…" : "Try the demo (read-only)"} <ArrowRight className="h-4 w-4" />
+            </Button>
             <div className="grid grid-cols-2 gap-3 border-t border-border/70 pt-5">
               {features.map((feature) => {
                 const Icon = feature.icon;
