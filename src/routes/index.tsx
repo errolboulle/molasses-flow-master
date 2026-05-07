@@ -19,6 +19,7 @@ function Index() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [signingIn, setSigningIn] = useState(false);
+  const [demoLoading, setDemoLoading] = useState(false);
 
   const handleSignIn = async (event: FormEvent) => {
     event.preventDefault();
@@ -30,6 +31,18 @@ function Index() {
       return;
     }
     toast.success("Signed in");
+    navigate({ to: "/dashboard" });
+  };
+
+  const handleDemo = async () => {
+    setDemoLoading(true);
+    const { error } = await supabase.auth.signInWithPassword({ email: "demo@flowops.app", password: "Demo1234!" });
+    setDemoLoading(false);
+    if (error) {
+      toast.error("Demo unavailable: " + error.message);
+      return;
+    }
+    toast.success("Welcome to the demo");
     navigate({ to: "/dashboard" });
   };
 
