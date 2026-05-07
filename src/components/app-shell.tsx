@@ -177,6 +177,11 @@ export function AppShell({ children }: { children: ReactNode }) {
         </header>
 
         <main className="flex-1 overflow-y-auto pb-16 lg:pb-0">
+          {isDemo && (
+            <div className="border-b border-amber-500/30 bg-amber-500/10 px-4 py-2 text-center text-xs font-semibold text-amber-200 lg:px-8">
+              👀 You're in <span className="font-bold">Demo Mode</span> — feel free to explore. Changes are disabled.
+            </div>
+          )}
           <div className="container max-w-7xl mx-auto px-4 py-6 lg:px-8 lg:py-8">{children}</div>
         </main>
 
