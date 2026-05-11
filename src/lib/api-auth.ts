@@ -19,6 +19,15 @@ export async function requireApiAuth(request: Request, allowedRoles?: AppRole[])
   const { data: userData, error } = await supabaseAdmin.auth.getUser(token);
   if (error || !userData.user) return { error: jsonError("Unauthorized", 401) } as const;
 
+  const { data: profileData } = await (supabaseAdmin as any)
+    .from("profiles")
+    .select("status")
+    .eq("id", userData.user.id)
+    .maybeSingle();
+  if (profileData?.status && profileData.status !== "active") {
+    return { error: jsonError("Account disabled", 401) } as const;
+  }
+
   const { data: rolesData } = await (supabaseAdmin as any)
     .from("user_roles")
     .select("role")
