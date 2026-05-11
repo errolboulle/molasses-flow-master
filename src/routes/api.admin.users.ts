@@ -78,6 +78,12 @@ export const Route = createFileRoute("/api/admin/users")({
           });
           if (error) return logAndJsonError("api/admin/users PATCH auth", error, "Could not update user");
         }
+        if (status) {
+          const { error } = await supabaseAdmin.auth.admin.updateUserById(userId, {
+            ban_duration: status === "disabled" ? "87600h" : "none",
+          } as any);
+          if (error) return logAndJsonError("api/admin/users PATCH ban", error, "Could not update user status");
+        }
         if (role) {
           await supabaseAdmin.from("user_roles").delete().eq("user_id", userId);
           const { error } = await supabaseAdmin.from("user_roles").insert({ user_id: userId, role });
