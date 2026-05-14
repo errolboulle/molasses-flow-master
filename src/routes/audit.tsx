@@ -235,30 +235,32 @@ function AuditPage() {
             <Card className="p-8 text-center text-sm text-muted-foreground">No audit entries match these filters.</Card>
           ) : (
             <Card className="overflow-hidden">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[170px]">Date / Time</TableHead>
-                    <TableHead>User</TableHead>
-                    <TableHead>Action</TableHead>
-                    <TableHead>Category</TableHead>
-                    <TableHead>Details</TableHead>
-                    <TableHead className="w-[100px]">Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {paged.map((row) => (
-                    <TableRow key={row.id}>
-                      <TableCell className="text-xs text-muted-foreground tabular-nums">{fmtDateTime(row.timestamp)}</TableCell>
-                      <TableCell className="text-sm">{row.user_email ?? <span className="text-muted-foreground">—</span>}</TableCell>
-                      <TableCell><Badge variant="outline">{row.action}</Badge></TableCell>
-                      <TableCell className="text-sm">{categoryLabel(row.log_type)}</TableCell>
-                      <TableCell className="text-sm max-w-md truncate" title={detailsFor(row)}>{detailsFor(row)}</TableCell>
-                      <TableCell>{row.status ? <Badge variant={statusVariant(row.status)}>{row.status}</Badge> : <span className="text-muted-foreground text-xs">—</span>}</TableCell>
+              <div className="overflow-x-auto">
+                <Table className="min-w-[760px]">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-[170px]">Date / Time</TableHead>
+                      <TableHead>User</TableHead>
+                      <TableHead>Action</TableHead>
+                      <TableHead>Category</TableHead>
+                      <TableHead>Details</TableHead>
+                      <TableHead className="w-[100px]">Status</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {paged.map((row) => (
+                      <TableRow key={row.id}>
+                        <TableCell className="text-xs text-muted-foreground tabular-nums whitespace-nowrap">{fmtDateTime(row.timestamp)}</TableCell>
+                        <TableCell className="text-sm whitespace-nowrap">{row.user_email ?? <span className="text-muted-foreground">—</span>}</TableCell>
+                        <TableCell><Badge variant="outline">{row.action}</Badge></TableCell>
+                        <TableCell className="text-sm whitespace-nowrap">{categoryLabel(row.log_type)}</TableCell>
+                        <TableCell className="text-sm max-w-[18rem] md:max-w-md truncate" title={detailsFor(row)}>{detailsFor(row)}</TableCell>
+                        <TableCell>{row.status ? <Badge variant={statusVariant(row.status)}>{row.status}</Badge> : <span className="text-muted-foreground text-xs">—</span>}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
               <div className="px-4 pb-3">
                 <PaginationControls page={page} pageSize={pageSize} total={filtered.length} onPageChange={setPage} onPageSizeChange={setPageSize} />
               </div>
