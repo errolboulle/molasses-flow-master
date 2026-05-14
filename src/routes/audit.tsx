@@ -20,7 +20,7 @@ export const Route = createFileRoute("/audit")({
   errorComponent: RouteError,
 });
 
-type LogType = "all" | "user_login" | "excel_import" | "dam_adjustment" | "movement";
+type LogType = "all" | "user_login" | "excel_import" | "dam_adjustment" | "movement" | "system_error";
 
 interface AuditRow {
   id: string;
