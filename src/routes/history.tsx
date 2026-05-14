@@ -29,6 +29,8 @@ function HistoryPage() {
   const [to, setTo] = useState("");
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState<Movement | null>(null);
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(50);
 
   const { data: movements = [] } = useMovements({
     damId: damId || undefined,
@@ -45,6 +47,14 @@ function HistoryPage() {
         .some((v) => v?.toLowerCase().includes(s))
     );
   }, [movements, search]);
+
+  // Reset to first page when filters/search change
+  useEffect(() => { setPage(0); }, [damId, type, from, to, search, pageSize]);
+
+  const paged = useMemo(
+    () => filtered.slice(page * pageSize, page * pageSize + pageSize),
+    [filtered, page, pageSize]
+  );
 
   const damName = (id: string) => dams.find((d) => d.id === id)?.name ?? "—";
 
