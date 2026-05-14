@@ -39,13 +39,24 @@ function useAuditLogs() {
   return useQuery({
     queryKey: ["audit_logs"],
     queryFn: async (): Promise<AuditRow[]> => {
-      const { data, error } = await (supabase as any)
-        .from("audit_logs")
-        .select("*")
-        .order("timestamp", { ascending: false })
-        .limit(1000);
-      if (error) throw error;
-      return (data ?? []) as AuditRow[];
+      // Paginate through all rows (Supabase caps each request at 1000)
+      const pageSize = 1000;
+      const all: AuditRow[] = [];
+      let from = 0;
+      const HARD_CAP = 10000;
+      while (all.length < HARD_CAP) {
+        const { data, error } = await (supabase as any)
+          .from("audit_logs")
+          .select("*")
+          .order("timestamp", { ascending: false })
+          .range(from, from + pageSize - 1);
+        if (error) throw error;
+        const rows = (data ?? []) as AuditRow[];
+        all.push(...rows);
+        if (rows.length < pageSize) break;
+        from += pageSize;
+      }
+      return all;
     },
   });
 }
