@@ -7,14 +7,17 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { fmtDateTime, fmtTons } from "@/lib/types";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { Lock, Search } from "lucide-react";
+import { PaginationControls } from "@/components/pagination-controls";
+import { RouteError } from "@/components/route-error";
 
 export const Route = createFileRoute("/audit")({
   component: () => <ProtectedLayout><AuditPage /></ProtectedLayout>,
+  errorComponent: RouteError,
 });
 
 type LogType = "all" | "user_login" | "excel_import" | "dam_adjustment" | "movement";
