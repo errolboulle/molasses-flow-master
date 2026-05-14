@@ -157,6 +157,7 @@ function AuditPage() {
     excel_import: logs.filter((l) => l.log_type === "excel_import").length,
     dam_adjustment: logs.filter((l) => l.log_type === "dam_adjustment").length,
     movement: logs.filter((l) => l.log_type === "movement").length,
+    system_error: logs.filter((l) => l.log_type === "system_error").length,
   }), [logs]);
 
   if (!isAdmin) {
