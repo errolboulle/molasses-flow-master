@@ -18,11 +18,11 @@ import { RouteError } from "@/components/route-error";
 
 export const Route = createFileRoute("/scan")({
   component: () => (
-  errorComponent: RouteError,
     <ProtectedLayout>
       <ScanPage />
     </ProtectedLayout>
   ),
+  errorComponent: RouteError,
 });
 
 type ExtractedFields = Record<string, any>;
