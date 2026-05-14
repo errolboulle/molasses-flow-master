@@ -2,6 +2,7 @@ import { Outlet, Link, createRootRouteWithContext, HeadContent, Scripts } from "
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "@/lib/auth-context";
+import { RouteError } from "@/components/route-error";
 import appCss from "../styles.css?url";
 
 interface MyRouterContext {
@@ -46,6 +47,7 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
   shellComponent: RootShell,
   component: RootComponent,
   notFoundComponent: NotFoundComponent,
+  errorComponent: RouteError,
 });
 
 function RootShell({ children }: { children: React.ReactNode }) {
