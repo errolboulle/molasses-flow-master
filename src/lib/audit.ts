@@ -5,7 +5,8 @@ export type AuditLogType =
   | "excel_import"
   | "dam_adjustment"
   | "movement"
-  | "system";
+  | "system"
+  | "system_error";
 
 export type AuditStatus = "success" | "partial" | "failed" | null;
 
