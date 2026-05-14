@@ -20,7 +20,7 @@ export const Route = createFileRoute("/audit")({
   errorComponent: RouteError,
 });
 
-type LogType = "all" | "user_login" | "excel_import" | "dam_adjustment" | "movement";
+type LogType = "all" | "user_login" | "excel_import" | "dam_adjustment" | "movement" | "system_error";
 
 interface AuditRow {
   id: string;
@@ -74,6 +74,7 @@ function categoryLabel(t: string) {
     case "excel_import": return "Excel Import";
     case "dam_adjustment": return "Dam Adjustment";
     case "movement": return "Movement";
+    case "system_error": return "System Error";
     default: return t;
   }
 }
@@ -92,6 +93,8 @@ function detailsFor(row: AuditRow): string {
     }
     case "movement":
       return `${m.dam_name ?? "—"} • ${m.movement_type ?? ""} • ${m.vehicle_registration ?? "—"} • ${m.fgc_net_mass != null ? fmtTons(Number(m.fgc_net_mass)) : ""}`;
+    case "system_error":
+      return `${m.message ?? "error"}${m.url ? ` • ${String(m.url).replace(/^https?:\/\/[^/]+/, "")}` : ""}`;
     default:
       return JSON.stringify(m).slice(0, 120);
   }
@@ -154,6 +157,7 @@ function AuditPage() {
     excel_import: logs.filter((l) => l.log_type === "excel_import").length,
     dam_adjustment: logs.filter((l) => l.log_type === "dam_adjustment").length,
     movement: logs.filter((l) => l.log_type === "movement").length,
+    system_error: logs.filter((l) => l.log_type === "system_error").length,
   }), [logs]);
 
   if (!isAdmin) {
@@ -211,13 +215,16 @@ function AuditPage() {
       </Card>
 
       <Tabs value={tab} onValueChange={(v) => setTab(v as LogType)}>
-        <TabsList className="grid grid-cols-2 md:grid-cols-5 w-full">
-          <TabsTrigger value="all">All ({counts.all})</TabsTrigger>
-          <TabsTrigger value="user_login">User Logins ({counts.user_login})</TabsTrigger>
-          <TabsTrigger value="excel_import">Excel Imports ({counts.excel_import})</TabsTrigger>
-          <TabsTrigger value="dam_adjustment">Dam Adjustments ({counts.dam_adjustment})</TabsTrigger>
-          <TabsTrigger value="movement">Movements ({counts.movement})</TabsTrigger>
-        </TabsList>
+        <div className="-mx-2 overflow-x-auto px-2 pb-1">
+          <TabsList className="inline-flex w-max md:grid md:w-full md:grid-cols-6">
+            <TabsTrigger value="all">All ({counts.all})</TabsTrigger>
+            <TabsTrigger value="user_login">Logins ({counts.user_login})</TabsTrigger>
+            <TabsTrigger value="excel_import">Imports ({counts.excel_import})</TabsTrigger>
+            <TabsTrigger value="dam_adjustment">Adjustments ({counts.dam_adjustment})</TabsTrigger>
+            <TabsTrigger value="movement">Movements ({counts.movement})</TabsTrigger>
+            <TabsTrigger value="system_error">Errors ({counts.system_error})</TabsTrigger>
+          </TabsList>
+        </div>
 
         <TabsContent value={tab} className="mt-4">
           {isLoading ? (
@@ -228,30 +235,32 @@ function AuditPage() {
             <Card className="p-8 text-center text-sm text-muted-foreground">No audit entries match these filters.</Card>
           ) : (
             <Card className="overflow-hidden">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[170px]">Date / Time</TableHead>
-                    <TableHead>User</TableHead>
-                    <TableHead>Action</TableHead>
-                    <TableHead>Category</TableHead>
-                    <TableHead>Details</TableHead>
-                    <TableHead className="w-[100px]">Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {paged.map((row) => (
-                    <TableRow key={row.id}>
-                      <TableCell className="text-xs text-muted-foreground tabular-nums">{fmtDateTime(row.timestamp)}</TableCell>
-                      <TableCell className="text-sm">{row.user_email ?? <span className="text-muted-foreground">—</span>}</TableCell>
-                      <TableCell><Badge variant="outline">{row.action}</Badge></TableCell>
-                      <TableCell className="text-sm">{categoryLabel(row.log_type)}</TableCell>
-                      <TableCell className="text-sm max-w-md truncate" title={detailsFor(row)}>{detailsFor(row)}</TableCell>
-                      <TableCell>{row.status ? <Badge variant={statusVariant(row.status)}>{row.status}</Badge> : <span className="text-muted-foreground text-xs">—</span>}</TableCell>
+              <div className="overflow-x-auto">
+                <Table className="min-w-[760px]">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-[170px]">Date / Time</TableHead>
+                      <TableHead>User</TableHead>
+                      <TableHead>Action</TableHead>
+                      <TableHead>Category</TableHead>
+                      <TableHead>Details</TableHead>
+                      <TableHead className="w-[100px]">Status</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {paged.map((row) => (
+                      <TableRow key={row.id}>
+                        <TableCell className="text-xs text-muted-foreground tabular-nums whitespace-nowrap">{fmtDateTime(row.timestamp)}</TableCell>
+                        <TableCell className="text-sm whitespace-nowrap">{row.user_email ?? <span className="text-muted-foreground">—</span>}</TableCell>
+                        <TableCell><Badge variant="outline">{row.action}</Badge></TableCell>
+                        <TableCell className="text-sm whitespace-nowrap">{categoryLabel(row.log_type)}</TableCell>
+                        <TableCell className="text-sm max-w-[18rem] md:max-w-md truncate" title={detailsFor(row)}>{detailsFor(row)}</TableCell>
+                        <TableCell>{row.status ? <Badge variant={statusVariant(row.status)}>{row.status}</Badge> : <span className="text-muted-foreground text-xs">—</span>}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
               <div className="px-4 pb-3">
                 <PaginationControls page={page} pageSize={pageSize} total={filtered.length} onPageChange={setPage} onPageSizeChange={setPageSize} />
               </div>

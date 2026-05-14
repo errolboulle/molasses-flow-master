@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { useDams } from "@/lib/queries";
@@ -50,6 +51,7 @@ function ImportPage() {
   const fileRef = useRef<HTMLInputElement>(null);
   const [parsing, setParsing] = useState(false);
   const [importing, setImporting] = useState(false);
+  const [progress, setProgress] = useState({ done: 0, total: 0 });
   const [fileName, setFileName] = useState<string | null>(null);
   const [rows, setRows] = useState<ParsedRow[]>([]);
   const [warnings, setWarnings] = useState<string[]>([]);
@@ -112,9 +114,12 @@ function ImportPage() {
       return;
     }
     setImporting(true);
+    setProgress({ done: 0, total: totalToImport });
     let inserted = 0;
     let failed = 0;
     const errors: string[] = [];
+    const BATCH_SIZE = 50;
+    const yieldToUI = () => new Promise<void>((r) => setTimeout(r, 0));
 
     const buildPayload = (row: ParsedRow) => ({
       dam_id: row.damId,
@@ -154,16 +159,27 @@ function ImportPage() {
       fgc_net: row.fgc_net_mass,
     });
 
-    for (const { r: row } of newRows) {
-      const { error } = await supabase.from("movements").insert(buildPayload(row));
+    // Batch new-row inserts (Supabase accepts an array). Yield to UI between batches.
+    const newPayloads = newRows.map(({ r }) => ({ row: r, payload: buildPayload(r) }));
+    for (let i = 0; i < newPayloads.length; i += BATCH_SIZE) {
+      const slice = newPayloads.slice(i, i + BATCH_SIZE);
+      const { error } = await supabase.from("movements").insert(slice.map((s) => s.payload));
       if (error) {
-        failed++;
-        errors.push(`${row.damName} row ${row.sheetRow}: ${error.message}`);
+        // Fall back to per-row inserts in this batch to attribute the failure
+        for (const { row, payload } of slice) {
+          const { error: e2 } = await supabase.from("movements").insert(payload);
+          if (e2) { failed++; errors.push(`${row.damName} row ${row.sheetRow}: ${e2.message}`); }
+          else inserted++;
+          setProgress((p) => ({ ...p, done: p.done + 1 }));
+        }
       } else {
-        inserted++;
+        inserted += slice.length;
+        setProgress((p) => ({ ...p, done: p.done + slice.length }));
       }
+      await yieldToUI();
     }
 
+    // Approved duplicates go through the force helper (per-row by design)
     for (const { r: row } of approvedRows) {
       try {
         await forceInsertMovement(buildPayload(row));
@@ -172,6 +188,8 @@ function ImportPage() {
         failed++;
         errors.push(`${row.damName} row ${row.sheetRow} (approved duplicate): ${e?.message ?? e}`);
       }
+      setProgress((p) => ({ ...p, done: p.done + 1 }));
+      if ((inserted + failed) % BATCH_SIZE === 0) await yieldToUI();
     }
 
     await Promise.all([
@@ -209,6 +227,7 @@ function ImportPage() {
       setWarnings((prev) => [...prev, ...errors]);
     }
     setImporting(false);
+    setProgress({ done: 0, total: 0 });
   };
 
   return (
@@ -279,7 +298,7 @@ function ImportPage() {
           )}
 
           <Card className="overflow-hidden">
-            <div className="flex items-center justify-between border-b border-border p-4">
+            <div className="flex flex-col gap-3 border-b border-border p-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="font-semibold">Preview</div>
               <Button onClick={handleImport} disabled={importing || totalToImport === 0}>
                 {importing ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
@@ -287,6 +306,15 @@ function ImportPage() {
                 {approvedRows.length > 0 ? ` (${approvedRows.length} approved dup)` : ""}
               </Button>
             </div>
+            {importing && progress.total > 0 && (
+              <div className="border-b border-border bg-muted/30 px-4 py-3 space-y-2">
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span>Importing in batches of 50…</span>
+                  <span className="tabular-nums">{progress.done} / {progress.total} ({Math.round((progress.done / Math.max(progress.total, 1)) * 100)}%)</span>
+                </div>
+                <Progress value={(progress.done / Math.max(progress.total, 1)) * 100} />
+              </div>
+            )}
             <ScrollArea className="h-[480px]">
               <table className="w-full text-xs">
                 <thead className="sticky top-0 bg-muted">
