@@ -9,9 +9,11 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } f
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useDams, useMovements, useSettings } from "@/lib/queries";
 import { fmtTons, tonsToLitres } from "@/lib/types";
+import { RouteError } from "@/components/route-error";
 
 export const Route = createFileRoute("/reports")({
   component: () => <ProtectedLayout><ReportsPage /></ProtectedLayout>,
+  errorComponent: RouteError,
 });
 
 const movementConfig = {

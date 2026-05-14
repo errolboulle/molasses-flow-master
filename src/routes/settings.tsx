@@ -10,9 +10,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { RouteError } from "@/components/route-error";
 
 export const Route = createFileRoute("/settings")({
   component: () => <ProtectedLayout requireAdmin><SettingsPage /></ProtectedLayout>,
+  errorComponent: RouteError,
 });
 
 function SettingsPage() {

@@ -13,9 +13,11 @@ import { toast } from "sonner";
 import { fmtDateTime } from "@/lib/types";
 import { useState, type FormEvent } from "react";
 import { Edit3, UserPlus } from "lucide-react";
+import { RouteError } from "@/components/route-error";
 
 export const Route = createFileRoute("/users")({
   component: () => <ProtectedLayout requireAdmin><UsersPage /></ProtectedLayout>,
+  errorComponent: RouteError,
 });
 
 const ROLES = ["admin", "operator", "supervisor", "viewer"] as const;

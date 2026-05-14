@@ -9,9 +9,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
+import { RouteError } from "@/components/route-error";
 
 export const Route = createFileRoute("/onboarding")({
   component: Onboarding,
+  errorComponent: RouteError,
 });
 
 function Onboarding() {

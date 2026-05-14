@@ -12,9 +12,11 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/lib/auth-context";
 import { fmtDateTime } from "@/lib/types";
+import { RouteError } from "@/components/route-error";
 
 export const Route = createFileRoute("/reports/$id")({
   component: () => <ProtectedLayout><ReportDetailPage /></ProtectedLayout>,
+  errorComponent: RouteError,
 });
 
 type ReportVersion = {

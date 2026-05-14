@@ -14,9 +14,11 @@ import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/integrations/supabase/client";
 import { extractScannedDocument } from "@/server/scan.functions";
 import { findDuplicateMovementReference, formatDuplicateMessage, forceInsertMovement } from "@/lib/movement-duplicates";
+import { RouteError } from "@/components/route-error";
 
 export const Route = createFileRoute("/scan")({
   component: () => (
+  errorComponent: RouteError,
     <ProtectedLayout>
       <ScanPage />
     </ProtectedLayout>

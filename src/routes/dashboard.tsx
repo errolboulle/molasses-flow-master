@@ -8,9 +8,11 @@ import { ArrowDownToLine, ArrowUpFromLine, BarChart3, Database, Droplet, Truck }
 import { Progress } from "@/components/ui/progress";
 import { buildDamReportRows } from "@/lib/report-layout";
 import type { ReactNode } from "react";
+import { RouteError } from "@/components/route-error";
 
 export const Route = createFileRoute("/dashboard")({
   component: () => <ProtectedLayout><DashboardPage /></ProtectedLayout>,
+  errorComponent: RouteError,
 });
 
 function periodStart(kind: "today" | "yesterday" | "week" | "month" | "year") {

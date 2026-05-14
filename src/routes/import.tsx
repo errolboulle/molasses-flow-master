@@ -14,9 +14,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { parseExcelImport, findExistingDuplicates, type ParsedRow, type DuplicateInfo } from "@/lib/excel-import";
 import { forceInsertMovement } from "@/lib/movement-duplicates";
 import { fmtNum } from "@/lib/types";
+import { RouteError } from "@/components/route-error";
 
 export const Route = createFileRoute("/import")({
   component: () => <ProtectedLayout><ImportPage /></ProtectedLayout>,
+  errorComponent: RouteError,
 });
 
 async function fetchAllMovementRefs() {

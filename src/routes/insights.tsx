@@ -8,11 +8,13 @@ import { useMemo, useState } from "react";
 import { fmtTons, fmtNum } from "@/lib/types";
 import { ArrowDownToLine, ArrowUpFromLine, Activity, Scale, Layers, Sigma } from "lucide-react";
 import {
+import { RouteError } from "@/components/route-error";
   Bar, BarChart, CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from "recharts";
 
 export const Route = createFileRoute("/insights")({
   component: () => <ProtectedLayout><InsightsPage /></ProtectedLayout>,
+  errorComponent: RouteError,
 });
 
 type RangeKey = "today" | "yesterday" | "7d" | "30d" | "3m" | "1y" | "custom";
