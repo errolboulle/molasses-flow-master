@@ -123,22 +123,25 @@ function HistoryPage() {
       <div>
         <div className="text-sm text-muted-foreground mb-3">{filtered.length} movements · click to edit</div>
         {filtered.length > 0 ? (
-          <Table>
-            <TableHeader>
-              <TableRow><TableHead>Type</TableHead><TableHead>Quantity</TableHead><TableHead>Dam</TableHead><TableHead>Driver / vehicle</TableHead><TableHead>Date</TableHead></TableRow>
-            </TableHeader>
-            <TableBody>
-              {filtered.map((m) => (
-                <TableRow key={m.id} className="cursor-pointer" tabIndex={0} onClick={() => setEditing(m)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setEditing(m); } }}>
-                  <TableCell><Badge variant="outline" className={m.movement_type === "incoming" ? "text-success" : "text-purple"}>{m.movement_type === "incoming" ? <ArrowDownToLine className="h-3 w-3" /> : <ArrowUpFromLine className="h-3 w-3" />}{m.movement_type}</Badge></TableCell>
-                  <TableCell className="font-semibold tabular-nums">{fmtTons(m.quantity_tons)}</TableCell>
-                  <TableCell>{damName(m.dam_id)}</TableCell>
-                  <TableCell className="text-muted-foreground">{m.driver_or_company || "—"} · {m.src_vehicle_registration || m.fgc_vehicle_registration || "—"} · {m.fgc_haulier || m.src_haulier || "—"}</TableCell>
-                  <TableCell className="text-muted-foreground">{fmtDateTime(m.occurred_at)}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          <>
+            <Table>
+              <TableHeader>
+                <TableRow><TableHead>Type</TableHead><TableHead>Quantity</TableHead><TableHead>Dam</TableHead><TableHead>Driver / vehicle</TableHead><TableHead>Date</TableHead></TableRow>
+              </TableHeader>
+              <TableBody>
+                {paged.map((m) => (
+                  <TableRow key={m.id} className="cursor-pointer" tabIndex={0} onClick={() => setEditing(m)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setEditing(m); } }}>
+                    <TableCell><Badge variant="outline" className={m.movement_type === "incoming" ? "text-success" : "text-purple"}>{m.movement_type === "incoming" ? <ArrowDownToLine className="h-3 w-3" /> : <ArrowUpFromLine className="h-3 w-3" />}{m.movement_type}</Badge></TableCell>
+                    <TableCell className="font-semibold tabular-nums">{fmtTons(m.quantity_tons)}</TableCell>
+                    <TableCell>{damName(m.dam_id)}</TableCell>
+                    <TableCell className="text-muted-foreground">{m.driver_or_company || "—"} · {m.src_vehicle_registration || m.fgc_vehicle_registration || "—"} · {m.fgc_haulier || m.src_haulier || "—"}</TableCell>
+                    <TableCell className="text-muted-foreground">{fmtDateTime(m.occurred_at)}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+            <PaginationControls page={page} pageSize={pageSize} total={filtered.length} onPageChange={setPage} onPageSizeChange={setPageSize} />
+          </>
         ) : <Card className="p-8 text-center text-sm text-muted-foreground">No movements match.</Card>}
       </div>
 
