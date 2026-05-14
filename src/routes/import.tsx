@@ -114,9 +114,12 @@ function ImportPage() {
       return;
     }
     setImporting(true);
+    setProgress({ done: 0, total: totalToImport });
     let inserted = 0;
     let failed = 0;
     const errors: string[] = [];
+    const BATCH_SIZE = 50;
+    const yieldToUI = () => new Promise<void>((r) => setTimeout(r, 0));
 
     const buildPayload = (row: ParsedRow) => ({
       dam_id: row.damId,
