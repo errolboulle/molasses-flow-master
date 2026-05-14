@@ -8,6 +8,9 @@ if (typeof window !== "undefined") installGlobalErrorHandlers();
 
 function DefaultErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   const router = useRouter();
+  useEffect(() => {
+    void logSystemError({ source: "router.defaultError", message: error?.message ?? "unknown", stack: error?.stack ?? null });
+  }, [error]);
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
