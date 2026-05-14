@@ -7,15 +7,18 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { fmtTons, fmtDateTime, type Movement } from "@/lib/types";
 import { ArrowDownToLine, ArrowUpFromLine, FileSpreadsheet } from "lucide-react";
 import { exportMovementsToExcel } from "@/lib/excel-export";
 import { toast } from "sonner";
 import { MovementEditDialog } from "@/components/movement-edit-dialog";
+import { PaginationControls } from "@/components/pagination-controls";
+import { RouteError } from "@/components/route-error";
 
 export const Route = createFileRoute("/history")({
   component: () => <ProtectedLayout><HistoryPage /></ProtectedLayout>,
+  errorComponent: RouteError,
 });
 
 function HistoryPage() {
