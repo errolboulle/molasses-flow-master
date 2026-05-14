@@ -16,6 +16,7 @@ import { checkDuplicateMovementField, duplicateFieldFromDatabaseError, duplicate
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { type Tables } from "@/integrations/supabase/types";
+import { RouteError } from "@/components/route-error";
 
 type MovementType = "incoming" | "outgoing";
 type Truck = Tables<"trucks">;
@@ -69,6 +70,7 @@ const normalizeFieldValue = (key: string, value: string) => (uppercaseFields.has
 
 export const Route = createFileRoute("/weigh-bridge")({
   component: WeighBridgeModePage,
+  errorComponent: RouteError,
 });
 
 function WeighBridgeModePage() {

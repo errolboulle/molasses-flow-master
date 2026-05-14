@@ -8,9 +8,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { ArrowRight, Database, FileSpreadsheet, LockKeyhole, SearchCheck, Truck } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
+import { RouteError } from "@/components/route-error";
 
 export const Route = createFileRoute("/")({
   component: Index,
+  errorComponent: RouteError,
 });
 
 function Index() {

@@ -7,9 +7,11 @@ import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
+import { RouteError } from "@/components/route-error";
 
 export const Route = createFileRoute("/auth")({
   component: AuthPage,
+  errorComponent: RouteError,
 });
 
 function AuthPage() {

@@ -10,9 +10,11 @@ import { ArrowDownToLine, ArrowUpFromLine, Activity, Scale, Layers, Sigma } from
 import {
   Bar, BarChart, CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from "recharts";
+import { RouteError } from "@/components/route-error";
 
 export const Route = createFileRoute("/insights")({
   component: () => <ProtectedLayout><InsightsPage /></ProtectedLayout>,
+  errorComponent: RouteError,
 });
 
 type RangeKey = "today" | "yesterday" | "7d" | "30d" | "3m" | "1y" | "custom";

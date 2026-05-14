@@ -16,9 +16,11 @@ import { toast } from "sonner";
 import { fmtTons, fmtLitres, tonsToLitres, type Dam } from "@/lib/types";
 import { Pencil, Plus, Sliders, Droplet } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
+import { RouteError } from "@/components/route-error";
 
 export const Route = createFileRoute("/dams")({
   component: () => <ProtectedLayout><DamsPage /></ProtectedLayout>,
+  errorComponent: RouteError,
 });
 
 function DamsPage() {
