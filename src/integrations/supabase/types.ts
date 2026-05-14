@@ -20,8 +20,11 @@ export type Database = {
           entity_id: string | null
           entity_type: string
           id: string
+          log_type: string
           metadata: Json
+          status: string | null
           timestamp: string
+          user_email: string | null
           user_id: string | null
         }
         Insert: {
@@ -29,8 +32,11 @@ export type Database = {
           entity_id?: string | null
           entity_type: string
           id?: string
+          log_type?: string
           metadata?: Json
+          status?: string | null
           timestamp?: string
+          user_email?: string | null
           user_id?: string | null
         }
         Update: {
@@ -38,8 +44,11 @@ export type Database = {
           entity_id?: string | null
           entity_type?: string
           id?: string
+          log_type?: string
           metadata?: Json
+          status?: string | null
           timestamp?: string
+          user_email?: string | null
           user_id?: string | null
         }
         Relationships: []
@@ -739,6 +748,17 @@ export type Database = {
       }
       is_active: { Args: { _user_id: string }; Returns: boolean }
       is_demo_user: { Args: never; Returns: boolean }
+      log_audit_event: {
+        Args: {
+          _action: string
+          _entity_id?: string
+          _entity_type?: string
+          _log_type: string
+          _metadata?: Json
+          _status?: string
+        }
+        Returns: string
+      }
     }
     Enums: {
       app_role: "admin" | "operator" | "viewer" | "supervisor" | "demo"

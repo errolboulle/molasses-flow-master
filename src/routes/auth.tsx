@@ -25,9 +25,18 @@ function AuthPage() {
   const handleSignIn = async (e: FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
     if (error) { toast.error(error.message); return; }
+    if (data.user) {
+      const { logUserLogin } = await import("@/lib/audit");
+      logUserLogin({
+        userId: data.user.id,
+        email: data.user.email,
+        fullName: (data.user.user_metadata as any)?.full_name,
+        method: "email_password",
+      });
+    }
     toast.success("Signed in");
     navigate({ to: "/dashboard" });
   };

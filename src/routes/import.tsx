@@ -177,6 +177,28 @@ function ImportPage() {
       qc.invalidateQueries({ queryKey: ["dams"] }),
     ]);
 
+    const { logAuditEvent } = await import("@/lib/audit");
+    const damNames = Array.from(new Set(rows.map((r) => r.damName)));
+    const status: "success" | "partial" | "failed" =
+      failed === 0 && inserted > 0 ? "success" : inserted === 0 ? "failed" : "partial";
+    await logAuditEvent({
+      log_type: "excel_import",
+      action: "import_excel",
+      entity_type: "import",
+      status,
+      metadata: {
+        file_name: fileName,
+        dam_names: damNames,
+        rows_detected: rows.length,
+        rows_imported: inserted,
+        rows_skipped: dupes.size - approvedRows.length,
+        duplicates_detected: dupes.size,
+        duplicates_force_approved: approvedRows.length,
+        rows_failed: failed,
+        errors: errors.slice(0, 20),
+      },
+    });
+
     if (failed === 0) {
       toast.success(`Imported ${inserted} movement${inserted === 1 ? "" : "s"}`);
       reset();

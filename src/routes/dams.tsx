@@ -225,6 +225,27 @@ function AdjustVolumeDialog({ dam, onClose }: { dam: Dam; onClose: () => void })
       const { error } = await supabase.from("dams").update({ current_volume_tons: newTons }).eq("id", dam.id);
       if (error) throw error;
 
+      const { logAuditEvent } = await import("@/lib/audit");
+      await logAuditEvent({
+        log_type: "dam_adjustment",
+        action: "manual_adjustment",
+        entity_type: "dam",
+        entity_id: dam.id,
+        status: "success",
+        metadata: {
+          dam_id: dam.id,
+          dam_name: dam.name,
+          previous_volume_tons: prev,
+          new_volume_tons: newTons,
+          difference_tons: newTons - prev,
+          previous_volume_liters: tonsToLitres(prev, density),
+          new_volume_liters: tonsToLitres(newTons, density),
+          adjustment_unit: unit,
+          input_value: numericValue,
+          reason: reason.trim(),
+        },
+      });
+
       await qc.invalidateQueries();
       toast.success("Volume adjusted (logged to audit)");
       onClose();
