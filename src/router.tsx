@@ -1,6 +1,10 @@
 import { createRouter, useRouter } from "@tanstack/react-router";
 import { QueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { routeTree } from "./routeTree.gen";
+import { installGlobalErrorHandlers, logSystemError } from "@/lib/audit";
+
+if (typeof window !== "undefined") installGlobalErrorHandlers();
 
 function DefaultErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   const router = useRouter();
