@@ -227,6 +227,7 @@ function ImportPage() {
       setWarnings((prev) => [...prev, ...errors]);
     }
     setImporting(false);
+    setProgress({ done: 0, total: 0 });
   };
 
   return (
