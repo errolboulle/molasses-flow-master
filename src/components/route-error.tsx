@@ -1,10 +1,15 @@
 import { useRouter } from "@tanstack/react-router";
+import { useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { AlertTriangle } from "lucide-react";
+import { logSystemError } from "@/lib/audit";
 
 export function RouteError({ error, reset }: { error: Error; reset: () => void }) {
   const router = useRouter();
+  useEffect(() => {
+    void logSystemError({ source: "route.error", message: error?.message ?? "unknown", stack: error?.stack ?? null });
+  }, [error]);
   return (
     <div className="flex min-h-[60vh] items-center justify-center p-4">
       <Card className="max-w-lg w-full p-6 text-center space-y-4">
