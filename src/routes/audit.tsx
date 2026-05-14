@@ -74,6 +74,7 @@ function categoryLabel(t: string) {
     case "excel_import": return "Excel Import";
     case "dam_adjustment": return "Dam Adjustment";
     case "movement": return "Movement";
+    case "system_error": return "System Error";
     default: return t;
   }
 }
