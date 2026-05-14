@@ -64,3 +64,47 @@ export async function logUserLogin(args: {
     },
   });
 }
+
+export async function logSystemError(args: {
+  source: string;
+  message: string;
+  stack?: string | null;
+  url?: string;
+  extra?: Record<string, unknown>;
+}) {
+  await logAuditEvent({
+    log_type: "system_error",
+    action: args.source,
+    entity_type: "error",
+    status: "failed",
+    metadata: {
+      message: args.message?.slice(0, 1000) ?? "unknown",
+      stack: args.stack ? String(args.stack).slice(0, 4000) : null,
+      url: args.url ?? (typeof window !== "undefined" ? window.location.href : null),
+      user_agent: getBrowserInfo(),
+      occurred_at: new Date().toISOString(),
+      ...(args.extra ?? {}),
+    },
+  });
+}
+
+let _globalErrorHandlersInstalled = false;
+export function installGlobalErrorHandlers() {
+  if (_globalErrorHandlersInstalled || typeof window === "undefined") return;
+  _globalErrorHandlersInstalled = true;
+  window.addEventListener("error", (e) => {
+    void logSystemError({
+      source: "window.onerror",
+      message: e.message ?? "unknown error",
+      stack: e.error?.stack ?? null,
+    });
+  });
+  window.addEventListener("unhandledrejection", (e) => {
+    const reason: any = e.reason;
+    void logSystemError({
+      source: "unhandledrejection",
+      message: reason?.message ?? String(reason ?? "unknown rejection"),
+      stack: reason?.stack ?? null,
+    });
+  });
+}
