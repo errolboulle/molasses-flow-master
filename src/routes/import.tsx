@@ -298,7 +298,7 @@ function ImportPage() {
           )}
 
           <Card className="overflow-hidden">
-            <div className="flex items-center justify-between border-b border-border p-4">
+            <div className="flex flex-col gap-3 border-b border-border p-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="font-semibold">Preview</div>
               <Button onClick={handleImport} disabled={importing || totalToImport === 0}>
                 {importing ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
@@ -306,6 +306,15 @@ function ImportPage() {
                 {approvedRows.length > 0 ? ` (${approvedRows.length} approved dup)` : ""}
               </Button>
             </div>
+            {importing && progress.total > 0 && (
+              <div className="border-b border-border bg-muted/30 px-4 py-3 space-y-2">
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span>Importing in batches of 50…</span>
+                  <span className="tabular-nums">{progress.done} / {progress.total} ({Math.round((progress.done / Math.max(progress.total, 1)) * 100)}%)</span>
+                </div>
+                <Progress value={(progress.done / Math.max(progress.total, 1)) * 100} />
+              </div>
+            )}
             <ScrollArea className="h-[480px]">
               <table className="w-full text-xs">
                 <thead className="sticky top-0 bg-muted">
