@@ -215,13 +215,16 @@ function AuditPage() {
       </Card>
 
       <Tabs value={tab} onValueChange={(v) => setTab(v as LogType)}>
-        <TabsList className="grid grid-cols-2 md:grid-cols-5 w-full">
-          <TabsTrigger value="all">All ({counts.all})</TabsTrigger>
-          <TabsTrigger value="user_login">User Logins ({counts.user_login})</TabsTrigger>
-          <TabsTrigger value="excel_import">Excel Imports ({counts.excel_import})</TabsTrigger>
-          <TabsTrigger value="dam_adjustment">Dam Adjustments ({counts.dam_adjustment})</TabsTrigger>
-          <TabsTrigger value="movement">Movements ({counts.movement})</TabsTrigger>
-        </TabsList>
+        <div className="-mx-2 overflow-x-auto px-2 pb-1">
+          <TabsList className="inline-flex w-max md:grid md:w-full md:grid-cols-6">
+            <TabsTrigger value="all">All ({counts.all})</TabsTrigger>
+            <TabsTrigger value="user_login">Logins ({counts.user_login})</TabsTrigger>
+            <TabsTrigger value="excel_import">Imports ({counts.excel_import})</TabsTrigger>
+            <TabsTrigger value="dam_adjustment">Adjustments ({counts.dam_adjustment})</TabsTrigger>
+            <TabsTrigger value="movement">Movements ({counts.movement})</TabsTrigger>
+            <TabsTrigger value="system_error">Errors ({counts.system_error})</TabsTrigger>
+          </TabsList>
+        </div>
 
         <TabsContent value={tab} className="mt-4">
           {isLoading ? (
