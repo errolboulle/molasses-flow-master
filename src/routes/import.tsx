@@ -159,16 +159,27 @@ function ImportPage() {
       fgc_net: row.fgc_net_mass,
     });
 
-    for (const { r: row } of newRows) {
-      const { error } = await supabase.from("movements").insert(buildPayload(row));
+    // Batch new-row inserts (Supabase accepts an array). Yield to UI between batches.
+    const newPayloads = newRows.map(({ r }) => ({ row: r, payload: buildPayload(r) }));
+    for (let i = 0; i < newPayloads.length; i += BATCH_SIZE) {
+      const slice = newPayloads.slice(i, i + BATCH_SIZE);
+      const { error } = await supabase.from("movements").insert(slice.map((s) => s.payload));
       if (error) {
-        failed++;
-        errors.push(`${row.damName} row ${row.sheetRow}: ${error.message}`);
+        // Fall back to per-row inserts in this batch to attribute the failure
+        for (const { row, payload } of slice) {
+          const { error: e2 } = await supabase.from("movements").insert(payload);
+          if (e2) { failed++; errors.push(`${row.damName} row ${row.sheetRow}: ${e2.message}`); }
+          else inserted++;
+          setProgress((p) => ({ ...p, done: p.done + 1 }));
+        }
       } else {
-        inserted++;
+        inserted += slice.length;
+        setProgress((p) => ({ ...p, done: p.done + slice.length }));
       }
+      await yieldToUI();
     }
 
+    // Approved duplicates go through the force helper (per-row by design)
     for (const { r: row } of approvedRows) {
       try {
         await forceInsertMovement(buildPayload(row));
@@ -177,6 +188,8 @@ function ImportPage() {
         failed++;
         errors.push(`${row.damName} row ${row.sheetRow} (approved duplicate): ${e?.message ?? e}`);
       }
+      setProgress((p) => ({ ...p, done: p.done + 1 }));
+      if ((inserted + failed) % BATCH_SIZE === 0) await yieldToUI();
     }
 
     await Promise.all([
