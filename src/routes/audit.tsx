@@ -93,6 +93,8 @@ function detailsFor(row: AuditRow): string {
     }
     case "movement":
       return `${m.dam_name ?? "—"} • ${m.movement_type ?? ""} • ${m.vehicle_registration ?? "—"} • ${m.fgc_net_mass != null ? fmtTons(Number(m.fgc_net_mass)) : ""}`;
+    case "system_error":
+      return `${m.message ?? "error"}${m.url ? ` • ${String(m.url).replace(/^https?:\/\/[^/]+/, "")}` : ""}`;
     default:
       return JSON.stringify(m).slice(0, 120);
   }
