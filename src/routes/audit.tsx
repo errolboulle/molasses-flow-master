@@ -120,6 +120,8 @@ function AuditPage() {
   const [userFilter, setUserFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(50);
 
   const users = useMemo(() => {
     const set = new Set<string>();
@@ -138,6 +140,13 @@ function AuditPage() {
       return true;
     });
   }, [logs, tab, from, to, userFilter, statusFilter, search]);
+
+  useEffect(() => { setPage(0); }, [tab, from, to, userFilter, statusFilter, search, pageSize]);
+
+  const paged = useMemo(
+    () => filtered.slice(page * pageSize, page * pageSize + pageSize),
+    [filtered, page, pageSize]
+  );
 
   const counts = useMemo(() => ({
     all: logs.length,
@@ -231,7 +240,7 @@ function AuditPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filtered.map((row) => (
+                  {paged.map((row) => (
                     <TableRow key={row.id}>
                       <TableCell className="text-xs text-muted-foreground tabular-nums">{fmtDateTime(row.timestamp)}</TableCell>
                       <TableCell className="text-sm">{row.user_email ?? <span className="text-muted-foreground">—</span>}</TableCell>
@@ -243,6 +252,9 @@ function AuditPage() {
                   ))}
                 </TableBody>
               </Table>
+              <div className="px-4 pb-3">
+                <PaginationControls page={page} pageSize={pageSize} total={filtered.length} onPageChange={setPage} onPageSizeChange={setPageSize} />
+              </div>
             </Card>
           )}
         </TabsContent>
