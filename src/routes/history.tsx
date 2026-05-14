@@ -7,15 +7,18 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { fmtTons, fmtDateTime, type Movement } from "@/lib/types";
 import { ArrowDownToLine, ArrowUpFromLine, FileSpreadsheet } from "lucide-react";
 import { exportMovementsToExcel } from "@/lib/excel-export";
 import { toast } from "sonner";
 import { MovementEditDialog } from "@/components/movement-edit-dialog";
+import { PaginationControls } from "@/components/pagination-controls";
+import { RouteError } from "@/components/route-error";
 
 export const Route = createFileRoute("/history")({
   component: () => <ProtectedLayout><HistoryPage /></ProtectedLayout>,
+  errorComponent: RouteError,
 });
 
 function HistoryPage() {
@@ -26,6 +29,8 @@ function HistoryPage() {
   const [to, setTo] = useState("");
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState<Movement | null>(null);
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(50);
 
   const { data: movements = [] } = useMovements({
     damId: damId || undefined,
@@ -42,6 +47,14 @@ function HistoryPage() {
         .some((v) => v?.toLowerCase().includes(s))
     );
   }, [movements, search]);
+
+  // Reset to first page when filters/search change
+  useEffect(() => { setPage(0); }, [damId, type, from, to, search, pageSize]);
+
+  const paged = useMemo(
+    () => filtered.slice(page * pageSize, page * pageSize + pageSize),
+    [filtered, page, pageSize]
+  );
 
   const damName = (id: string) => dams.find((d) => d.id === id)?.name ?? "—";
 
@@ -110,22 +123,25 @@ function HistoryPage() {
       <div>
         <div className="text-sm text-muted-foreground mb-3">{filtered.length} movements · click to edit</div>
         {filtered.length > 0 ? (
-          <Table>
-            <TableHeader>
-              <TableRow><TableHead>Type</TableHead><TableHead>Quantity</TableHead><TableHead>Dam</TableHead><TableHead>Driver / vehicle</TableHead><TableHead>Date</TableHead></TableRow>
-            </TableHeader>
-            <TableBody>
-              {filtered.map((m) => (
-                <TableRow key={m.id} className="cursor-pointer" tabIndex={0} onClick={() => setEditing(m)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setEditing(m); } }}>
-                  <TableCell><Badge variant="outline" className={m.movement_type === "incoming" ? "text-success" : "text-purple"}>{m.movement_type === "incoming" ? <ArrowDownToLine className="h-3 w-3" /> : <ArrowUpFromLine className="h-3 w-3" />}{m.movement_type}</Badge></TableCell>
-                  <TableCell className="font-semibold tabular-nums">{fmtTons(m.quantity_tons)}</TableCell>
-                  <TableCell>{damName(m.dam_id)}</TableCell>
-                  <TableCell className="text-muted-foreground">{m.driver_or_company || "—"} · {m.src_vehicle_registration || m.fgc_vehicle_registration || "—"} · {m.fgc_haulier || m.src_haulier || "—"}</TableCell>
-                  <TableCell className="text-muted-foreground">{fmtDateTime(m.occurred_at)}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          <>
+            <Table>
+              <TableHeader>
+                <TableRow><TableHead>Type</TableHead><TableHead>Quantity</TableHead><TableHead>Dam</TableHead><TableHead>Driver / vehicle</TableHead><TableHead>Date</TableHead></TableRow>
+              </TableHeader>
+              <TableBody>
+                {paged.map((m) => (
+                  <TableRow key={m.id} className="cursor-pointer" tabIndex={0} onClick={() => setEditing(m)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setEditing(m); } }}>
+                    <TableCell><Badge variant="outline" className={m.movement_type === "incoming" ? "text-success" : "text-purple"}>{m.movement_type === "incoming" ? <ArrowDownToLine className="h-3 w-3" /> : <ArrowUpFromLine className="h-3 w-3" />}{m.movement_type}</Badge></TableCell>
+                    <TableCell className="font-semibold tabular-nums">{fmtTons(m.quantity_tons)}</TableCell>
+                    <TableCell>{damName(m.dam_id)}</TableCell>
+                    <TableCell className="text-muted-foreground">{m.driver_or_company || "—"} · {m.src_vehicle_registration || m.fgc_vehicle_registration || "—"} · {m.fgc_haulier || m.src_haulier || "—"}</TableCell>
+                    <TableCell className="text-muted-foreground">{fmtDateTime(m.occurred_at)}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+            <PaginationControls page={page} pageSize={pageSize} total={filtered.length} onPageChange={setPage} onPageSizeChange={setPageSize} />
+          </>
         ) : <Card className="p-8 text-center text-sm text-muted-foreground">No movements match.</Card>}
       </div>
 

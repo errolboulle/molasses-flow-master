@@ -7,14 +7,17 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { fmtDateTime, fmtTons } from "@/lib/types";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { Lock, Search } from "lucide-react";
+import { PaginationControls } from "@/components/pagination-controls";
+import { RouteError } from "@/components/route-error";
 
 export const Route = createFileRoute("/audit")({
   component: () => <ProtectedLayout><AuditPage /></ProtectedLayout>,
+  errorComponent: RouteError,
 });
 
 type LogType = "all" | "user_login" | "excel_import" | "dam_adjustment" | "movement";
@@ -36,13 +39,24 @@ function useAuditLogs() {
   return useQuery({
     queryKey: ["audit_logs"],
     queryFn: async (): Promise<AuditRow[]> => {
-      const { data, error } = await (supabase as any)
-        .from("audit_logs")
-        .select("*")
-        .order("timestamp", { ascending: false })
-        .limit(1000);
-      if (error) throw error;
-      return (data ?? []) as AuditRow[];
+      // Paginate through all rows (Supabase caps each request at 1000)
+      const pageSize = 1000;
+      const all: AuditRow[] = [];
+      let from = 0;
+      const HARD_CAP = 10000;
+      while (all.length < HARD_CAP) {
+        const { data, error } = await (supabase as any)
+          .from("audit_logs")
+          .select("*")
+          .order("timestamp", { ascending: false })
+          .range(from, from + pageSize - 1);
+        if (error) throw error;
+        const rows = (data ?? []) as AuditRow[];
+        all.push(...rows);
+        if (rows.length < pageSize) break;
+        from += pageSize;
+      }
+      return all;
     },
   });
 }
@@ -106,6 +120,8 @@ function AuditPage() {
   const [userFilter, setUserFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(50);
 
   const users = useMemo(() => {
     const set = new Set<string>();
@@ -124,6 +140,13 @@ function AuditPage() {
       return true;
     });
   }, [logs, tab, from, to, userFilter, statusFilter, search]);
+
+  useEffect(() => { setPage(0); }, [tab, from, to, userFilter, statusFilter, search, pageSize]);
+
+  const paged = useMemo(
+    () => filtered.slice(page * pageSize, page * pageSize + pageSize),
+    [filtered, page, pageSize]
+  );
 
   const counts = useMemo(() => ({
     all: logs.length,
@@ -217,7 +240,7 @@ function AuditPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filtered.map((row) => (
+                  {paged.map((row) => (
                     <TableRow key={row.id}>
                       <TableCell className="text-xs text-muted-foreground tabular-nums">{fmtDateTime(row.timestamp)}</TableCell>
                       <TableCell className="text-sm">{row.user_email ?? <span className="text-muted-foreground">—</span>}</TableCell>
@@ -229,6 +252,9 @@ function AuditPage() {
                   ))}
                 </TableBody>
               </Table>
+              <div className="px-4 pb-3">
+                <PaginationControls page={page} pageSize={pageSize} total={filtered.length} onPageChange={setPage} onPageSizeChange={setPageSize} />
+              </div>
             </Card>
           )}
         </TabsContent>
