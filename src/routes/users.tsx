@@ -12,8 +12,11 @@ import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { fmtDateTime } from "@/lib/types";
 import { useState, type FormEvent } from "react";
-import { Edit3, UserPlus } from "lucide-react";
+import { Edit3, Trash2, UserPlus } from "lucide-react";
 import { RouteError } from "@/components/route-error";
+import { useAuth } from "@/lib/auth-context";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 export const Route = createFileRoute("/users")({
   component: () => <ProtectedLayout requireAdmin><UsersPage /></ProtectedLayout>,
