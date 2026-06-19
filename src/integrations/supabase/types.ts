@@ -301,6 +301,7 @@ export type Database = {
           src_tare_mass: number | null
           src_time: string | null
           src_vehicle_registration: string | null
+          version: number
         }
         Insert: {
           created_at?: string
@@ -343,6 +344,7 @@ export type Database = {
           src_tare_mass?: number | null
           src_time?: string | null
           src_vehicle_registration?: string | null
+          version?: number
         }
         Update: {
           created_at?: string
@@ -385,6 +387,7 @@ export type Database = {
           src_tare_mass?: number | null
           src_time?: string | null
           src_vehicle_registration?: string | null
+          version?: number
         }
         Relationships: [
           {
@@ -656,6 +659,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      bulk_insert_movements: {
+        Args: { force?: boolean; payloads: Json }
+        Returns: Json
+      }
       can_operate: { Args: never; Returns: boolean }
       can_view_operations: { Args: never; Returns: boolean }
       create_load_transaction: {
@@ -741,6 +748,7 @@ export type Database = {
           src_tare_mass: number | null
           src_time: string | null
           src_vehicle_registration: string | null
+          version: number
         }
         SetofOptions: {
           from: "*"
