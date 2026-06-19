@@ -87,6 +87,35 @@ function UsersPage() {
     setForm({ fullName: u.full_name || "", email: u.email, password: "", role: (u.roles[0] as Role) || "viewer" });
   };
 
+  const startDelete = (u: UserRow) => {
+    setDeleting(u);
+    setDeleteMode("soft");
+    setDeletePassword("");
+  };
+
+  const confirmDelete = async () => {
+    if (!deleting) return;
+    if (!deletePassword) { toast.error("Enter your password to confirm"); return; }
+    setBusy(true);
+    try {
+      const res = await fetch("/api/admin/users", {
+        method: "DELETE",
+        headers: await authHeaders(),
+        body: JSON.stringify({ userId: deleting.id, mode: deleteMode, password: deletePassword }),
+      });
+      const body = await res.json();
+      if (!res.ok) throw new Error(body.error || "Could not delete user");
+      toast.success("User successfully deleted and access removed");
+      setDeleting(null);
+      setDeletePassword("");
+      refresh();
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
