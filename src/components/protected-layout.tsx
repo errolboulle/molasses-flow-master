@@ -2,10 +2,11 @@ import { useAuth } from "@/lib/auth-context";
 import { Navigate } from "@tanstack/react-router";
 import { useSettings } from "@/lib/queries";
 import { AppShell } from "./app-shell";
+import { TermsAcceptanceDialog } from "./terms-acceptance-dialog";
 import type { ReactNode } from "react";
 
 export function ProtectedLayout({ requireAdmin = false, children }: { requireAdmin?: boolean; children: ReactNode }) {
-  const { user, loading, isAdmin, roles } = useAuth();
+  const { user, loading, isAdmin, roles, termsAcceptedAt, refreshProfile } = useAuth();
   const { data: settings, isLoading: settingsLoading } = useSettings();
 
   if (loading || settingsLoading) {
