@@ -31,8 +31,12 @@ type UserRow = { id: string; full_name: string | null; email: string; status: st
 function UsersPage() {
   const { data: users = [] } = useUsersAdmin();
   const qc = useQueryClient();
+  const { user: currentUser } = useAuth();
   const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState<UserRow | null>(null);
+  const [deleting, setDeleting] = useState<UserRow | null>(null);
+  const [deleteMode, setDeleteMode] = useState<"soft" | "hard">("soft");
+  const [deletePassword, setDeletePassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [form, setForm] = useState({ fullName: "", email: "", password: "", role: "operator" as Role });
 
