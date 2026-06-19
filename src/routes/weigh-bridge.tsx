@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 import { checkDuplicateMovementField, duplicateFieldFromDatabaseError, duplicateFieldLabels, extractDuplicateMessage, findDuplicateMovementReference, forceInsertMovement, formatDuplicateMessage, isDuplicateError, type DuplicateFieldName } from "@/lib/movement-duplicates";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
+import { withRetry } from "@/lib/retry";
 import { type Tables } from "@/integrations/supabase/types";
 import { RouteError } from "@/components/route-error";
 
