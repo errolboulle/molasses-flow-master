@@ -415,8 +415,10 @@ function WeighBridgeModePage() {
         return;
       }
 
-      const { error } = await supabase.from("movements").insert(payload);
-      if (error) throw error;
+      await withRetry(async () => {
+        const { error } = await supabase.from("movements").insert(payload);
+        if (error) throw error;
+      });
 
       await finishSave();
     } catch (error: any) {
