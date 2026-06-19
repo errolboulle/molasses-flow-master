@@ -14,8 +14,10 @@ interface AuthContextValue {
   isSupervisor: boolean;
   isViewer: boolean;
   canEntry: boolean;
+  termsAcceptedAt: string | null;
   signOut: () => Promise<void>;
   refreshRoles: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -24,15 +26,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [roles, setRoles] = useState<AppRole[]>([]);
   const [status, setStatus] = useState<string>("active");
+  const [termsAcceptedAt, setTermsAcceptedAt] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchRoles = async (userId: string) => {
     const [{ data }, profileResult] = await Promise.all([
       supabase.from("user_roles").select("role").eq("user_id", userId),
-      supabase.from("profiles").select("status").eq("id", userId).maybeSingle(),
+      supabase.from("profiles").select("status, terms_accepted_at").eq("id", userId).maybeSingle(),
     ]);
     setRoles((data?.map((r) => r.role as AppRole)) ?? []);
-    setStatus(profileResult.data?.status ?? "active");
+    const profile = profileResult.data as { status?: string; terms_accepted_at?: string | null } | null;
+    setStatus(profile?.status ?? "active");
+    setTermsAcceptedAt(profile?.terms_accepted_at ?? null);
   };
 
   useEffect(() => {
