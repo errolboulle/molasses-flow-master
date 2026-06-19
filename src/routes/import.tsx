@@ -159,15 +159,21 @@ function ImportPage() {
       fgc_net: row.fgc_net_mass,
     });
 
-    // Batch new-row inserts (Supabase accepts an array). Yield to UI between batches.
+    // Transactional batch insert via RPC: whole batch succeeds or whole batch rolls back.
     const newPayloads = newRows.map(({ r }) => ({ row: r, payload: buildPayload(r) }));
     for (let i = 0; i < newPayloads.length; i += BATCH_SIZE) {
       const slice = newPayloads.slice(i, i + BATCH_SIZE);
-      const { error } = await supabase.from("movements").insert(slice.map((s) => s.payload));
+      const { error } = await (supabase.rpc as any)("bulk_insert_movements", {
+        payloads: slice.map((s) => s.payload),
+        force: false,
+      });
       if (error) {
-        // Fall back to per-row inserts in this batch to attribute the failure
+        // Whole batch rolled back. Retry per-row to attribute the failing record(s).
         for (const { row, payload } of slice) {
-          const { error: e2 } = await supabase.from("movements").insert(payload);
+          const { error: e2 } = await (supabase.rpc as any)("bulk_insert_movements", {
+            payloads: [payload],
+            force: false,
+          });
           if (e2) { failed++; errors.push(`${row.damName} row ${row.sheetRow}: ${e2.message}`); }
           else inserted++;
           setProgress((p) => ({ ...p, done: p.done + 1 }));

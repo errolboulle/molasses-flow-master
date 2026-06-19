@@ -96,8 +96,19 @@ export function MovementEditDialog({
         if (v === "" || v == null) { payload[f.key as string] = null; continue; }
         payload[f.key as string] = f.type === "number" ? Number(v) : v;
       }
-      const { error } = await supabase.from("movements").update(payload as any).eq("id", movement.id);
+      // Optimistic concurrency: only update if version matches what we loaded.
+      const expectedVersion = (movement as any).version ?? 1;
+      const { data: updated, error } = await supabase
+        .from("movements")
+        .update(payload as any)
+        .eq("id", movement.id)
+        .eq("version" as any, expectedVersion)
+        .select("id");
       if (error) throw error;
+      if (!updated || updated.length === 0) {
+        toast.error("This movement was changed by someone else. Please close and reopen to see the latest version before editing.");
+        return;
+      }
       await Promise.all([
         qc.invalidateQueries({ queryKey: ["movements"] }),
         qc.invalidateQueries({ queryKey: ["dams"] }),
