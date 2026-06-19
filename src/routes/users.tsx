@@ -12,8 +12,11 @@ import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { fmtDateTime } from "@/lib/types";
 import { useState, type FormEvent } from "react";
-import { Edit3, UserPlus } from "lucide-react";
+import { Edit3, Trash2, UserPlus } from "lucide-react";
 import { RouteError } from "@/components/route-error";
+import { useAuth } from "@/lib/auth-context";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 export const Route = createFileRoute("/users")({
   component: () => <ProtectedLayout requireAdmin><UsersPage /></ProtectedLayout>,
@@ -28,8 +31,12 @@ type UserRow = { id: string; full_name: string | null; email: string; status: st
 function UsersPage() {
   const { data: users = [] } = useUsersAdmin();
   const qc = useQueryClient();
+  const { user: currentUser } = useAuth();
   const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState<UserRow | null>(null);
+  const [deleting, setDeleting] = useState<UserRow | null>(null);
+  const [deleteMode, setDeleteMode] = useState<"soft" | "hard">("soft");
+  const [deletePassword, setDeletePassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [form, setForm] = useState({ fullName: "", email: "", password: "", role: "operator" as Role });
 
@@ -80,6 +87,35 @@ function UsersPage() {
     setForm({ fullName: u.full_name || "", email: u.email, password: "", role: (u.roles[0] as Role) || "viewer" });
   };
 
+  const startDelete = (u: UserRow) => {
+    setDeleting(u);
+    setDeleteMode("soft");
+    setDeletePassword("");
+  };
+
+  const confirmDelete = async () => {
+    if (!deleting) return;
+    if (!deletePassword) { toast.error("Enter your password to confirm"); return; }
+    setBusy(true);
+    try {
+      const res = await fetch("/api/admin/users", {
+        method: "DELETE",
+        headers: await authHeaders(),
+        body: JSON.stringify({ userId: deleting.id, mode: deleteMode, password: deletePassword }),
+      });
+      const body = await res.json();
+      if (!res.ok) throw new Error(body.error || "Could not delete user");
+      toast.success("User successfully deleted and access removed");
+      setDeleting(null);
+      setDeletePassword("");
+      refresh();
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -114,11 +150,63 @@ function UsersPage() {
               <TableCell><div className="flex gap-1 flex-wrap">{u.roles.length === 0 && <Badge variant="outline">no role</Badge>}{u.roles.map((r) => <Badge key={r} variant={r === "admin" ? "default" : "secondary"}>{r}</Badge>)}</div></TableCell>
               <TableCell><Badge variant={u.status === "active" ? "outline" : "destructive"}>{u.status === "active" ? "active" : "inactive"}</Badge></TableCell>
               <TableCell className="text-muted-foreground">{fmtDateTime(u.created_at)}</TableCell>
-              <TableCell><div className="flex justify-end gap-2"><Button size="sm" variant="outline" onClick={() => startEdit(u as UserRow)}><Edit3 className="h-4 w-4" /> Edit</Button><Button size="sm" variant={u.status === "active" ? "destructive" : "default"} onClick={() => updateUser({ userId: u.id, status: u.status === "active" ? "disabled" : "active" })}>{u.status === "active" ? "Deactivate" : "Restore"}</Button></div></TableCell>
+              <TableCell><div className="flex justify-end gap-2 flex-wrap"><Button size="sm" variant="outline" onClick={() => startEdit(u as UserRow)}><Edit3 className="h-4 w-4" /> Edit</Button><Button size="sm" variant={u.status === "active" ? "destructive" : "default"} onClick={() => updateUser({ userId: u.id, status: u.status === "active" ? "disabled" : "active" })}>{u.status === "active" ? "Deactivate" : "Restore"}</Button>{currentUser?.id !== u.id && <Button size="sm" variant="destructive" onClick={() => startDelete(u as UserRow)}><Trash2 className="h-4 w-4" /> Delete</Button>}</div></TableCell>
             </TableRow>
           ))}
         </TableBody>
       </Table>
+
+      <Dialog open={!!deleting} onOpenChange={(open) => { if (!open) { setDeleting(null); setDeletePassword(""); } }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-destructive">Delete user</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to permanently delete this user? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+
+          {deleting && (
+            <div className="space-y-4">
+              <div className="rounded-md border bg-muted/30 px-3 py-2 text-sm">
+                <div className="font-semibold">{deleting.full_name || deleting.email}</div>
+                <div className="text-xs text-muted-foreground">{deleting.email}</div>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-xs font-semibold uppercase tracking-wider">Deletion type</Label>
+                <RadioGroup value={deleteMode} onValueChange={(v) => setDeleteMode(v as "soft" | "hard")} className="gap-2">
+                  <label className="flex items-start gap-2 rounded-md border p-3 cursor-pointer hover:bg-accent">
+                    <RadioGroupItem value="soft" id="del-soft" className="mt-0.5" />
+                    <div className="text-sm">
+                      <div className="font-medium">Soft delete (recommended)</div>
+                      <div className="text-xs text-muted-foreground">Revokes login and all roles, anonymizes name to "Deleted User", keeps historical records.</div>
+                    </div>
+                  </label>
+                  <label className="flex items-start gap-2 rounded-md border p-3 cursor-pointer hover:bg-accent">
+                    <RadioGroupItem value="hard" id="del-hard" className="mt-0.5" />
+                    <div className="text-sm">
+                      <div className="font-medium">Hard delete</div>
+                      <div className="text-xs text-muted-foreground">Permanently removes profile, authentication, and personal info. Historical records remain but the user reference is anonymized.</div>
+                    </div>
+                  </label>
+                </RadioGroup>
+              </div>
+
+              <div className="space-y-1">
+                <Label htmlFor="del-pw" className="text-xs">Confirm your password</Label>
+                <Input id="del-pw" type="password" autoComplete="current-password" value={deletePassword} onChange={(e) => setDeletePassword(e.target.value)} />
+              </div>
+            </div>
+          )}
+
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => { setDeleting(null); setDeletePassword(""); }}>Cancel</Button>
+            <Button variant="destructive" onClick={confirmDelete} disabled={busy || !deletePassword}>
+              {busy ? "Deleting…" : "Delete Permanently"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
