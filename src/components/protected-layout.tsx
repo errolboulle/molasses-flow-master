@@ -46,5 +46,12 @@ export function ProtectedLayout({ requireAdmin = false, children }: { requireAdm
     );
   }
 
-  return <AppShell>{children}</AppShell>;
+  return (
+    <AppShell>
+      {children}
+      {user && !termsAcceptedAt && (
+        <TermsAcceptanceDialog userId={user.id} onAccepted={() => { void refreshProfile(); }} />
+      )}
+    </AppShell>
+  );
 }
