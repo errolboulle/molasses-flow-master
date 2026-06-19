@@ -18,15 +18,6 @@ async function requireAdmin(request: Request) {
   return { userId: userData.user.id, email: userData.user.email ?? null };
 }
 
-async function requireAdmin(request: Request) {
-  const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
-  if (!token) return { error: Response.json({ error: "Unauthorized" }, { status: 401 }) };
-  const { data: userData, error } = await supabaseAdmin.auth.getUser(token);
-  if (error || !userData.user) return { error: Response.json({ error: "Unauthorized" }, { status: 401 }) };
-  const { data: isAdmin } = await supabaseAdmin.rpc("has_role", { _user_id: userData.user.id, _role: "admin" });
-  if (!isAdmin) return { error: Response.json({ error: "Forbidden" }, { status: 403 }) };
-  return { userId: userData.user.id };
-}
 
 const createUserSchema = z.object({
   fullName: z.string().trim().min(1).max(120),
