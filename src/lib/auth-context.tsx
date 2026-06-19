@@ -80,8 +80,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isSupervisor,
     isViewer,
     canEntry: isAdmin || isOperator,
+    termsAcceptedAt,
     signOut: async () => { await supabase.auth.signOut(); },
     refreshRoles: async () => { if (session?.user) await fetchRoles(session.user.id); },
+    refreshProfile: async () => { if (session?.user) await fetchRoles(session.user.id); },
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
