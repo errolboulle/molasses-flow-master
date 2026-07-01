@@ -101,3 +101,26 @@ export function buildDamReportRows(dam: Dam, movements: Movement[]) {
 
   return { opening, rows, totalIn, totalOut, closing: nett };
 }
+
+/**
+ * Current on-hand tons for a dam, anchored on the latest adjustment.
+ * If the dam has adjustments, use the most recent adjustment's new value
+ * plus movements that occurred after that adjustment. Otherwise fall back
+ * to starting balance + all movements.
+ */
+export function computeCurrentTons(dam: Dam, movements: Movement[], adjustments: { dam_id: string; new_volume_tons: number | string; created_at: string }[]): number {
+  const damAdj = adjustments
+    .filter((a) => a.dam_id === dam.id)
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  const damMoves = movements.filter((m) => m.dam_id === dam.id);
+  if (damAdj.length === 0) return buildDamReportRows(dam, damMoves).closing;
+  const anchor = damAdj[0];
+  const anchorTs = new Date(anchor.created_at).getTime();
+  let nett = Number(anchor.new_volume_tons);
+  for (const m of damMoves) {
+    if (new Date(m.occurred_at).getTime() <= anchorTs) continue;
+    if (m.movement_type === "incoming") nett += Number(m.quantity_tons);
+    else if (m.movement_type === "outgoing") nett -= Number(m.quantity_tons);
+  }
+  return nett;
+}
