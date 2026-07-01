@@ -7,9 +7,10 @@ import { ReportPreview } from "@/components/report-preview";
 import { Card } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useDams, useMovements, useSettings } from "@/lib/queries";
+import { useAdjustments, useDams, useMovements, useSettings } from "@/lib/queries";
 import { fmtTons, tonsToLitres } from "@/lib/types";
 import { RouteError } from "@/components/route-error";
+import { computeCurrentTons } from "@/lib/report-layout";
 
 export const Route = createFileRoute("/reports")({
   component: () => <ProtectedLayout><ReportsPage /></ProtectedLayout>,
@@ -28,6 +29,7 @@ const stockConfig = {
 function ReportsPage() {
   const { data: dams = [] } = useDams();
   const { data: movements = [] } = useMovements();
+  const { data: adjustments = [] } = useAdjustments();
   const { data: settings } = useSettings();
   const density = settings?.density_kg_per_l ?? 1.4;
   const [selectedDam, setSelectedDam] = useState("");
@@ -36,10 +38,10 @@ function ReportsPage() {
   const selectedDams = selectedDam ? dams.filter((dam) => dam.id === selectedDam) : dams;
   const totalIn = filteredMovements.filter((movement) => movement.movement_type === "incoming").reduce((sum, movement) => sum + Number(movement.quantity_tons ?? 0), 0);
   const totalOut = filteredMovements.filter((movement) => movement.movement_type === "outgoing").reduce((sum, movement) => sum + Number(movement.quantity_tons ?? 0), 0);
-  const totalStock = selectedDams.reduce((sum, dam) => sum + Number(dam.current_volume_tons ?? 0), 0);
+  const totalStock = selectedDams.reduce((sum, dam) => sum + computeCurrentTons(dam, movements, adjustments as any), 0);
 
   const movementChartData = buildMovementChartData(filteredMovements);
-  const stockChartData = selectedDams.map((dam) => ({ name: dam.name, stock: Number(dam.current_volume_tons ?? 0) }));
+  const stockChartData = selectedDams.map((dam) => ({ name: dam.name, stock: computeCurrentTons(dam, movements, adjustments as any) }));
 
   return (
     <div className="space-y-6">
@@ -71,7 +73,7 @@ function ReportsPage() {
           <TabsTrigger value="graphs">Graphs</TabsTrigger>
         </TabsList>
         <TabsContent value="preview">
-          <ReportPreview dams={dams} movements={movements} damId={selectedDam} />
+          <ReportPreview dams={dams} movements={movements} adjustments={adjustments as any} damId={selectedDam} />
         </TabsContent>
         <TabsContent value="graphs" className="grid gap-4 xl:grid-cols-2">
           <Card className="p-5">

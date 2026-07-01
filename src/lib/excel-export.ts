@@ -1,5 +1,6 @@
 import * as XLSX from "xlsx-js-style";
 import type { Movement, Dam } from "./types";
+import type { ReportAdjustment } from "./report-layout";
 
 // =============================================================================
 // Excel export — mirrors the FGC 2025 Weighbridge & Dam Records template exactly
@@ -116,15 +117,24 @@ function num(v: any): number | "" {
   return Number.isFinite(n) ? n : "";
 }
 
-function addDamSheet(wb: XLSX.WorkBook, dam: Dam, movements: Movement[], damIndex: number) {
+const normalizeTons = (value: unknown): number => {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return 0;
+  const rounded = Math.round(n * 1000) / 1000;
+  return Math.abs(rounded) < 0.0005 ? 0 : rounded;
+};
+
+function addDamSheet(wb: XLSX.WorkBook, dam: Dam, movements: Movement[], damIndex: number, adjustments: ReportAdjustment[] = []) {
   const ws: XLSX.WorkSheet = {};
   const merges: XLSX.Range[] = [];
   const rowHeights: { hpt: number }[] = [];
 
-  // Sort movements
-  const sorted = [...movements].sort(
-    (a, b) => new Date(a.occurred_at).getTime() - new Date(b.occurred_at).getTime()
-  );
+  const events = [
+    ...movements.map((movement) => ({ kind: "movement" as const, at: movement.occurred_at, movement })),
+    ...adjustments
+      .filter((adjustment) => adjustment.dam_id === dam.id)
+      .map((adjustment) => ({ kind: "adjustment" as const, at: adjustment.created_at, adjustment })),
+  ].sort((a, b) => new Date(a.at).getTime() - new Date(b.at).getTime());
 
   // ---------- Row 1: Title ----------
   setCell(ws, 0, 0, "       MOLASSES RECORDS FOR FGC 2025/26", {
@@ -191,9 +201,45 @@ function addDamSheet(wb: XLSX.WorkBook, dam: Dam, movements: Movement[], damInde
     ...(opts.numFmt ? { numFmt: opts.numFmt } : {}),
   });
 
-  sorted.forEach((m, idx) => {
+  events.forEach((event, idx) => {
     const r = dataStart + idx;
     const excelRow = r + 1;
+    if (event.kind === "adjustment") {
+      const adjustedAt = new Date(event.adjustment.created_at);
+      setCell(ws, r, COL.A, "", dataStyle());
+      setCell(ws, r, COL.B, "", dataStyle());
+      setCell(ws, r, COL.C, "", dataStyle());
+      setCell(ws, r, COL.D, "", dataStyle());
+      setCell(ws, r, COL.E, "", dataStyle());
+      setCell(ws, r, COL.F, "", dataStyle());
+      setCell(ws, r, COL.G, "", dataStyle());
+      setCell(ws, r, COL.H, "", dataStyle({ numFmt: "0.00", align: "right" }));
+      setCell(ws, r, COL.I, "", dataStyle({ numFmt: "0.00", align: "right" }));
+      setCell(ws, r, COL.J, "", dataStyle({ numFmt: "0.00", align: "right" }));
+      setCell(ws, r, COL.K, "", dataStyle({ numFmt: "0.0", align: "right" }));
+      setCell(ws, r, COL.L, "", dataStyle());
+
+      setCell(ws, r, COL.N, adjustedAt, dataStyle(), undefined, "yyyy-mm-dd");
+      setCell(ws, r, COL.O, fmtTimeStr(adjustedAt), dataStyle());
+      setCell(ws, r, COL.P, "Manual adjustment", dataStyle());
+      setCell(ws, r, COL.Q, event.adjustment.reason || "Stock adjustment", dataStyle());
+      setCell(ws, r, COL.R, "", dataStyle());
+      setCell(ws, r, COL.S, "", dataStyle());
+      setCell(ws, r, COL.T, "", dataStyle({ numFmt: "0.00", align: "right" }));
+      setCell(ws, r, COL.U, "", dataStyle({ numFmt: "0.00", align: "right" }));
+      setCell(ws, r, COL.V, "", dataStyle({ numFmt: "0.00", align: "right" }));
+      setCell(ws, r, COL.W, "", dataStyle({ numFmt: "0.00", align: "right" }));
+      setCell(ws, r, COL.X, "", dataStyle({ numFmt: "0.0", align: "right" }));
+      setCell(ws, r, COL.Y, "ADJUST", dataStyle());
+      setCell(ws, r, COL.Z, "", dataStyle());
+      setCell(ws, r, COL.AA, "", dataStyle());
+      setCell(ws, r, COL.AB, 0, dataStyle({ numFmt: "0.00", align: "right" }));
+      setCell(ws, r, COL.AC, 0, dataStyle({ numFmt: "0.00", align: "right" }));
+      setCell(ws, r, COL.AD, normalizeTons(event.adjustment.new_volume_tons), dataStyle({ numFmt: "0.00", align: "right" }));
+      return;
+    }
+
+    const m = event.movement;
     const isIn = m.movement_type === "incoming";
 
     // SOURCE (A..L)
@@ -239,17 +285,17 @@ function addDamSheet(wb: XLSX.WorkBook, dam: Dam, movements: Movement[], damInde
     setCell(ws, r, COL.AD, undefined, dataStyle({ numFmt: "0.00", align: "right" }), nettFormula);
   });
 
-  const lastDataRow = dataStart + Math.max(sorted.length - 1, 0); // 0-indexed
+  const lastDataRow = dataStart + Math.max(events.length - 1, 0); // 0-indexed
   const totalsRowIdx = lastDataRow + 1; // one row right after last data
   const labelRowIdx = totalsRowIdx + 1;
   const allowanceRowIdx = labelRowIdx + 1;
   const truckRowsStart = allowanceRowIdx + 1;
 
   // If no data rows, still place totals at row 5 (idx 4)
-  const totalsRow = sorted.length === 0 ? 4 : totalsRowIdx;
+  const totalsRow = events.length === 0 ? 4 : totalsRowIdx;
   const totalsExcel = totalsRow + 1;
   const firstDataExcel = dataStart + 1;
-  const lastDataExcel = sorted.length === 0 ? firstDataExcel : lastDataRow + 1;
+  const lastDataExcel = events.length === 0 ? firstDataExcel : lastDataRow + 1;
 
   // ---------- Totals row (AVERAGE / SUBTOTAL / SUM) ----------
   const totalStyle = {
@@ -259,7 +305,7 @@ function addDamSheet(wb: XLSX.WorkBook, dam: Dam, movements: Movement[], damInde
     border: ALL_MEDIUM,
     numFmt: "0.00",
   };
-  if (sorted.length > 0) {
+  if (events.length > 0) {
     setCell(ws, totalsRow, COL.H, undefined, totalStyle, `AVERAGE(H${firstDataExcel}:H${lastDataExcel})`);
     setCell(ws, totalsRow, COL.I, undefined, totalStyle, `AVERAGE(I${firstDataExcel}:I${lastDataExcel})`);
     setCell(ws, totalsRow, COL.J, undefined, totalStyle, `SUBTOTAL(9,J${firstDataExcel}:J${lastDataExcel})`);
@@ -270,7 +316,7 @@ function addDamSheet(wb: XLSX.WorkBook, dam: Dam, movements: Movement[], damInde
     setCell(ws, totalsRow, COL.X, undefined, totalStyle, `AVERAGE(X${firstDataExcel}:X${lastDataExcel})`);
     setCell(ws, totalsRow, COL.AB, undefined, totalStyle, `SUM(AB${firstDataExcel}:AB${lastDataExcel})`);
     setCell(ws, totalsRow, COL.AC, undefined, totalStyle, `SUM(AC${firstDataExcel}:AC${lastDataExcel})`);
-    setCell(ws, totalsRow, COL.AD, undefined, totalStyle, `AB${totalsExcel}-AC${totalsExcel}`);
+    setCell(ws, totalsRow, COL.AD, undefined, totalStyle, `AD${lastDataExcel}`);
   }
 
   // Fill row 2 G2:J2 total formula
@@ -279,7 +325,7 @@ function addDamSheet(wb: XLSX.WorkBook, dam: Dam, movements: Movement[], damInde
     alignment: { horizontal: "center", vertical: "center" },
     border: ALL_MEDIUM,
     numFmt: "#,##0.00",
-  }, sorted.length > 0 ? `AD${totalsExcel}` : `${opening}`);
+  }, events.length > 0 ? `AD${totalsExcel}` : `${normalizeTons((dam as any).current_volume_tons ?? opening)}`);
   merges.push({ s: { r: 1, c: COL.G }, e: { r: 1, c: COL.J } });
 
   // ---------- Label row (Average / Total / Allowable Variance) ----------
@@ -358,7 +404,7 @@ function addSummarySheet(wb: XLSX.WorkBook, dams: Dam[]) {
     setCell(ws, r, 2, undefined, cellStyle, `SUMIF(${sheet}!Y5:Y10000,"in",${sheet}!V5:V10000)`);
     setCell(ws, r, 4, undefined, cellStyle, `SUMIF(${sheet}!Y5:Y10000,"out",${sheet}!V5:V10000)`);
     setCell(ws, r, 5, undefined, cellStyle, `B${r + 1}-D${r + 1}`);
-    setCell(ws, r, 6, undefined, cellStyle, `C${r + 1}-E${r + 1}`);
+    setCell(ws, r, 6, undefined, cellStyle, `${sheet}!G2`);
     setCell(ws, r, 7, undefined, cellStyle, `B${r + 1}-C${r + 1}`);
     setCell(ws, r, 8, undefined, cellStyle, `D${r + 1}-E${r + 1}`);
     setCell(ws, r, 9, undefined, cellStyle, `C${r + 1}*0.005`);
@@ -388,6 +434,7 @@ function addSummarySheet(wb: XLSX.WorkBook, dams: Dam[]) {
 export async function exportMovementsToExcel(opts: {
   dams: Dam[];
   movements: Movement[];
+  adjustments?: ReportAdjustment[];
   filename: string;
   perDamSheets: boolean;
   allDams?: Dam[];
@@ -398,7 +445,7 @@ export async function exportMovementsToExcel(opts: {
   if (opts.perDamSheets) {
     allDams.forEach((dam, idx) => {
       const rows = opts.movements.filter((m) => m.dam_id === dam.id);
-      addDamSheet(wb, dam, rows, idx);
+      addDamSheet(wb, dam, rows, idx, opts.adjustments ?? []);
     });
     addSummarySheet(wb, allDams);
     if (allDams.length === 0) {
@@ -410,7 +457,7 @@ export async function exportMovementsToExcel(opts: {
     if (!dam) throw new Error("No dam selected");
     const rows = opts.movements.filter((m) => m.dam_id === dam.id);
     const idx = Math.max(0, allDams.findIndex((d) => d.id === dam.id));
-    addDamSheet(wb, dam, rows, idx);
+    addDamSheet(wb, dam, rows, idx, opts.adjustments ?? []);
   }
 
   const buf = XLSX.write(wb, { bookType: "xlsx", type: "array", cellDates: true });

@@ -37,20 +37,71 @@ export const RIGHT_COLS = [
 
 export type ReportRow = { left: (string | number)[]; right: (string | number)[]; inVal: number; outVal: number; nett: number };
 
+export type ReportAdjustment = {
+  dam_id: string;
+  new_volume_tons: number | string;
+  previous_volume_tons?: number | string | null;
+  reason?: string | null;
+  created_at: string;
+};
+
+export const normalizeTons = (value: unknown): number => {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return 0;
+  const rounded = Math.round(n * 1000) / 1000;
+  return Math.abs(rounded) < 0.0005 ? 0 : rounded;
+};
+
 const num = (v: unknown): number | "" => {
   if (v == null || v === "") return "";
   const n = Number(v);
   return Number.isFinite(n) ? n : "";
 };
 
-export function buildDamReportRows(dam: Dam, movements: Movement[]) {
-  const sorted = [...movements].sort((a, b) => new Date(a.occurred_at).getTime() - new Date(b.occurred_at).getTime());
+export function buildDamReportRows(dam: Dam, movements: Movement[], adjustments: ReportAdjustment[] = []) {
+  const events = [
+    ...movements.map((movement) => ({ kind: "movement" as const, at: movement.occurred_at, movement })),
+    ...adjustments
+      .filter((adjustment) => adjustment.dam_id === dam.id)
+      .map((adjustment) => ({ kind: "adjustment" as const, at: adjustment.created_at, adjustment })),
+  ].sort((a, b) => new Date(a.at).getTime() - new Date(b.at).getTime());
   const opening = Number(dam.starting_balance_tons ?? 0);
   let nett = opening;
   let totalIn = 0;
   let totalOut = 0;
 
-  const rows: ReportRow[] = sorted.map((m) => {
+  const rows: ReportRow[] = events.map((event) => {
+    if (event.kind === "adjustment") {
+      const adjustedAt = new Date(event.adjustment.created_at);
+      nett = normalizeTons(event.adjustment.new_volume_tons);
+      return {
+        inVal: 0,
+        outVal: 0,
+        nett,
+        left: ["", "", "", "", "", "", "", "", "", "", "", ""],
+        right: [
+          adjustedAt.toISOString().slice(0, 10),
+          adjustedAt.toTimeString().slice(0, 5),
+          "Manual adjustment",
+          event.adjustment.reason || "Stock adjustment",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "ADJUST",
+          "",
+          "",
+          "",
+          "",
+          nett,
+        ],
+      };
+    }
+
+    const m = event.movement;
     const isIn = m.movement_type === "incoming";
     const qty = Number(m.quantity_tons) || 0;
     const inVal = isIn ? qty : 0;
@@ -108,19 +159,22 @@ export function buildDamReportRows(dam: Dam, movements: Movement[]) {
  * plus movements that occurred after that adjustment. Otherwise fall back
  * to starting balance + all movements.
  */
-export function computeCurrentTons(dam: Dam, movements: Movement[], adjustments: { dam_id: string; new_volume_tons: number | string; created_at: string }[]): number {
+export function computeCurrentTons(dam: Dam, movements: Movement[], adjustments: ReportAdjustment[]): number {
+  const storedCurrent = Number((dam as any).current_volume_tons);
+  if (Number.isFinite(storedCurrent)) return normalizeTons(storedCurrent);
+
   const damAdj = adjustments
     .filter((a) => a.dam_id === dam.id)
     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
   const damMoves = movements.filter((m) => m.dam_id === dam.id);
-  if (damAdj.length === 0) return buildDamReportRows(dam, damMoves).closing;
+  if (damAdj.length === 0) return normalizeTons(buildDamReportRows(dam, damMoves).closing);
   const anchor = damAdj[0];
   const anchorTs = new Date(anchor.created_at).getTime();
-  let nett = Number(anchor.new_volume_tons);
+  let nett = normalizeTons(anchor.new_volume_tons);
   for (const m of damMoves) {
     if (new Date(m.occurred_at).getTime() <= anchorTs) continue;
     if (m.movement_type === "incoming") nett += Number(m.quantity_tons);
     else if (m.movement_type === "outgoing") nett -= Number(m.quantity_tons);
   }
-  return nett;
+  return normalizeTons(nett);
 }
