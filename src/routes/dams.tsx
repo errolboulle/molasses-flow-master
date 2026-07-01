@@ -54,10 +54,7 @@ function DamsPage() {
         {dams.map((dam) => {
           const damMoves = movements.filter((m) => m.dam_id === dam.id);
           const reportNett = buildDamReportRows(dam, damMoves).closing;
-          const adjDelta = adjustments
-            .filter((a: any) => a.dam_id === dam.id)
-            .reduce((sum: number, a: any) => sum + (Number(a.new_volume_tons) - Number(a.previous_volume_tons)), 0);
-          const currentNett = reportNett + adjDelta;
+          const currentNett = computeCurrentTons(dam, movements, adjustments as any);
           const cap = Number(dam.capacity_tons ?? 0);
           const pct = cap > 0 ? Math.min(100, (currentNett / cap) * 100) : 0;
           return (
