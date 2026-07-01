@@ -274,8 +274,8 @@ function AdjustVolumeDialog({ dam, currentTons, onClose }: { dam: Dam; currentTo
       </DialogHeader>
       <div className="space-y-4 py-2">
         <div className="text-sm text-muted-foreground">
-          Current: <span className="font-semibold text-foreground">{fmtTons(dam.current_volume_tons)}</span>
-          {" · "}<span>{fmtLitres(tonsToLitres(Number(dam.current_volume_tons), density))}</span>
+          Current: <span className="font-semibold text-foreground">{fmtTons(currentTons)}</span>
+          {" · "}<span>{fmtLitres(tonsToLitres(currentTons, density))}</span>
         </div>
         <div className="grid grid-cols-3 gap-2">
           <div className="col-span-2 space-y-2">
