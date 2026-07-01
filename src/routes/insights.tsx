@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ProtectedLayout } from "@/components/protected-layout";
-import { useDams, useMovements } from "@/lib/queries";
+import { useAdjustments, useDams, useMovements } from "@/lib/queries";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,7 @@ import {
   Bar, BarChart, CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from "recharts";
 import { RouteError } from "@/components/route-error";
+import { computeCurrentTons } from "@/lib/report-layout";
 
 export const Route = createFileRoute("/insights")({
   component: () => <ProtectedLayout><InsightsPage /></ProtectedLayout>,
@@ -50,6 +51,7 @@ function InsightsPage() {
   const { from, to } = useMemo(() => computeRange(rangeKey, customFrom, customTo), [rangeKey, customFrom, customTo]);
   const { data: movements = [] } = useMovements({ from: from.toISOString(), to: to.toISOString() });
   const { data: dams = [] } = useDams();
+  const { data: adjustments = [] } = useAdjustments();
 
   const stats = useMemo(() => {
     const inc = movements.filter((m) => m.movement_type === "incoming");
@@ -90,7 +92,7 @@ function InsightsPage() {
     });
   }, [movements, from, to]);
 
-  const totalStock = dams.reduce((s, d) => s + Number(d.current_volume_tons || 0), 0);
+  const totalStock = dams.reduce((s, d) => s + computeCurrentTons(d, movements, adjustments as any), 0);
 
   return (
     <div className="space-y-6">

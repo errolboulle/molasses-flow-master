@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ProtectedLayout } from "@/components/protected-layout";
 import { useDams, useMovements, useSettings, useAdjustments } from "@/lib/queries";
-import { buildDamReportRows, computeCurrentTons } from "@/lib/report-layout";
+import { computeCurrentTons, normalizeTons } from "@/lib/report-layout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -52,8 +52,6 @@ function DamsPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
         {dams.map((dam) => {
-          const damMoves = movements.filter((m) => m.dam_id === dam.id);
-          const reportNett = buildDamReportRows(dam, damMoves).closing;
           const currentNett = computeCurrentTons(dam, movements, adjustments as any);
           const cap = Number(dam.capacity_tons ?? 0);
           const pct = cap > 0 ? Math.min(100, (currentNett / cap) * 100) : 0;
@@ -207,7 +205,7 @@ function AdjustVolumeDialog({ dam, currentTons, onClose }: { dam: Dam; currentTo
   const { data: settings } = useSettings();
   const density = settings?.density_kg_per_l ?? 1.4;
   const [unit, setUnit] = useState<"tons" | "litres">("tons");
-  const [value, setValue] = useState(String(currentTons));
+  const [value, setValue] = useState(String(normalizeTons(currentTons)));
   const [reason, setReason] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -217,7 +215,7 @@ function AdjustVolumeDialog({ dam, currentTons, onClose }: { dam: Dam; currentTo
     try {
       const numericValue = parseFloat(value);
       if (isNaN(numericValue) || numericValue < 0) throw new Error("Invalid volume");
-      const newTons = unit === "tons" ? numericValue : (numericValue * density) / 1000;
+      const newTons = normalizeTons(unit === "tons" ? numericValue : (numericValue * density) / 1000);
       const prev = currentTons;
 
       const { error: aErr } = await supabase.from("dam_adjustments").insert({

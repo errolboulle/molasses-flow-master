@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ProtectedLayout } from "@/components/protected-layout";
-import { useDams, useMovements } from "@/lib/queries";
+import { useAdjustments, useDams, useMovements } from "@/lib/queries";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,6 +23,7 @@ export const Route = createFileRoute("/history")({
 
 function HistoryPage() {
   const { data: dams = [] } = useDams();
+  const { data: adjustments = [] } = useAdjustments();
   const [damId, setDamId] = useState("");
   const [type, setType] = useState<"" | "incoming" | "outgoing">("");
   const [from, setFrom] = useState("");
@@ -65,13 +66,13 @@ function HistoryPage() {
         const dam = dams.find((d) => d.id === damId);
         if (!dam) { toast.error("Dam not found"); return; }
         await exportMovementsToExcel({
-          dams: [dam], movements: filtered, perDamSheets: false, allDams: dams,
+          dams: [dam], movements: filtered, adjustments: adjustments as any, perDamSheets: false, allDams: dams,
           filename: `FGC_${dam.name.replace(/\s+/g, "")}_${new Date().toISOString().slice(0,10)}.xlsx`,
         });
       } else {
         // Full report: always uses ALL dams + ALL movements (ignore dam filter), so summary is complete.
         await exportMovementsToExcel({
-          dams, movements, perDamSheets: true, allDams: dams,
+          dams, movements, adjustments: adjustments as any, perDamSheets: true, allDams: dams,
           filename: `FGC_FullReport_${new Date().toISOString().slice(0,10)}.xlsx`,
         });
       }

@@ -1,15 +1,17 @@
 import { Card } from "@/components/ui/card";
 import type { ReactNode } from "react";
-import { buildDamReportRows, LEFT_COLS, RIGHT_COLS } from "@/lib/report-layout";
+import { buildDamReportRows, computeCurrentTons, LEFT_COLS, RIGHT_COLS, type ReportAdjustment } from "@/lib/report-layout";
 import { fmtNum, type Dam, type Movement } from "@/lib/types";
 
-export function ReportPreview({ dams, movements, damId }: { dams: Dam[]; movements: Movement[]; damId: string }) {
+export function ReportPreview({ dams, movements, adjustments = [], damId }: { dams: Dam[]; movements: Movement[]; adjustments?: ReportAdjustment[]; damId: string }) {
   const visibleDams = damId ? dams.filter((d) => d.id === damId) : dams;
 
   return (
     <div className="space-y-6">
       {visibleDams.map((dam) => {
-        const report = buildDamReportRows(dam, movements.filter((m) => m.dam_id === dam.id));
+        const damMovements = movements.filter((m) => m.dam_id === dam.id);
+        const report = buildDamReportRows(dam, damMovements, adjustments);
+        const currentTons = computeCurrentTons(dam, damMovements, adjustments);
         return (
           <Card key={dam.id} className="overflow-hidden border-border bg-card">
             <div className="overflow-x-auto">
@@ -57,7 +59,7 @@ export function ReportPreview({ dams, movements, damId }: { dams: Dam[]; movemen
                     <div className="col-span-14 border-2 border-foreground/80 bg-warning/70 px-2 py-2 text-right font-black text-warning-foreground">TOTALS</div>
                     <BodyCell value={report.totalIn} balance strong />
                     <BodyCell value={report.totalOut} balance strong />
-                    <BodyCell value={report.closing} balance strong />
+                    <BodyCell value={currentTons} balance strong />
                   </div>
                 </div>
               </div>
