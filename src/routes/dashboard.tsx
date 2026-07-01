@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ProtectedLayout } from "@/components/protected-layout";
-import { useDams, useMovements, useSettings } from "@/lib/queries";
+import { useDams, useMovements, useSettings, useAdjustments } from "@/lib/queries";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { fmtTons, fmtLitres, fmtDateTime, tonsToLitres } from "@/lib/types";
