@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ProtectedLayout } from "@/components/protected-layout";
-import { useDams, useMovements, useSettings } from "@/lib/queries";
+import { useDams, useMovements, useSettings, useAdjustments } from "@/lib/queries";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { fmtTons, fmtLitres, fmtDateTime, tonsToLitres } from "@/lib/types";
@@ -28,13 +28,18 @@ function periodStart(kind: "today" | "yesterday" | "week" | "month" | "year") {
 function DashboardPage() {
   const { data: dams = [] } = useDams();
   const { data: movements = [] } = useMovements();
+  const { data: adjustments = [] } = useAdjustments();
   const { data: settings } = useSettings();
   const density = settings?.density_kg_per_l ?? 1.4;
 
   const monthStart = periodStart("month");
   const damStats = dams.map((dam) => {
     const damMoves = movements.filter((m) => m.dam_id === dam.id);
-    const reportNett = buildDamReportRows(dam, damMoves).closing;
+    const baseNett = buildDamReportRows(dam, damMoves).closing;
+    const adjDelta = (adjustments as any[])
+      .filter((a) => a.dam_id === dam.id)
+      .reduce((s, a) => s + (Number(a.new_volume_tons) - Number(a.previous_volume_tons)), 0);
+    const reportNett = baseNett + adjDelta;
     const monthMoves = damMoves.filter((m) => new Date(m.occurred_at) >= monthStart);
     const totalIn = monthMoves.filter((m) => m.movement_type === "incoming").reduce((s, m) => s + Number(m.quantity_tons), 0);
     const totalOut = monthMoves.filter((m) => m.movement_type === "outgoing").reduce((s, m) => s + Number(m.quantity_tons), 0);

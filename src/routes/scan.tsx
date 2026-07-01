@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { useDams } from "@/lib/queries";
 import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/integrations/supabase/client";
-import { extractScannedDocument } from "@/server/scan.functions";
+import { extractScannedDocument } from "@/lib/scan.functions";
 import { findDuplicateMovementReference, formatDuplicateMessage, forceInsertMovement } from "@/lib/movement-duplicates";
 import { RouteError } from "@/components/route-error";
 
