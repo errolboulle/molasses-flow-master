@@ -208,13 +208,13 @@ function DamFormDialog({ dam, onClose }: { dam?: Dam; onClose: () => void }) {
   );
 }
 
-function AdjustVolumeDialog({ dam, onClose }: { dam: Dam; onClose: () => void }) {
+function AdjustVolumeDialog({ dam, currentTons, onClose }: { dam: Dam; currentTons: number; onClose: () => void }) {
   const qc = useQueryClient();
   const { user } = useAuth();
   const { data: settings } = useSettings();
   const density = settings?.density_kg_per_l ?? 1.4;
   const [unit, setUnit] = useState<"tons" | "litres">("tons");
-  const [value, setValue] = useState(String(dam.current_volume_tons));
+  const [value, setValue] = useState(String(currentTons));
   const [reason, setReason] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -225,7 +225,7 @@ function AdjustVolumeDialog({ dam, onClose }: { dam: Dam; onClose: () => void })
       const numericValue = parseFloat(value);
       if (isNaN(numericValue) || numericValue < 0) throw new Error("Invalid volume");
       const newTons = unit === "tons" ? numericValue : (numericValue * density) / 1000;
-      const prev = Number(dam.current_volume_tons);
+      const prev = currentTons;
 
       const { error: aErr } = await supabase.from("dam_adjustments").insert({
         dam_id: dam.id,
