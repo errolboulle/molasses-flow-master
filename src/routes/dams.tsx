@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ProtectedLayout } from "@/components/protected-layout";
-import { useDams, useMovements, useSettings } from "@/lib/queries";
+import { useDams, useMovements, useSettings, useAdjustments } from "@/lib/queries";
 import { buildDamReportRows } from "@/lib/report-layout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -27,6 +27,7 @@ function DamsPage() {
   const { isAdmin } = useAuth();
   const { data: dams = [] } = useDams();
   const { data: movements = [] } = useMovements();
+  const { data: adjustments = [] } = useAdjustments();
   const { data: settings } = useSettings();
   const density = settings?.density_kg_per_l ?? 1.4;
   const [addOpen, setAddOpen] = useState(false);
@@ -53,8 +54,12 @@ function DamsPage() {
         {dams.map((dam) => {
           const damMoves = movements.filter((m) => m.dam_id === dam.id);
           const reportNett = buildDamReportRows(dam, damMoves).closing;
+          const adjDelta = adjustments
+            .filter((a: any) => a.dam_id === dam.id)
+            .reduce((sum: number, a: any) => sum + (Number(a.new_volume_tons) - Number(a.previous_volume_tons)), 0);
+          const currentNett = reportNett + adjDelta;
           const cap = Number(dam.capacity_tons ?? 0);
-          const pct = cap > 0 ? Math.min(100, (reportNett / cap) * 100) : 0;
+          const pct = cap > 0 ? Math.min(100, (currentNett / cap) * 100) : 0;
           return (
           <Card key={dam.id} className="p-5 hover:-translate-y-1 hover:border-primary/35">
             <div className="flex items-start justify-between mb-3">
@@ -65,7 +70,7 @@ function DamsPage() {
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary"><Droplet className="h-5 w-5" /></div>
             </div>
             <div className="space-y-2 text-sm">
-              <Row label="Current" value={fmtTons(reportNett)} sub={fmtLitres(tonsToLitres(reportNett, density))} />
+              <Row label="Current" value={fmtTons(currentNett)} sub={fmtLitres(tonsToLitres(currentNett, density))} />
               <Row label="Starting balance" value={fmtTons(dam.starting_balance_tons)} />
               <Row label="Capacity" value={dam.capacity_tons ? fmtTons(dam.capacity_tons) : "—"} />
             </div>
@@ -95,11 +100,18 @@ function DamsPage() {
           <DamFormDialog dam={editDam} onClose={() => setEditDam(null)} />
         </Dialog>
       )}
-      {adjustDam && (
-        <Dialog open onOpenChange={(o) => !o && setAdjustDam(null)}>
-          <AdjustVolumeDialog dam={adjustDam} onClose={() => setAdjustDam(null)} />
-        </Dialog>
-      )}
+      {adjustDam && (() => {
+        const dm = movements.filter((m) => m.dam_id === adjustDam.id);
+        const rn = buildDamReportRows(adjustDam, dm).closing;
+        const ad = adjustments
+          .filter((a: any) => a.dam_id === adjustDam.id)
+          .reduce((s: number, a: any) => s + (Number(a.new_volume_tons) - Number(a.previous_volume_tons)), 0);
+        return (
+          <Dialog open onOpenChange={(o) => !o && setAdjustDam(null)}>
+            <AdjustVolumeDialog dam={adjustDam} currentTons={rn + ad} onClose={() => setAdjustDam(null)} />
+          </Dialog>
+        );
+      })()}
     </div>
   );
 }
@@ -196,13 +208,13 @@ function DamFormDialog({ dam, onClose }: { dam?: Dam; onClose: () => void }) {
   );
 }
 
-function AdjustVolumeDialog({ dam, onClose }: { dam: Dam; onClose: () => void }) {
+function AdjustVolumeDialog({ dam, currentTons, onClose }: { dam: Dam; currentTons: number; onClose: () => void }) {
   const qc = useQueryClient();
   const { user } = useAuth();
   const { data: settings } = useSettings();
   const density = settings?.density_kg_per_l ?? 1.4;
   const [unit, setUnit] = useState<"tons" | "litres">("tons");
-  const [value, setValue] = useState(String(dam.current_volume_tons));
+  const [value, setValue] = useState(String(currentTons));
   const [reason, setReason] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -213,7 +225,7 @@ function AdjustVolumeDialog({ dam, onClose }: { dam: Dam; onClose: () => void })
       const numericValue = parseFloat(value);
       if (isNaN(numericValue) || numericValue < 0) throw new Error("Invalid volume");
       const newTons = unit === "tons" ? numericValue : (numericValue * density) / 1000;
-      const prev = Number(dam.current_volume_tons);
+      const prev = currentTons;
 
       const { error: aErr } = await supabase.from("dam_adjustments").insert({
         dam_id: dam.id,
@@ -262,8 +274,8 @@ function AdjustVolumeDialog({ dam, onClose }: { dam: Dam; onClose: () => void })
       </DialogHeader>
       <div className="space-y-4 py-2">
         <div className="text-sm text-muted-foreground">
-          Current: <span className="font-semibold text-foreground">{fmtTons(dam.current_volume_tons)}</span>
-          {" · "}<span>{fmtLitres(tonsToLitres(Number(dam.current_volume_tons), density))}</span>
+          Current: <span className="font-semibold text-foreground">{fmtTons(currentTons)}</span>
+          {" · "}<span>{fmtLitres(tonsToLitres(currentTons, density))}</span>
         </div>
         <div className="grid grid-cols-3 gap-2">
           <div className="col-span-2 space-y-2">
