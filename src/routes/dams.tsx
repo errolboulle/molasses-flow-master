@@ -54,8 +54,12 @@ function DamsPage() {
         {dams.map((dam) => {
           const damMoves = movements.filter((m) => m.dam_id === dam.id);
           const reportNett = buildDamReportRows(dam, damMoves).closing;
+          const adjDelta = adjustments
+            .filter((a: any) => a.dam_id === dam.id)
+            .reduce((sum: number, a: any) => sum + (Number(a.new_volume_tons) - Number(a.previous_volume_tons)), 0);
+          const currentNett = reportNett + adjDelta;
           const cap = Number(dam.capacity_tons ?? 0);
-          const pct = cap > 0 ? Math.min(100, (reportNett / cap) * 100) : 0;
+          const pct = cap > 0 ? Math.min(100, (currentNett / cap) * 100) : 0;
           return (
           <Card key={dam.id} className="p-5 hover:-translate-y-1 hover:border-primary/35">
             <div className="flex items-start justify-between mb-3">
