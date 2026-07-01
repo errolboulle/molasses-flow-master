@@ -70,7 +70,7 @@ function DamsPage() {
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary"><Droplet className="h-5 w-5" /></div>
             </div>
             <div className="space-y-2 text-sm">
-              <Row label="Current" value={fmtTons(reportNett)} sub={fmtLitres(tonsToLitres(reportNett, density))} />
+              <Row label="Current" value={fmtTons(currentNett)} sub={fmtLitres(tonsToLitres(currentNett, density))} />
               <Row label="Starting balance" value={fmtTons(dam.starting_balance_tons)} />
               <Row label="Capacity" value={dam.capacity_tons ? fmtTons(dam.capacity_tons) : "—"} />
             </div>
