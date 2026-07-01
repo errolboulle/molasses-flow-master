@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { fmtTons, fmtLitres, fmtDateTime, tonsToLitres } from "@/lib/types";
 import { ArrowDownToLine, ArrowUpFromLine, BarChart3, Database, Droplet, Truck } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
-import { buildDamReportRows } from "@/lib/report-layout";
+import { computeCurrentTons } from "@/lib/report-layout";
 import type { ReactNode } from "react";
 import { RouteError } from "@/components/route-error";
 
@@ -35,11 +35,7 @@ function DashboardPage() {
   const monthStart = periodStart("month");
   const damStats = dams.map((dam) => {
     const damMoves = movements.filter((m) => m.dam_id === dam.id);
-    const baseNett = buildDamReportRows(dam, damMoves).closing;
-    const adjDelta = (adjustments as any[])
-      .filter((a) => a.dam_id === dam.id)
-      .reduce((s, a) => s + (Number(a.new_volume_tons) - Number(a.previous_volume_tons)), 0);
-    const reportNett = baseNett + adjDelta;
+    const reportNett = computeCurrentTons(dam, movements, adjustments as any);
     const monthMoves = damMoves.filter((m) => new Date(m.occurred_at) >= monthStart);
     const totalIn = monthMoves.filter((m) => m.movement_type === "incoming").reduce((s, m) => s + Number(m.quantity_tons), 0);
     const totalOut = monthMoves.filter((m) => m.movement_type === "outgoing").reduce((s, m) => s + Number(m.quantity_tons), 0);

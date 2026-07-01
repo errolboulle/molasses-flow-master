@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ProtectedLayout } from "@/components/protected-layout";
 import { useDams, useMovements, useSettings, useAdjustments } from "@/lib/queries";
-import { buildDamReportRows } from "@/lib/report-layout";
+import { buildDamReportRows, computeCurrentTons } from "@/lib/report-layout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -54,10 +54,7 @@ function DamsPage() {
         {dams.map((dam) => {
           const damMoves = movements.filter((m) => m.dam_id === dam.id);
           const reportNett = buildDamReportRows(dam, damMoves).closing;
-          const adjDelta = adjustments
-            .filter((a: any) => a.dam_id === dam.id)
-            .reduce((sum: number, a: any) => sum + (Number(a.new_volume_tons) - Number(a.previous_volume_tons)), 0);
-          const currentNett = reportNett + adjDelta;
+          const currentNett = computeCurrentTons(dam, movements, adjustments as any);
           const cap = Number(dam.capacity_tons ?? 0);
           const pct = cap > 0 ? Math.min(100, (currentNett / cap) * 100) : 0;
           return (
@@ -101,14 +98,10 @@ function DamsPage() {
         </Dialog>
       )}
       {adjustDam && (() => {
-        const dm = movements.filter((m) => m.dam_id === adjustDam.id);
-        const rn = buildDamReportRows(adjustDam, dm).closing;
-        const ad = adjustments
-          .filter((a: any) => a.dam_id === adjustDam.id)
-          .reduce((s: number, a: any) => s + (Number(a.new_volume_tons) - Number(a.previous_volume_tons)), 0);
+        const cur = computeCurrentTons(adjustDam, movements, adjustments as any);
         return (
           <Dialog open onOpenChange={(o) => !o && setAdjustDam(null)}>
-            <AdjustVolumeDialog dam={adjustDam} currentTons={rn + ad} onClose={() => setAdjustDam(null)} />
+            <AdjustVolumeDialog dam={adjustDam} currentTons={cur} onClose={() => setAdjustDam(null)} />
           </Dialog>
         );
       })()}
