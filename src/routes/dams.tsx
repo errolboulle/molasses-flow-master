@@ -98,14 +98,10 @@ function DamsPage() {
         </Dialog>
       )}
       {adjustDam && (() => {
-        const dm = movements.filter((m) => m.dam_id === adjustDam.id);
-        const rn = buildDamReportRows(adjustDam, dm).closing;
-        const ad = adjustments
-          .filter((a: any) => a.dam_id === adjustDam.id)
-          .reduce((s: number, a: any) => s + (Number(a.new_volume_tons) - Number(a.previous_volume_tons)), 0);
+        const cur = computeCurrentTons(adjustDam, movements, adjustments as any);
         return (
           <Dialog open onOpenChange={(o) => !o && setAdjustDam(null)}>
-            <AdjustVolumeDialog dam={adjustDam} currentTons={rn + ad} onClose={() => setAdjustDam(null)} />
+            <AdjustVolumeDialog dam={adjustDam} currentTons={cur} onClose={() => setAdjustDam(null)} />
           </Dialog>
         );
       })()}
