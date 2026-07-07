@@ -389,10 +389,103 @@ function addDamSheet(wb: XLSX.WorkBook, dam: Dam, movements: Movement[], damInde
   return { totalsExcel, hasData: events.length > 0, summaryFirstExcel, lastDataExcel, hasSummaryRange };
 }
 
+type DamSheetInfo = ReturnType<typeof addDamSheet>;
+
+type WeighbridgeDamSummary = {
+  dam: Dam;
+  sheetName: string;
+  sourceMill: number;
+  inZsm: number;
+  outAnchor: number;
+  outZsm: number;
+  balanceAnchor: number;
+  balanceZsm: number;
+  varianceIn: number;
+  varianceOut: number;
+  allowableVariance: number;
+  summaryFirstExcel: number;
+  lastDataExcel: number;
+  hasSummaryRange: boolean;
+};
+
+const round2 = (value: number) => Math.round((Number.isFinite(value) ? value : 0) * 100) / 100;
+
+const safeNum = (value: unknown): number => {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : 0;
+};
+
+const calculatedNet = (gross: unknown, tare: unknown, storedNet: unknown, fallback?: unknown) => {
+  const g = Number(gross);
+  const t = Number(tare);
+  if (Number.isFinite(g) && Number.isFinite(t)) return g - t;
+  const stored = Number(storedNet);
+  if (Number.isFinite(stored)) return stored;
+  return safeNum(fallback);
+};
+
+const movementDirection = (movement: Movement) => {
+  const label = String(movement.fgc_in_out || (movement.movement_type === "incoming" ? "In" : "Out")).trim().toLowerCase();
+  return label === "out" || movement.movement_type === "outgoing" ? "out" : "in";
+};
+
+function calculateWeighbridgeDamSummary(
+  dams: Dam[],
+  movements: Movement[],
+  adjustments: ReportAdjustment[],
+  sheetInfoByDamId: Map<string, DamSheetInfo>,
+): WeighbridgeDamSummary[] {
+  const summaryOrder = new Map([["dam 1", 0], ["dam 2", 1], ["dam 3", 2]]);
+  return dams
+    .filter((dam) => summaryOrder.has(dam.name.trim().toLowerCase()))
+    .sort((a, b) => summaryOrder.get(a.name.trim().toLowerCase())! - summaryOrder.get(b.name.trim().toLowerCase())!)
+    .map((dam) => {
+      const latestZeroingAt = adjustments
+        .filter((adjustment) => adjustment.dam_id === dam.id && isZeroingAdjustment(adjustment))
+        .reduce((latest, adjustment) => Math.max(latest, new Date(adjustment.created_at).getTime()), 0);
+
+      const totals = movements
+        .filter((movement) => movement.dam_id === dam.id && new Date(movement.occurred_at).getTime() > latestZeroingAt)
+        .reduce((sum, movement) => {
+          const sourceNet = calculatedNet(movement.src_gross_mass, movement.src_tare_mass, movement.src_net_mass);
+          const zsmNet = calculatedNet(movement.fgc_gross_mass, movement.fgc_tare_mass, movement.fgc_net_mass, movement.quantity_tons);
+          if (movementDirection(movement) === "out") {
+            sum.outAnchor += sourceNet;
+            sum.outZsm += zsmNet;
+          } else {
+            sum.sourceMill += sourceNet;
+            sum.inZsm += zsmNet;
+          }
+          return sum;
+        }, { sourceMill: 0, inZsm: 0, outAnchor: 0, outZsm: 0 });
+
+      const sourceMill = round2(totals.sourceMill);
+      const inZsm = round2(totals.inZsm);
+      const outAnchor = round2(totals.outAnchor);
+      const outZsm = round2(totals.outZsm);
+      const sheetInfo = sheetInfoByDamId.get(dam.id);
+      return {
+        dam,
+        sheetName: sanitizeSheet(dam.name),
+        sourceMill,
+        inZsm,
+        outAnchor,
+        outZsm,
+        balanceAnchor: round2(sourceMill - outAnchor),
+        balanceZsm: round2(inZsm - outZsm),
+        varianceIn: round2(sourceMill - inZsm),
+        varianceOut: round2(outAnchor - outZsm),
+        allowableVariance: round2(inZsm * 0.005),
+        summaryFirstExcel: sheetInfo?.summaryFirstExcel ?? 5,
+        lastDataExcel: sheetInfo?.lastDataExcel ?? 5,
+        hasSummaryRange: sheetInfo?.hasSummaryRange ?? false,
+      };
+    });
+}
+
 function addSummarySheet(
   wb: XLSX.WorkBook,
-  dams: Dam[],
-  damTotals: { totalsExcel: number; hasData: boolean; summaryFirstExcel: number; lastDataExcel: number; hasSummaryRange: boolean }[],
+  rows: WeighbridgeDamSummary[],
 ) {
   const headers = [
     "", "Source Mill", "In ZSM", "Out Anchor", "Out ZSM",
@@ -411,56 +504,76 @@ function addSummarySheet(
   const cellStyle = { font: { sz: 11 }, alignment: { horizontal: "right" }, border: ALL_THIN, numFmt: numberFormat };
   const labelStyle = { font: { bold: true, sz: 11 }, alignment: { horizontal: "left" }, border: ALL_THIN };
 
-  dams.forEach((d, idx) => {
+  rows.forEach((row, idx) => {
     const r = idx + 1;
     const excelRow = r + 1;
-    const sheet = `'${sanitizeSheet(d.name)}'`;
-    const t = damTotals[idx];
-    setCell(ws, r, 0, d.name, labelStyle);
-    if (t?.hasSummaryRange) {
-      const sourceRange = `${sheet}!J${t.summaryFirstExcel}:J${t.lastDataExcel}`;
-      const directionRange = `${sheet}!Y${t.summaryFirstExcel}:Y${t.lastDataExcel}`;
-      const inZsmRange = `${sheet}!AB${t.summaryFirstExcel}:AB${t.lastDataExcel}`;
-      const outZsmRange = `${sheet}!AC${t.summaryFirstExcel}:AC${t.lastDataExcel}`;
-      setCell(ws, r, 1, undefined, cellStyle, `SUMIF(${directionRange},"In",${sourceRange})`);
-      setCell(ws, r, 2, undefined, cellStyle, `SUM(${inZsmRange})`);
-      setCell(ws, r, 3, undefined, cellStyle, `SUMIF(${directionRange},"Out",${sourceRange})`);
-      setCell(ws, r, 4, undefined, cellStyle, `SUM(${outZsmRange})`);
+    const sheet = `'${row.sheetName}'`;
+    setCell(ws, r, 0, row.dam.name, labelStyle);
+    if (row.hasSummaryRange) {
+      const sourceRange = `${sheet}!J${row.summaryFirstExcel}:J${row.lastDataExcel}`;
+      const directionRange = `${sheet}!Y${row.summaryFirstExcel}:Y${row.lastDataExcel}`;
+      const inZsmRange = `${sheet}!AB${row.summaryFirstExcel}:AB${row.lastDataExcel}`;
+      const outZsmRange = `${sheet}!AC${row.summaryFirstExcel}:AC${row.lastDataExcel}`;
+      setCell(ws, r, 1, row.sourceMill, cellStyle, `SUMIF(${directionRange},"In",${sourceRange})`);
+      setCell(ws, r, 2, row.inZsm, cellStyle, `SUM(${inZsmRange})`);
+      setCell(ws, r, 3, row.outAnchor, cellStyle, `SUMIF(${directionRange},"Out",${sourceRange})`);
+      setCell(ws, r, 4, row.outZsm, cellStyle, `SUM(${outZsmRange})`);
     } else {
       setCell(ws, r, 1, 0, cellStyle);
       setCell(ws, r, 2, 0, cellStyle);
       setCell(ws, r, 3, 0, cellStyle);
       setCell(ws, r, 4, 0, cellStyle);
     }
-    setCell(ws, r, 5, undefined, cellStyle, `B${excelRow}-D${excelRow}`);
-    setCell(ws, r, 6, undefined, cellStyle, `C${excelRow}-E${excelRow}`);
-    setCell(ws, r, 7, undefined, cellStyle, `ROUND(B${excelRow},2)-ROUND(C${excelRow},2)`);
-    setCell(ws, r, 8, undefined, cellStyle, `ROUND(D${excelRow},2)-ROUND(E${excelRow},2)`);
-    setCell(ws, r, 9, undefined, cellStyle, `C${excelRow}*0.005`);
+    setCell(ws, r, 5, row.balanceAnchor, cellStyle, `B${excelRow}-D${excelRow}`);
+    setCell(ws, r, 6, row.balanceZsm, cellStyle, `C${excelRow}-E${excelRow}`);
+    setCell(ws, r, 7, row.varianceIn, cellStyle, `ROUND(B${excelRow},2)-ROUND(C${excelRow},2)`);
+    setCell(ws, r, 8, row.varianceOut, cellStyle, `ROUND(D${excelRow},2)-ROUND(E${excelRow},2)`);
+    setCell(ws, r, 9, row.allowableVariance, cellStyle, `C${excelRow}*0.005`);
   });
 
-  const tRow = dams.length + 1;
+  const tRow = rows.length + 1;
   const tExcel = tRow + 1;
   const firstExcel = 2;
-  const lastExcel = dams.length + 1;
+  const lastExcel = rows.length + 1;
+  const totals = rows.reduce((sum, row) => {
+    sum.sourceMill += row.sourceMill;
+    sum.inZsm += row.inZsm;
+    sum.outAnchor += row.outAnchor;
+    sum.outZsm += row.outZsm;
+    sum.balanceAnchor += row.balanceAnchor;
+    sum.balanceZsm += row.balanceZsm;
+    return sum;
+  }, { sourceMill: 0, inZsm: 0, outAnchor: 0, outZsm: 0, balanceAnchor: 0, balanceZsm: 0 });
   const totalStyle = { ...cellStyle, font: { bold: true, sz: 11 }, fill: { patternType: "solid", fgColor: { rgb: "FEF3C7" } } };
   setCell(ws, tRow, 0, "Total", { ...labelStyle, font: { bold: true, sz: 11 } });
-  ["B", "C", "D", "E", "F", "G"].forEach((col, i) => {
-    setCell(ws, tRow, i + 1, undefined, totalStyle, `SUM(${col}${firstExcel}:${col}${lastExcel})`);
+  [
+    round2(totals.sourceMill),
+    round2(totals.inZsm),
+    round2(totals.outAnchor),
+    round2(totals.outZsm),
+    round2(totals.balanceAnchor),
+    round2(totals.balanceZsm),
+  ].forEach((value, i) => {
+    const col = String.fromCharCode("B".charCodeAt(0) + i);
+    setCell(ws, tRow, i + 1, value, totalStyle, `SUM(${col}${firstExcel}:${col}${lastExcel})`);
   });
-  setCell(ws, tRow, 7, undefined, totalStyle, `ROUND(B${tExcel},2)-ROUND(C${tExcel},2)`);
-  setCell(ws, tRow, 8, undefined, totalStyle, `ROUND(D${tExcel},2)-ROUND(E${tExcel},2)`);
-  setCell(ws, tRow, 9, undefined, { ...totalStyle, font: { bold: true, sz: 11, color: { rgb: "FF0000" } } }, `C${tExcel}*0.005`);
+  setCell(ws, tRow, 7, round2(totals.sourceMill - totals.inZsm), totalStyle, `ROUND(B${tExcel},2)-ROUND(C${tExcel},2)`);
+  setCell(ws, tRow, 8, round2(totals.outAnchor - totals.outZsm), totalStyle, `ROUND(D${tExcel},2)-ROUND(E${tExcel},2)`);
+  setCell(ws, tRow, 9, round2(totals.inZsm * 0.005), { ...totalStyle, font: { bold: true, sz: 11, color: { rgb: "FF0000" } } }, `C${tExcel}*0.005`);
 
   // Variance row
   const vRow = tRow + 1;
   const vExcel = vRow + 1;
+  const varianceSourceMill = round2(totals.inZsm - totals.sourceMill);
+  const variancePercentage = round2(totals.sourceMill) === 0 ? 0 : varianceSourceMill / round2(totals.sourceMill);
+  const varianceOutAnchor = round2(totals.outAnchor - totals.outZsm);
+  const varianceOutZsm = round2(totals.outZsm - totals.outAnchor);
   const varStyle = { ...cellStyle, font: { bold: true, sz: 11, color: { rgb: "FF0000" } } };
   setCell(ws, vRow, 0, "Varience", { ...labelStyle, font: { bold: true, sz: 11 } });
-  setCell(ws, vRow, 1, undefined, varStyle, `ROUND(C${tExcel},2)-ROUND(B${tExcel},2)`);
-  setCell(ws, vRow, 2, undefined, { ...varStyle, numFmt: "0.000%;-0.000%;-" }, `IFERROR(B${vExcel}/ROUND(B${tExcel},2),0)`);
-  setCell(ws, vRow, 3, undefined, varStyle, `ROUND(D${tExcel},2)-ROUND(E${tExcel},2)`);
-  setCell(ws, vRow, 4, undefined, varStyle, `ROUND(E${tExcel},2)-ROUND(D${tExcel},2)`);
+  setCell(ws, vRow, 1, varianceSourceMill, varStyle, `ROUND(C${tExcel},2)-ROUND(B${tExcel},2)`);
+  setCell(ws, vRow, 2, variancePercentage, { ...varStyle, numFmt: "0.000%;-0.000%;-" }, `IFERROR(B${vExcel}/ROUND(B${tExcel},2),0)`);
+  setCell(ws, vRow, 3, varianceOutAnchor, varStyle, `ROUND(D${tExcel},2)-ROUND(E${tExcel},2)`);
+  setCell(ws, vRow, 4, varianceOutZsm, varStyle, `ROUND(E${tExcel},2)-ROUND(D${tExcel},2)`);
 
   ws["!ref"] = `A1:J${vRow + 1}`;
   ws["!cols"] = [{ wch: 14 }, ...Array(9).fill({ wch: 13 })];
