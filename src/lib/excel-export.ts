@@ -563,15 +563,17 @@ function addSummarySheet(
   setCell(ws, vRow, 2, variancePercentage, { ...cellStyle, numFmt: "0.000%" }, `IFERROR(B${vExcel}/B${tExcel},0)`);
   setCell(ws, vRow, 3, varianceOutAnchor, cellStyle, `IFERROR(D${tExcel}-E${tExcel},0)`);
   setCell(ws, vRow, 4, varianceOutZsm, cellStyle, `IFERROR(E${tExcel}-D${tExcel},0)`);
+  for (let c = 5; c <= 9; c++) setCell(ws, vRow, c, "", labelStyle);
 
-  ws["!ref"] = "A1:M12";
+  const lastCol = String.fromCharCode("A".charCodeAt(0) + 9);
+  ws["!ref"] = `A1:${lastCol}${vExcel}`;
   ws["!cols"] = [
     { wch: 8.86 }, { wch: 11.71 }, { wch: 12.71 }, { wch: 12 }, { wch: 13.29 },
-    { wch: 14.71 }, { wch: 15.57 }, { wch: 12.86 }, { wch: 17.43 }, { wch: 9.14 },
-    { wch: 8.43 }, { wch: 9.71 }, { wch: 8.43 },
+    { wch: 14.71 }, { wch: 15.57 }, { wch: 12.86 }, { wch: 17.43 }, { wch: 18 },
   ];
   XLSX.utils.book_append_sheet(wb, ws, "Summary");
 }
+
 
 
 export async function exportMovementsToExcel(opts: {
