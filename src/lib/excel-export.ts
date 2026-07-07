@@ -500,14 +500,17 @@ function addSummarySheet(
     "Balance Anc.", "Balance ZSM", "Varience in", "Varience out", "Allowable varience",
   ];
   const ws: XLSX.WorkSheet = {};
-  const headerStyle = { font: { sz: 11 }, alignment: { horizontal: "left", vertical: "center" } };
+  const thin = { style: "thin", color: { rgb: "000000" } };
+  const border = { top: thin, bottom: thin, left: thin, right: thin };
+  const headerStyle = { font: { sz: 11, bold: true }, alignment: { horizontal: "left", vertical: "center" }, border };
   headers.forEach((h, i) => setCell(ws, 0, i, h, headerStyle));
 
   const numberFormat = '_-* #,##0.00_-;\\-* #,##0.00_-;_-* "-"??_-;_-@_-';
-  const cellStyle = { font: { sz: 11 }, alignment: { horizontal: "right" }, numFmt: numberFormat };
+  const cellStyle = { font: { sz: 11 }, alignment: { horizontal: "right" }, numFmt: numberFormat, border };
   const linkedCellStyle = { ...cellStyle, fill: { patternType: "solid", fgColor: { rgb: "FFFFFF" } } };
-  const labelStyle = { font: { sz: 11 }, alignment: { horizontal: "left" } };
+  const labelStyle = { font: { sz: 11 }, alignment: { horizontal: "left" }, border };
   const blankOutAnchorStyle = { ...cellStyle, numFmt: "#,##0.00", fill: { patternType: "solid", fgColor: { rgb: "FFFFFF" } } };
+
 
   rows.forEach((row, idx) => {
     const r = idx + 1;
@@ -560,15 +563,17 @@ function addSummarySheet(
   setCell(ws, vRow, 2, variancePercentage, { ...cellStyle, numFmt: "0.000%" }, `IFERROR(B${vExcel}/B${tExcel},0)`);
   setCell(ws, vRow, 3, varianceOutAnchor, cellStyle, `IFERROR(D${tExcel}-E${tExcel},0)`);
   setCell(ws, vRow, 4, varianceOutZsm, cellStyle, `IFERROR(E${tExcel}-D${tExcel},0)`);
+  for (let c = 5; c <= 9; c++) setCell(ws, vRow, c, "", labelStyle);
 
-  ws["!ref"] = "A1:M12";
+  const lastCol = String.fromCharCode("A".charCodeAt(0) + 9);
+  ws["!ref"] = `A1:${lastCol}${vExcel}`;
   ws["!cols"] = [
     { wch: 8.86 }, { wch: 11.71 }, { wch: 12.71 }, { wch: 12 }, { wch: 13.29 },
-    { wch: 14.71 }, { wch: 15.57 }, { wch: 12.86 }, { wch: 17.43 }, { wch: 9.14 },
-    { wch: 8.43 }, { wch: 9.71 }, { wch: 8.43 },
+    { wch: 14.71 }, { wch: 15.57 }, { wch: 12.86 }, { wch: 17.43 }, { wch: 18 },
   ];
   XLSX.utils.book_append_sheet(wb, ws, "Summary");
 }
+
 
 
 export async function exportMovementsToExcel(opts: {
