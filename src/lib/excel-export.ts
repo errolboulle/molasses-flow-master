@@ -124,6 +124,11 @@ const normalizeTons = (value: unknown): number => {
   return Math.abs(rounded) < 0.0005 ? 0 : rounded;
 };
 
+const isOpeningAdjustment = (adjustment: ReportAdjustment) => {
+  const reason = String(adjustment.reason ?? "").trim().toLowerCase();
+  return reason === "starting" || reason === "start" || reason === "opening";
+};
+
 function addDamSheet(wb: XLSX.WorkBook, dam: Dam, movements: Movement[], damIndex: number, adjustments: ReportAdjustment[] = []) {
   const ws: XLSX.WorkSheet = {};
   const merges: XLSX.Range[] = [];
@@ -297,6 +302,15 @@ function addDamSheet(wb: XLSX.WorkBook, dam: Dam, movements: Movement[], damInde
   const firstDataExcel = dataStart + 1;
   const lastDataExcel = events.length === 0 ? firstDataExcel : lastDataRow + 1;
 
+  let summaryStartIdx = 0;
+  events.forEach((event, idx) => {
+    if (event.kind === "adjustment" && !isOpeningAdjustment(event.adjustment)) {
+      summaryStartIdx = idx + 1;
+    }
+  });
+  const summaryFirstExcel = dataStart + summaryStartIdx + 1;
+  const hasSummaryRange = events.length > 0 && summaryStartIdx < events.length;
+
   // ---------- Totals row (AVERAGE / SUBTOTAL / SUM) ----------
   const totalStyle = {
     font: { bold: true, sz: 11, color: { rgb: "FF0000" } },
@@ -371,10 +385,14 @@ function addDamSheet(wb: XLSX.WorkBook, dam: Dam, movements: Movement[], damInde
   ws["!freeze"] = { xSplit: 0, ySplit: 4 };
 
   XLSX.utils.book_append_sheet(wb, ws, sanitizeSheet(dam.name));
-  return { totalsExcel, hasData: events.length > 0 };
+  return { totalsExcel, hasData: events.length > 0, summaryFirstExcel, lastDataExcel, hasSummaryRange };
 }
 
-function addSummarySheet(wb: XLSX.WorkBook, dams: Dam[], damTotals: { totalsExcel: number; hasData: boolean }[]) {
+function addSummarySheet(
+  wb: XLSX.WorkBook,
+  dams: Dam[],
+  damTotals: { totalsExcel: number; hasData: boolean; summaryFirstExcel: number; lastDataExcel: number; hasSummaryRange: boolean }[],
+) {
   const headers = [
     "", "Source Mill", "In ZSM", "Out Anchor", "Out ZSM",
     "Balance Anc.", "Balance ZSM", "Varience in", "Varience out", "Allowable varience",
@@ -388,7 +406,8 @@ function addSummarySheet(wb: XLSX.WorkBook, dams: Dam[], damTotals: { totalsExce
   };
   headers.forEach((h, i) => setCell(ws, 0, i, h, headerStyle));
 
-  const cellStyle = { font: { sz: 11 }, alignment: { horizontal: "right" }, border: ALL_THIN, numFmt: "#,##0.00" };
+  const numberFormat = "#,##0.00;-#,##0.00;-";
+  const cellStyle = { font: { sz: 11 }, alignment: { horizontal: "right" }, border: ALL_THIN, numFmt: numberFormat };
   const labelStyle = { font: { bold: true, sz: 11 }, alignment: { horizontal: "left" }, border: ALL_THIN };
 
   dams.forEach((d, idx) => {
@@ -397,16 +416,21 @@ function addSummarySheet(wb: XLSX.WorkBook, dams: Dam[], damTotals: { totalsExce
     const sheet = `'${sanitizeSheet(d.name)}'`;
     const t = damTotals[idx];
     setCell(ws, r, 0, d.name, labelStyle);
-    if (t?.hasData) {
-      setCell(ws, r, 1, undefined, cellStyle, `${sheet}!J${t.totalsExcel}`);
-      setCell(ws, r, 2, undefined, cellStyle, `${sheet}!AB${t.totalsExcel}`);
-      setCell(ws, r, 4, undefined, cellStyle, `${sheet}!AC${t.totalsExcel}`);
+    if (t?.hasSummaryRange) {
+      const sourceRange = `${sheet}!J${t.summaryFirstExcel}:J${t.lastDataExcel}`;
+      const directionRange = `${sheet}!Y${t.summaryFirstExcel}:Y${t.lastDataExcel}`;
+      const inZsmRange = `${sheet}!AB${t.summaryFirstExcel}:AB${t.lastDataExcel}`;
+      const outZsmRange = `${sheet}!AC${t.summaryFirstExcel}:AC${t.lastDataExcel}`;
+      setCell(ws, r, 1, undefined, cellStyle, `SUMIF(${directionRange},"In",${sourceRange})`);
+      setCell(ws, r, 2, undefined, cellStyle, `SUM(${inZsmRange})`);
+      setCell(ws, r, 3, undefined, cellStyle, `SUMIF(${directionRange},"Out",${sourceRange})`);
+      setCell(ws, r, 4, undefined, cellStyle, `SUM(${outZsmRange})`);
     } else {
       setCell(ws, r, 1, 0, cellStyle);
       setCell(ws, r, 2, 0, cellStyle);
+      setCell(ws, r, 3, 0, cellStyle);
       setCell(ws, r, 4, 0, cellStyle);
     }
-    setCell(ws, r, 3, undefined, cellStyle); // Out Anchor blank
     setCell(ws, r, 5, undefined, cellStyle, `B${excelRow}-D${excelRow}`);
     setCell(ws, r, 6, undefined, cellStyle, `C${excelRow}-E${excelRow}`);
     setCell(ws, r, 7, undefined, cellStyle, `B${excelRow}-C${excelRow}`);
@@ -425,7 +449,7 @@ function addSummarySheet(wb: XLSX.WorkBook, dams: Dam[], damTotals: { totalsExce
   });
   setCell(ws, tRow, 7, undefined, totalStyle, `B${tExcel}-C${tExcel}`);
   setCell(ws, tRow, 8, undefined, totalStyle, `D${tExcel}-E${tExcel}`);
-  setCell(ws, tRow, 9, undefined, totalStyle, `C${tExcel}*0.005`);
+  setCell(ws, tRow, 9, undefined, { ...totalStyle, font: { bold: true, sz: 11, color: { rgb: "FF0000" } } }, `C${tExcel}*0.005`);
 
   // Variance row
   const vRow = tRow + 1;
@@ -433,7 +457,7 @@ function addSummarySheet(wb: XLSX.WorkBook, dams: Dam[], damTotals: { totalsExce
   const varStyle = { ...cellStyle, font: { bold: true, sz: 11, color: { rgb: "FF0000" } } };
   setCell(ws, vRow, 0, "Varience", { ...labelStyle, font: { bold: true, sz: 11 } });
   setCell(ws, vRow, 1, undefined, varStyle, `C${tExcel}-B${tExcel}`);
-  setCell(ws, vRow, 2, undefined, { ...varStyle, numFmt: "0.00%" }, `IFERROR(B${vExcel}/B${tExcel},0)`);
+  setCell(ws, vRow, 2, undefined, { ...varStyle, numFmt: "0.000%;-0.000%;-" }, `IFERROR(B${vExcel}/B${tExcel},0)`);
   setCell(ws, vRow, 3, undefined, varStyle, `D${tExcel}-E${tExcel}`);
   setCell(ws, vRow, 4, undefined, varStyle, `E${tExcel}-D${tExcel}`);
 
