@@ -126,9 +126,9 @@ function HistoryPage() {
         {filtered.length > 0 ? (
           <>
             <div className="overflow-x-auto rounded-md border border-border">
-              <Table className="min-w-[720px]">
+              <Table className="min-w-[960px]">
                 <TableHeader>
-                  <TableRow><TableHead>Type</TableHead><TableHead>Quantity</TableHead><TableHead>Dam</TableHead><TableHead>Driver / vehicle</TableHead><TableHead>Date</TableHead></TableRow>
+                  <TableRow><TableHead>Type</TableHead><TableHead>Quantity</TableHead><TableHead>Dam</TableHead><TableHead>Driver / vehicle</TableHead><TableHead>Delivery note</TableHead><TableHead>Weighbridge #</TableHead><TableHead>Date</TableHead></TableRow>
                 </TableHeader>
                 <TableBody>
                   {paged.map((m) => (
@@ -137,6 +137,8 @@ function HistoryPage() {
                       <TableCell className="font-semibold tabular-nums whitespace-nowrap">{fmtTons(m.quantity_tons)}</TableCell>
                       <TableCell className="whitespace-nowrap">{damName(m.dam_id)}</TableCell>
                       <TableCell className="text-muted-foreground max-w-[18rem] truncate">{m.driver_or_company || "—"} · {m.src_vehicle_registration || m.fgc_vehicle_registration || "—"} · {m.fgc_haulier || m.src_haulier || "—"}</TableCell>
+                      <TableCell className="text-muted-foreground whitespace-nowrap">{m.src_delivery_note || "—"}</TableCell>
+                      <TableCell className="text-muted-foreground whitespace-nowrap">{(m as any).fgc_zsm_weighbridge_number || "—"}</TableCell>
                       <TableCell className="text-muted-foreground whitespace-nowrap">{fmtDateTime(m.occurred_at)}</TableCell>
                     </TableRow>
                   ))}
