@@ -455,11 +455,11 @@ export async function exportMovementsToExcel(opts: {
   const allDams = opts.allDams ?? opts.dams;
 
   if (opts.perDamSheets) {
-    allDams.forEach((dam, idx) => {
+    const damTotals = allDams.map((dam, idx) => {
       const rows = opts.movements.filter((m) => m.dam_id === dam.id);
-      addDamSheet(wb, dam, rows, idx, opts.adjustments ?? []);
+      return addDamSheet(wb, dam, rows, idx, opts.adjustments ?? []);
     });
-    addSummarySheet(wb, allDams);
+    addSummarySheet(wb, allDams, damTotals);
     if (allDams.length === 0) {
       const ws = XLSX.utils.aoa_to_sheet([["No data"]]);
       XLSX.utils.book_append_sheet(wb, ws, "Movements");
