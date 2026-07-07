@@ -302,13 +302,8 @@ function addDamSheet(wb: XLSX.WorkBook, dam: Dam, movements: Movement[], damInde
   const firstDataExcel = dataStart + 1;
   const lastDataExcel = events.length === 0 ? firstDataExcel : lastDataRow + 1;
 
-  const latestAdjustmentIdx = events.reduce((latestIdx, event, idx) => (event.kind === "adjustment" ? idx : latestIdx), -1);
-  const latestAdjustment = latestAdjustmentIdx >= 0 ? events[latestAdjustmentIdx] : undefined;
-  const summaryStartIdx = latestAdjustment?.kind === "adjustment" && !isOpeningAdjustment(latestAdjustment.adjustment)
-    ? latestAdjustmentIdx + 1
-    : 0;
-  const summaryFirstExcel = dataStart + summaryStartIdx + 1;
-  const hasSummaryRange = events.length > 0 && summaryStartIdx < events.length;
+  const summaryFirstExcel = firstDataExcel;
+  const hasSummaryRange = events.length > 0;
 
   // ---------- Totals row (AVERAGE / SUBTOTAL / SUM) ----------
   const totalStyle = {
