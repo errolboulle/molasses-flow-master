@@ -594,11 +594,10 @@ export async function exportMovementsToExcel(opts: {
 
   if (opts.perDamSheets) {
     const sheetInfoByDamId = new Map<string, DamSheetInfo>();
-    const damTotals = allDams.map((dam, idx) => {
+    allDams.forEach((dam, idx) => {
       const rows = opts.movements.filter((m) => m.dam_id === dam.id);
       const sheetInfo = addDamSheet(wb, dam, rows, idx, opts.adjustments ?? []);
       sheetInfoByDamId.set(dam.id, sheetInfo);
-      return sheetInfo;
     });
     const summaryRows = calculateWeighbridgeDamSummary(allDams, opts.movements, opts.adjustments ?? [], sheetInfoByDamId);
     addSummarySheet(wb, summaryRows);
