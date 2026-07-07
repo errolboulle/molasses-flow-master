@@ -371,9 +371,10 @@ function addDamSheet(wb: XLSX.WorkBook, dam: Dam, movements: Movement[], damInde
   ws["!freeze"] = { xSplit: 0, ySplit: 4 };
 
   XLSX.utils.book_append_sheet(wb, ws, sanitizeSheet(dam.name));
+  return { totalsExcel, hasData: events.length > 0 };
 }
 
-function addSummarySheet(wb: XLSX.WorkBook, dams: Dam[]) {
+function addSummarySheet(wb: XLSX.WorkBook, dams: Dam[], damTotals: { totalsExcel: number; hasData: boolean }[]) {
   const headers = [
     "", "Source Mill", "In ZSM", "Out Anchor", "Out ZSM",
     "Balance Anc.", "Balance ZSM", "Varience in", "Varience out", "Allowable varience",
@@ -392,44 +393,55 @@ function addSummarySheet(wb: XLSX.WorkBook, dams: Dam[]) {
 
   dams.forEach((d, idx) => {
     const r = idx + 1;
+    const excelRow = r + 1;
     const sheet = `'${sanitizeSheet(d.name)}'`;
+    const t = damTotals[idx];
     setCell(ws, r, 0, d.name, labelStyle);
-    setCell(ws, r, 1, undefined, cellStyle, `IFERROR(${sheet}!J5:J10000,0)`); // placeholder; replaced below safer
-    // Safer: reference the totals NETT (AD column total) via SUM of in/out
-    // We'll compute from sheet via simple SUM ranges to avoid hardcoding totals row index.
-    setCell(ws, r, 1, undefined, cellStyle, `SUM(${sheet}!J5:J10000)`);
-    setCell(ws, r, 2, undefined, cellStyle, `SUM(${sheet}!AB5:AB10000)/2`); // /2 because totals row also gets summed
-    // Correct approach: exclude totals row by using fixed range for data only — but row count varies.
-    // Use SUMIF on column Y instead for IN/OUT to be robust.
-    setCell(ws, r, 2, undefined, cellStyle, `SUMIF(${sheet}!Y5:Y10000,"in",${sheet}!V5:V10000)`);
-    setCell(ws, r, 4, undefined, cellStyle, `SUMIF(${sheet}!Y5:Y10000,"out",${sheet}!V5:V10000)`);
-    setCell(ws, r, 5, undefined, cellStyle, `B${r + 1}-D${r + 1}`);
-    setCell(ws, r, 6, undefined, cellStyle, `${sheet}!G2`);
-    setCell(ws, r, 7, undefined, cellStyle, `B${r + 1}-C${r + 1}`);
-    setCell(ws, r, 8, undefined, cellStyle, `D${r + 1}-E${r + 1}`);
-    setCell(ws, r, 9, undefined, cellStyle, `C${r + 1}*0.005`);
+    if (t?.hasData) {
+      setCell(ws, r, 1, undefined, cellStyle, `${sheet}!J${t.totalsExcel}`);
+      setCell(ws, r, 2, undefined, cellStyle, `${sheet}!AB${t.totalsExcel}`);
+      setCell(ws, r, 4, undefined, cellStyle, `${sheet}!AC${t.totalsExcel}`);
+    } else {
+      setCell(ws, r, 1, 0, cellStyle);
+      setCell(ws, r, 2, 0, cellStyle);
+      setCell(ws, r, 4, 0, cellStyle);
+    }
+    setCell(ws, r, 3, undefined, cellStyle); // Out Anchor blank
+    setCell(ws, r, 5, undefined, cellStyle, `B${excelRow}-D${excelRow}`);
+    setCell(ws, r, 6, undefined, cellStyle, `C${excelRow}-E${excelRow}`);
+    setCell(ws, r, 7, undefined, cellStyle, `B${excelRow}-C${excelRow}`);
+    setCell(ws, r, 8, undefined, cellStyle, `D${excelRow}-E${excelRow}`);
+    setCell(ws, r, 9, undefined, cellStyle, `C${excelRow}*0.005`);
   });
 
   const tRow = dams.length + 1;
+  const tExcel = tRow + 1;
+  const firstExcel = 2;
+  const lastExcel = dams.length + 1;
   const totalStyle = { ...cellStyle, font: { bold: true, sz: 11 }, fill: { patternType: "solid", fgColor: { rgb: "FEF3C7" } } };
   setCell(ws, tRow, 0, "Total", { ...labelStyle, font: { bold: true, sz: 11 } });
-  for (let c = 1; c <= 9; c++) {
-    if (c === 7 || c === 8 || c === 9) {
-      const colLetter = XLSX.utils.encode_col(c);
-      if (c === 7) setCell(ws, tRow, c, undefined, totalStyle, `B${tRow + 1}-C${tRow + 1}`);
-      else if (c === 8) setCell(ws, tRow, c, undefined, totalStyle, `D${tRow + 1}-E${tRow + 1}`);
-      else setCell(ws, tRow, c, undefined, totalStyle, `C${tRow + 1}*0.005`);
-      void colLetter;
-    } else {
-      const colLetter = XLSX.utils.encode_col(c);
-      setCell(ws, tRow, c, undefined, totalStyle, `SUM(${colLetter}2:${colLetter}${tRow})`);
-    }
-  }
+  ["B", "C", "D", "E", "F", "G"].forEach((col, i) => {
+    setCell(ws, tRow, i + 1, undefined, totalStyle, `SUM(${col}${firstExcel}:${col}${lastExcel})`);
+  });
+  setCell(ws, tRow, 7, undefined, totalStyle, `B${tExcel}-C${tExcel}`);
+  setCell(ws, tRow, 8, undefined, totalStyle, `D${tExcel}-E${tExcel}`);
+  setCell(ws, tRow, 9, undefined, totalStyle, `C${tExcel}*0.005`);
 
-  ws["!ref"] = `A1:J${tRow + 1}`;
+  // Variance row
+  const vRow = tRow + 1;
+  const vExcel = vRow + 1;
+  const varStyle = { ...cellStyle, font: { bold: true, sz: 11, color: { rgb: "FF0000" } } };
+  setCell(ws, vRow, 0, "Varience", { ...labelStyle, font: { bold: true, sz: 11 } });
+  setCell(ws, vRow, 1, undefined, varStyle, `C${tExcel}-B${tExcel}`);
+  setCell(ws, vRow, 2, undefined, { ...varStyle, numFmt: "0.00%" }, `IFERROR(B${vExcel}/B${tExcel},0)`);
+  setCell(ws, vRow, 3, undefined, varStyle, `D${tExcel}-E${tExcel}`);
+  setCell(ws, vRow, 4, undefined, varStyle, `E${tExcel}-D${tExcel}`);
+
+  ws["!ref"] = `A1:J${vRow + 1}`;
   ws["!cols"] = [{ wch: 14 }, ...Array(9).fill({ wch: 13 })];
   XLSX.utils.book_append_sheet(wb, ws, "Summary");
 }
+
 
 export async function exportMovementsToExcel(opts: {
   dams: Dam[];
