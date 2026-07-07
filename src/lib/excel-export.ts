@@ -131,6 +131,16 @@ const isOpeningAdjustment = (adjustment: ReportAdjustment) => {
 
 const isZeroingAdjustment = (adjustment: ReportAdjustment) => !isOpeningAdjustment(adjustment) && normalizeTons(adjustment.new_volume_tons) === 0;
 
+const movementDirection = (movement: Movement) => {
+  const label = String(movement.fgc_in_out || (movement.movement_type === "incoming" ? "In" : "Out")).trim().toLowerCase();
+  return label === "out" || movement.movement_type === "outgoing" ? "out" : "in";
+};
+
+const coreDamOrder = new Map([["dam 1", 0], ["dam 2", 1], ["dam 3", 2]]);
+const isCoreDam = (dam: Dam) => coreDamOrder.has(dam.name.trim().toLowerCase());
+const coreDamSort = (a: Dam, b: Dam) => coreDamOrder.get(a.name.trim().toLowerCase())! - coreDamOrder.get(b.name.trim().toLowerCase())!;
+const getSheetNameForDam = (dam: Dam) => isCoreDam(dam) ? dam.name.trim().toUpperCase() : sanitizeSheet(dam.name);
+
 function addDamSheet(wb: XLSX.WorkBook, dam: Dam, movements: Movement[], damIndex: number, adjustments: ReportAdjustment[] = []) {
   const ws: XLSX.WorkSheet = {};
   const merges: XLSX.Range[] = [];
@@ -278,7 +288,7 @@ function addDamSheet(wb: XLSX.WorkBook, dam: Dam, movements: Movement[], damInde
     // Variance =V-J
     setCell(ws, r, COL.W, undefined, dataStyle({ numFmt: "0.00", align: "right" }), `V${excelRow}-J${excelRow}`);
     setCell(ws, r, COL.X, num(m.fgc_brix), dataStyle({ numFmt: "0.0", align: "right" }));
-    setCell(ws, r, COL.Y, m.fgc_in_out || (isIn ? "in" : "out"), dataStyle());
+    setCell(ws, r, COL.Y, movementDirection(m) === "out" ? "Out" : "In", dataStyle());
     setCell(ws, r, COL.Z, m.fgc_zsm_operator || "", dataStyle());
     setCell(ws, r, COL.AA, m.fgc_if_out_haulier || "", dataStyle());
 
@@ -321,17 +331,18 @@ function addDamSheet(wb: XLSX.WorkBook, dam: Dam, movements: Movement[], damInde
     numFmt: "0.00",
   };
   if (events.length > 0) {
-    setCell(ws, totalsRow, COL.H, undefined, totalStyle, `AVERAGE(H${firstDataExcel}:H${lastDataExcel})`);
-    setCell(ws, totalsRow, COL.I, undefined, totalStyle, `AVERAGE(I${firstDataExcel}:I${lastDataExcel})`);
-    setCell(ws, totalsRow, COL.J, undefined, totalStyle, `SUBTOTAL(9,J${firstDataExcel}:J${lastDataExcel})`);
-    setCell(ws, totalsRow, COL.T, undefined, totalStyle, `AVERAGE(T${firstDataExcel}:T${lastDataExcel})`);
-    setCell(ws, totalsRow, COL.U, undefined, totalStyle, `AVERAGE(U${firstDataExcel}:U${lastDataExcel})`);
-    setCell(ws, totalsRow, COL.V, undefined, totalStyle, `SUBTOTAL(9,V${firstDataExcel}:V${lastDataExcel})`);
-    setCell(ws, totalsRow, COL.W, undefined, totalStyle, `SUBTOTAL(9,W${firstDataExcel}:W${lastDataExcel})`);
-    setCell(ws, totalsRow, COL.X, undefined, totalStyle, `AVERAGE(X${firstDataExcel}:X${lastDataExcel})`);
-    setCell(ws, totalsRow, COL.AB, undefined, totalStyle, `SUM(AB${firstDataExcel}:AB${lastDataExcel})`);
-    setCell(ws, totalsRow, COL.AC, undefined, totalStyle, `SUM(AC${firstDataExcel}:AC${lastDataExcel})`);
-    setCell(ws, totalsRow, COL.AD, undefined, totalStyle, `AD${lastDataExcel}`);
+    const totalFirstExcel = hasSummaryRange ? summaryFirstExcel : firstDataExcel;
+    setCell(ws, totalsRow, COL.H, undefined, totalStyle, `AVERAGE(H${totalFirstExcel}:H${lastDataExcel})`);
+    setCell(ws, totalsRow, COL.I, undefined, totalStyle, `AVERAGE(I${totalFirstExcel}:I${lastDataExcel})`);
+    setCell(ws, totalsRow, COL.J, undefined, totalStyle, `SUBTOTAL(9,J${totalFirstExcel}:J${lastDataExcel})`);
+    setCell(ws, totalsRow, COL.T, undefined, totalStyle, `AVERAGE(T${totalFirstExcel}:T${lastDataExcel})`);
+    setCell(ws, totalsRow, COL.U, undefined, totalStyle, `AVERAGE(U${totalFirstExcel}:U${lastDataExcel})`);
+    setCell(ws, totalsRow, COL.V, undefined, totalStyle, `SUBTOTAL(9,V${totalFirstExcel}:V${lastDataExcel})`);
+    setCell(ws, totalsRow, COL.W, undefined, totalStyle, `SUBTOTAL(9,W${totalFirstExcel}:W${lastDataExcel})`);
+    setCell(ws, totalsRow, COL.X, undefined, totalStyle, `AVERAGE(X${totalFirstExcel}:X${lastDataExcel})`);
+    setCell(ws, totalsRow, COL.AB, undefined, totalStyle, `SUM(AB${totalFirstExcel}:AB${lastDataExcel})`);
+    setCell(ws, totalsRow, COL.AC, undefined, totalStyle, `SUM(AC${totalFirstExcel}:AC${lastDataExcel})`);
+    setCell(ws, totalsRow, COL.AD, undefined, totalStyle, `AB${totalsExcel}-AC${totalsExcel}`);
   }
 
   // Fill row 2 G2:J2 total formula
@@ -385,7 +396,7 @@ function addDamSheet(wb: XLSX.WorkBook, dam: Dam, movements: Movement[], damInde
   ws["!merges"] = merges;
   ws["!freeze"] = { xSplit: 0, ySplit: 4 };
 
-  XLSX.utils.book_append_sheet(wb, ws, sanitizeSheet(dam.name));
+  XLSX.utils.book_append_sheet(wb, ws, getSheetNameForDam(dam));
   return { totalsExcel, hasData: events.length > 0, summaryFirstExcel, lastDataExcel, hasSummaryRange };
 }
 
@@ -403,6 +414,7 @@ type WeighbridgeDamSummary = {
   varianceIn: number;
   varianceOut: number;
   allowableVariance: number;
+  totalsExcel: number;
   summaryFirstExcel: number;
   lastDataExcel: number;
   hasSummaryRange: boolean;
@@ -422,11 +434,6 @@ const calculatedNet = (gross: unknown, tare: unknown, storedNet: unknown, fallba
   const stored = Number(storedNet);
   if (Number.isFinite(stored)) return stored;
   return safeNum(fallback);
-};
-
-const movementDirection = (movement: Movement) => {
-  const label = String(movement.fgc_in_out || (movement.movement_type === "incoming" ? "In" : "Out")).trim().toLowerCase();
-  return label === "out" || movement.movement_type === "outgoing" ? "out" : "in";
 };
 
 function calculateWeighbridgeDamSummary(
@@ -466,7 +473,7 @@ function calculateWeighbridgeDamSummary(
       const sheetInfo = sheetInfoByDamId.get(dam.id);
       return {
         dam,
-        sheetName: sanitizeSheet(dam.name),
+        sheetName: getSheetNameForDam(dam),
         sourceMill,
         inZsm,
         outAnchor,
@@ -476,6 +483,7 @@ function calculateWeighbridgeDamSummary(
         varianceIn: round2(sourceMill - inZsm),
         varianceOut: round2(outAnchor - outZsm),
         allowableVariance: round2(inZsm * 0.005),
+        totalsExcel: sheetInfo?.totalsExcel ?? 5,
         summaryFirstExcel: sheetInfo?.summaryFirstExcel ?? 5,
         lastDataExcel: sheetInfo?.lastDataExcel ?? 5,
         hasSummaryRange: sheetInfo?.hasSummaryRange ?? false,
@@ -492,33 +500,35 @@ function addSummarySheet(
     "Balance Anc.", "Balance ZSM", "Varience in", "Varience out", "Allowable varience",
   ];
   const ws: XLSX.WorkSheet = {};
-  const headerStyle = {
-    font: { bold: true, sz: 11 },
-    alignment: { horizontal: "center", vertical: "center" },
-    fill: { patternType: "solid", fgColor: { rgb: "D9D9D9" } },
-    border: ALL_MEDIUM,
-  };
+  const headerStyle = { font: { sz: 11 }, alignment: { horizontal: "left", vertical: "center" } };
   headers.forEach((h, i) => setCell(ws, 0, i, h, headerStyle));
 
-  const numberFormat = "#,##0.00;-#,##0.00;-";
-  const cellStyle = { font: { sz: 11 }, alignment: { horizontal: "right" }, border: ALL_THIN, numFmt: numberFormat };
-  const labelStyle = { font: { bold: true, sz: 11 }, alignment: { horizontal: "left" }, border: ALL_THIN };
+  const numberFormat = '_-* #,##0.00_-;\\-* #,##0.00_-;_-* "-"??_-;_-@_-';
+  const cellStyle = { font: { sz: 11 }, alignment: { horizontal: "right" }, numFmt: numberFormat };
+  const linkedCellStyle = { ...cellStyle, fill: { patternType: "solid", fgColor: { rgb: "FFFFFF" } } };
+  const labelStyle = { font: { sz: 11 }, alignment: { horizontal: "left" } };
+  const blankOutAnchorStyle = { ...cellStyle, numFmt: "#,##0.00", fill: { patternType: "solid", fgColor: { rgb: "FFFFFF" } } };
 
   rows.forEach((row, idx) => {
     const r = idx + 1;
+    const excelRow = r + 1;
+    const sheet = `'${row.sheetName}'`;
     setCell(ws, r, 0, row.dam.name, labelStyle);
-    setCell(ws, r, 1, row.sourceMill, cellStyle);
-    setCell(ws, r, 2, row.inZsm, cellStyle);
-    setCell(ws, r, 3, row.outAnchor, cellStyle);
-    setCell(ws, r, 4, row.outZsm, cellStyle);
-    setCell(ws, r, 5, row.balanceAnchor, cellStyle);
-    setCell(ws, r, 6, row.balanceZsm, cellStyle);
-    setCell(ws, r, 7, row.varianceIn, cellStyle);
-    setCell(ws, r, 8, row.varianceOut, cellStyle);
-    setCell(ws, r, 9, row.allowableVariance, cellStyle);
+    setCell(ws, r, 1, row.sourceMill, linkedCellStyle, `${sheet}!J${row.totalsExcel}`);
+    setCell(ws, r, 2, row.inZsm, linkedCellStyle, `${sheet}!AB${row.totalsExcel}`);
+    setCell(ws, r, 3, "", blankOutAnchorStyle);
+    setCell(ws, r, 4, row.outZsm, linkedCellStyle, `${sheet}!AC${row.totalsExcel}`);
+    setCell(ws, r, 5, row.balanceAnchor, linkedCellStyle, `B${excelRow}-D${excelRow}`);
+    setCell(ws, r, 6, row.balanceZsm, linkedCellStyle, `C${excelRow}-E${excelRow}`);
+    setCell(ws, r, 7, row.varianceIn, cellStyle, `B${excelRow}-C${excelRow}`);
+    setCell(ws, r, 8, row.varianceOut, cellStyle, `D${excelRow}-E${excelRow}`);
+    setCell(ws, r, 9, row.allowableVariance, cellStyle, `C${excelRow}*0.005`);
   });
 
   const tRow = rows.length + 1;
+  const tExcel = tRow + 1;
+  const firstExcel = 2;
+  const lastExcel = rows.length + 1;
   const totals = rows.reduce((sum, row) => {
     sum.sourceMill += row.sourceMill;
     sum.inZsm += row.inZsm;
@@ -528,37 +538,35 @@ function addSummarySheet(
     sum.balanceZsm += row.balanceZsm;
     return sum;
   }, { sourceMill: 0, inZsm: 0, outAnchor: 0, outZsm: 0, balanceAnchor: 0, balanceZsm: 0 });
-  const totalStyle = { ...cellStyle, font: { bold: true, sz: 11 }, fill: { patternType: "solid", fgColor: { rgb: "FEF3C7" } } };
-  setCell(ws, tRow, 0, "Total", { ...labelStyle, font: { bold: true, sz: 11 } });
-  [
-    round2(totals.sourceMill),
-    round2(totals.inZsm),
-    round2(totals.outAnchor),
-    round2(totals.outZsm),
-    round2(totals.balanceAnchor),
-    round2(totals.balanceZsm),
-  ].forEach((value, i) => {
-    setCell(ws, tRow, i + 1, value, totalStyle);
-  });
-  setCell(ws, tRow, 7, round2(totals.sourceMill - totals.inZsm), totalStyle);
-  setCell(ws, tRow, 8, round2(totals.outAnchor - totals.outZsm), totalStyle);
-  setCell(ws, tRow, 9, round2(totals.inZsm * 0.005), { ...totalStyle, font: { bold: true, sz: 11, color: { rgb: "FF0000" } } });
+  setCell(ws, tRow, 0, "Total", labelStyle);
+  [round2(totals.sourceMill), round2(totals.inZsm), round2(totals.outAnchor), round2(totals.outZsm), round2(totals.balanceAnchor), round2(totals.balanceZsm)]
+    .forEach((value, i) => {
+      const col = String.fromCharCode("B".charCodeAt(0) + i);
+      setCell(ws, tRow, i + 1, value, linkedCellStyle, `SUM(${col}${firstExcel}:${col}${lastExcel})`);
+    });
+  setCell(ws, tRow, 7, round2(totals.sourceMill - totals.inZsm), cellStyle, `B${tExcel}-C${tExcel}`);
+  setCell(ws, tRow, 8, round2(totals.outAnchor - totals.outZsm), cellStyle, `D${tExcel}-E${tExcel}`);
+  setCell(ws, tRow, 9, round2(totals.inZsm * 0.005), cellStyle, `C${tExcel}*0.005`);
 
   // Variance row
   const vRow = tRow + 1;
+  const vExcel = vRow + 1;
   const varianceSourceMill = round2(totals.inZsm - totals.sourceMill);
   const variancePercentage = round2(totals.sourceMill) === 0 ? 0 : varianceSourceMill / round2(totals.sourceMill);
   const varianceOutAnchor = round2(totals.outAnchor - totals.outZsm);
   const varianceOutZsm = round2(totals.outZsm - totals.outAnchor);
-  const varStyle = { ...cellStyle, font: { bold: true, sz: 11, color: { rgb: "FF0000" } } };
-  setCell(ws, vRow, 0, "Varience", { ...labelStyle, font: { bold: true, sz: 11 } });
-  setCell(ws, vRow, 1, varianceSourceMill, varStyle);
-  setCell(ws, vRow, 2, variancePercentage, { ...varStyle, numFmt: "0.000%;-0.000%;-" });
-  setCell(ws, vRow, 3, varianceOutAnchor, varStyle);
-  setCell(ws, vRow, 4, varianceOutZsm, varStyle);
+  setCell(ws, vRow, 0, "Varience", labelStyle);
+  setCell(ws, vRow, 1, varianceSourceMill, cellStyle, `C${tExcel}-B${tExcel}`);
+  setCell(ws, vRow, 2, variancePercentage, { ...cellStyle, numFmt: "0.000%" }, `B${vExcel}/B${tExcel}`);
+  setCell(ws, vRow, 3, varianceOutAnchor, cellStyle, `D${tExcel}-E${tExcel}`);
+  setCell(ws, vRow, 4, varianceOutZsm, cellStyle, `E${tExcel}-D${tExcel}`);
 
-  ws["!ref"] = `A1:J${vRow + 1}`;
-  ws["!cols"] = [{ wch: 14 }, ...Array(9).fill({ wch: 13 })];
+  ws["!ref"] = "A1:M12";
+  ws["!cols"] = [
+    { wch: 8.86 }, { wch: 11.71 }, { wch: 12.71 }, { wch: 12 }, { wch: 13.29 },
+    { wch: 14.71 }, { wch: 15.57 }, { wch: 12.86 }, { wch: 17.43 }, { wch: 9.14 },
+    { wch: 8.43 }, { wch: 9.71 }, { wch: 8.43 },
+  ];
   XLSX.utils.book_append_sheet(wb, ws, "Summary");
 }
 
@@ -575,15 +583,16 @@ export async function exportMovementsToExcel(opts: {
   const allDams = opts.allDams ?? opts.dams;
 
   if (opts.perDamSheets) {
+    const reportDams = allDams.filter(isCoreDam).sort(coreDamSort);
     const sheetInfoByDamId = new Map<string, DamSheetInfo>();
-    allDams.forEach((dam, idx) => {
+    reportDams.forEach((dam, idx) => {
       const rows = opts.movements.filter((m) => m.dam_id === dam.id);
       const sheetInfo = addDamSheet(wb, dam, rows, idx, opts.adjustments ?? []);
       sheetInfoByDamId.set(dam.id, sheetInfo);
     });
-    const summaryRows = calculateWeighbridgeDamSummary(allDams, opts.movements, opts.adjustments ?? [], sheetInfoByDamId);
+    const summaryRows = calculateWeighbridgeDamSummary(reportDams, opts.movements, opts.adjustments ?? [], sheetInfoByDamId);
     addSummarySheet(wb, summaryRows);
-    if (allDams.length === 0) {
+    if (reportDams.length === 0) {
       const ws = XLSX.utils.aoa_to_sheet([["No data"]]);
       XLSX.utils.book_append_sheet(wb, ws, "Movements");
     }
