@@ -506,35 +506,19 @@ function addSummarySheet(
 
   rows.forEach((row, idx) => {
     const r = idx + 1;
-    const excelRow = r + 1;
-    const sheet = `'${row.sheetName}'`;
     setCell(ws, r, 0, row.dam.name, labelStyle);
-    if (row.hasSummaryRange) {
-      const sourceRange = `${sheet}!J${row.summaryFirstExcel}:J${row.lastDataExcel}`;
-      const directionRange = `${sheet}!Y${row.summaryFirstExcel}:Y${row.lastDataExcel}`;
-      const inZsmRange = `${sheet}!AB${row.summaryFirstExcel}:AB${row.lastDataExcel}`;
-      const outZsmRange = `${sheet}!AC${row.summaryFirstExcel}:AC${row.lastDataExcel}`;
-      setCell(ws, r, 1, row.sourceMill, cellStyle, `SUMIF(${directionRange},"In",${sourceRange})`);
-      setCell(ws, r, 2, row.inZsm, cellStyle, `SUM(${inZsmRange})`);
-      setCell(ws, r, 3, row.outAnchor, cellStyle, `SUMIF(${directionRange},"Out",${sourceRange})`);
-      setCell(ws, r, 4, row.outZsm, cellStyle, `SUM(${outZsmRange})`);
-    } else {
-      setCell(ws, r, 1, 0, cellStyle);
-      setCell(ws, r, 2, 0, cellStyle);
-      setCell(ws, r, 3, 0, cellStyle);
-      setCell(ws, r, 4, 0, cellStyle);
-    }
-    setCell(ws, r, 5, row.balanceAnchor, cellStyle, `B${excelRow}-D${excelRow}`);
-    setCell(ws, r, 6, row.balanceZsm, cellStyle, `C${excelRow}-E${excelRow}`);
-    setCell(ws, r, 7, row.varianceIn, cellStyle, `ROUND(B${excelRow},2)-ROUND(C${excelRow},2)`);
-    setCell(ws, r, 8, row.varianceOut, cellStyle, `ROUND(D${excelRow},2)-ROUND(E${excelRow},2)`);
-    setCell(ws, r, 9, row.allowableVariance, cellStyle, `C${excelRow}*0.005`);
+    setCell(ws, r, 1, row.sourceMill, cellStyle);
+    setCell(ws, r, 2, row.inZsm, cellStyle);
+    setCell(ws, r, 3, row.outAnchor, cellStyle);
+    setCell(ws, r, 4, row.outZsm, cellStyle);
+    setCell(ws, r, 5, row.balanceAnchor, cellStyle);
+    setCell(ws, r, 6, row.balanceZsm, cellStyle);
+    setCell(ws, r, 7, row.varianceIn, cellStyle);
+    setCell(ws, r, 8, row.varianceOut, cellStyle);
+    setCell(ws, r, 9, row.allowableVariance, cellStyle);
   });
 
   const tRow = rows.length + 1;
-  const tExcel = tRow + 1;
-  const firstExcel = 2;
-  const lastExcel = rows.length + 1;
   const totals = rows.reduce((sum, row) => {
     sum.sourceMill += row.sourceMill;
     sum.inZsm += row.inZsm;
@@ -554,26 +538,24 @@ function addSummarySheet(
     round2(totals.balanceAnchor),
     round2(totals.balanceZsm),
   ].forEach((value, i) => {
-    const col = String.fromCharCode("B".charCodeAt(0) + i);
-    setCell(ws, tRow, i + 1, value, totalStyle, `SUM(${col}${firstExcel}:${col}${lastExcel})`);
+    setCell(ws, tRow, i + 1, value, totalStyle);
   });
-  setCell(ws, tRow, 7, round2(totals.sourceMill - totals.inZsm), totalStyle, `ROUND(B${tExcel},2)-ROUND(C${tExcel},2)`);
-  setCell(ws, tRow, 8, round2(totals.outAnchor - totals.outZsm), totalStyle, `ROUND(D${tExcel},2)-ROUND(E${tExcel},2)`);
-  setCell(ws, tRow, 9, round2(totals.inZsm * 0.005), { ...totalStyle, font: { bold: true, sz: 11, color: { rgb: "FF0000" } } }, `C${tExcel}*0.005`);
+  setCell(ws, tRow, 7, round2(totals.sourceMill - totals.inZsm), totalStyle);
+  setCell(ws, tRow, 8, round2(totals.outAnchor - totals.outZsm), totalStyle);
+  setCell(ws, tRow, 9, round2(totals.inZsm * 0.005), { ...totalStyle, font: { bold: true, sz: 11, color: { rgb: "FF0000" } } });
 
   // Variance row
   const vRow = tRow + 1;
-  const vExcel = vRow + 1;
   const varianceSourceMill = round2(totals.inZsm - totals.sourceMill);
   const variancePercentage = round2(totals.sourceMill) === 0 ? 0 : varianceSourceMill / round2(totals.sourceMill);
   const varianceOutAnchor = round2(totals.outAnchor - totals.outZsm);
   const varianceOutZsm = round2(totals.outZsm - totals.outAnchor);
   const varStyle = { ...cellStyle, font: { bold: true, sz: 11, color: { rgb: "FF0000" } } };
   setCell(ws, vRow, 0, "Varience", { ...labelStyle, font: { bold: true, sz: 11 } });
-  setCell(ws, vRow, 1, varianceSourceMill, varStyle, `ROUND(C${tExcel},2)-ROUND(B${tExcel},2)`);
-  setCell(ws, vRow, 2, variancePercentage, { ...varStyle, numFmt: "0.000%;-0.000%;-" }, `IFERROR(B${vExcel}/ROUND(B${tExcel},2),0)`);
-  setCell(ws, vRow, 3, varianceOutAnchor, varStyle, `ROUND(D${tExcel},2)-ROUND(E${tExcel},2)`);
-  setCell(ws, vRow, 4, varianceOutZsm, varStyle, `ROUND(E${tExcel},2)-ROUND(D${tExcel},2)`);
+  setCell(ws, vRow, 1, varianceSourceMill, varStyle);
+  setCell(ws, vRow, 2, variancePercentage, { ...varStyle, numFmt: "0.000%;-0.000%;-" });
+  setCell(ws, vRow, 3, varianceOutAnchor, varStyle);
+  setCell(ws, vRow, 4, varianceOutZsm, varStyle);
 
   ws["!ref"] = `A1:J${vRow + 1}`;
   ws["!cols"] = [{ wch: 14 }, ...Array(9).fill({ wch: 13 })];
