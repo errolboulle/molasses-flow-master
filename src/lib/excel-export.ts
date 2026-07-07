@@ -432,8 +432,8 @@ function addSummarySheet(
     }
     setCell(ws, r, 5, undefined, cellStyle, `B${excelRow}-D${excelRow}`);
     setCell(ws, r, 6, undefined, cellStyle, `C${excelRow}-E${excelRow}`);
-    setCell(ws, r, 7, undefined, cellStyle, `B${excelRow}-C${excelRow}`);
-    setCell(ws, r, 8, undefined, cellStyle, `D${excelRow}-E${excelRow}`);
+    setCell(ws, r, 7, undefined, cellStyle, `ROUND(B${excelRow},2)-ROUND(C${excelRow},2)`);
+    setCell(ws, r, 8, undefined, cellStyle, `ROUND(D${excelRow},2)-ROUND(E${excelRow},2)`);
     setCell(ws, r, 9, undefined, cellStyle, `C${excelRow}*0.005`);
   });
 
@@ -446,8 +446,8 @@ function addSummarySheet(
   ["B", "C", "D", "E", "F", "G"].forEach((col, i) => {
     setCell(ws, tRow, i + 1, undefined, totalStyle, `SUM(${col}${firstExcel}:${col}${lastExcel})`);
   });
-  setCell(ws, tRow, 7, undefined, totalStyle, `B${tExcel}-C${tExcel}`);
-  setCell(ws, tRow, 8, undefined, totalStyle, `D${tExcel}-E${tExcel}`);
+  setCell(ws, tRow, 7, undefined, totalStyle, `ROUND(B${tExcel},2)-ROUND(C${tExcel},2)`);
+  setCell(ws, tRow, 8, undefined, totalStyle, `ROUND(D${tExcel},2)-ROUND(E${tExcel},2)`);
   setCell(ws, tRow, 9, undefined, { ...totalStyle, font: { bold: true, sz: 11, color: { rgb: "FF0000" } } }, `C${tExcel}*0.005`);
 
   // Variance row
@@ -455,10 +455,10 @@ function addSummarySheet(
   const vExcel = vRow + 1;
   const varStyle = { ...cellStyle, font: { bold: true, sz: 11, color: { rgb: "FF0000" } } };
   setCell(ws, vRow, 0, "Varience", { ...labelStyle, font: { bold: true, sz: 11 } });
-  setCell(ws, vRow, 1, undefined, varStyle, `C${tExcel}-B${tExcel}`);
-  setCell(ws, vRow, 2, undefined, { ...varStyle, numFmt: "0.000%;-0.000%;-" }, `IFERROR(B${vExcel}/B${tExcel},0)`);
-  setCell(ws, vRow, 3, undefined, varStyle, `D${tExcel}-E${tExcel}`);
-  setCell(ws, vRow, 4, undefined, varStyle, `E${tExcel}-D${tExcel}`);
+  setCell(ws, vRow, 1, undefined, varStyle, `ROUND(C${tExcel},2)-ROUND(B${tExcel},2)`);
+  setCell(ws, vRow, 2, undefined, { ...varStyle, numFmt: "0.000%;-0.000%;-" }, `IFERROR(B${vExcel}/ROUND(B${tExcel},2),0)`);
+  setCell(ws, vRow, 3, undefined, varStyle, `ROUND(D${tExcel},2)-ROUND(E${tExcel},2)`);
+  setCell(ws, vRow, 4, undefined, varStyle, `ROUND(E${tExcel},2)-ROUND(D${tExcel},2)`);
 
   ws["!ref"] = `A1:J${vRow + 1}`;
   ws["!cols"] = [{ wch: 14 }, ...Array(9).fill({ wch: 13 })];
