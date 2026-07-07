@@ -414,6 +414,7 @@ type WeighbridgeDamSummary = {
   varianceIn: number;
   varianceOut: number;
   allowableVariance: number;
+  totalsExcel: number;
   summaryFirstExcel: number;
   lastDataExcel: number;
   hasSummaryRange: boolean;
@@ -482,6 +483,7 @@ function calculateWeighbridgeDamSummary(
         varianceIn: round2(sourceMill - inZsm),
         varianceOut: round2(outAnchor - outZsm),
         allowableVariance: round2(inZsm * 0.005),
+        totalsExcel: sheetInfo?.totalsExcel ?? 5,
         summaryFirstExcel: sheetInfo?.summaryFirstExcel ?? 5,
         lastDataExcel: sheetInfo?.lastDataExcel ?? 5,
         hasSummaryRange: sheetInfo?.hasSummaryRange ?? false,
@@ -563,7 +565,7 @@ function addSummarySheet(
   ws["!cols"] = [
     { wch: 8.86 }, { wch: 11.71 }, { wch: 12.71 }, { wch: 12 }, { wch: 13.29 },
     { wch: 14.71 }, { wch: 15.57 }, { wch: 12.86 }, { wch: 17.43 }, { wch: 9.14 },
-    undefined, { wch: 9.71 }, undefined,
+    { wch: 8.43 }, { wch: 9.71 }, { wch: 8.43 },
   ];
   XLSX.utils.book_append_sheet(wb, ws, "Summary");
 }
