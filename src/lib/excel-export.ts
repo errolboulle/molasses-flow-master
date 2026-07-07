@@ -131,6 +131,16 @@ const isOpeningAdjustment = (adjustment: ReportAdjustment) => {
 
 const isZeroingAdjustment = (adjustment: ReportAdjustment) => !isOpeningAdjustment(adjustment) && normalizeTons(adjustment.new_volume_tons) === 0;
 
+const movementDirection = (movement: Movement) => {
+  const label = String(movement.fgc_in_out || (movement.movement_type === "incoming" ? "In" : "Out")).trim().toLowerCase();
+  return label === "out" || movement.movement_type === "outgoing" ? "out" : "in";
+};
+
+const coreDamOrder = new Map([["dam 1", 0], ["dam 2", 1], ["dam 3", 2]]);
+const isCoreDam = (dam: Dam) => coreDamOrder.has(dam.name.trim().toLowerCase());
+const coreDamSort = (a: Dam, b: Dam) => coreDamOrder.get(a.name.trim().toLowerCase())! - coreDamOrder.get(b.name.trim().toLowerCase())!;
+const getSheetNameForDam = (dam: Dam) => isCoreDam(dam) ? dam.name.trim().toUpperCase() : sanitizeSheet(dam.name);
+
 function addDamSheet(wb: XLSX.WorkBook, dam: Dam, movements: Movement[], damIndex: number, adjustments: ReportAdjustment[] = []) {
   const ws: XLSX.WorkSheet = {};
   const merges: XLSX.Range[] = [];
@@ -278,7 +288,7 @@ function addDamSheet(wb: XLSX.WorkBook, dam: Dam, movements: Movement[], damInde
     // Variance =V-J
     setCell(ws, r, COL.W, undefined, dataStyle({ numFmt: "0.00", align: "right" }), `V${excelRow}-J${excelRow}`);
     setCell(ws, r, COL.X, num(m.fgc_brix), dataStyle({ numFmt: "0.0", align: "right" }));
-    setCell(ws, r, COL.Y, m.fgc_in_out || (isIn ? "in" : "out"), dataStyle());
+    setCell(ws, r, COL.Y, movementDirection(m) === "out" ? "Out" : "In", dataStyle());
     setCell(ws, r, COL.Z, m.fgc_zsm_operator || "", dataStyle());
     setCell(ws, r, COL.AA, m.fgc_if_out_haulier || "", dataStyle());
 
@@ -321,17 +331,18 @@ function addDamSheet(wb: XLSX.WorkBook, dam: Dam, movements: Movement[], damInde
     numFmt: "0.00",
   };
   if (events.length > 0) {
-    setCell(ws, totalsRow, COL.H, undefined, totalStyle, `AVERAGE(H${firstDataExcel}:H${lastDataExcel})`);
-    setCell(ws, totalsRow, COL.I, undefined, totalStyle, `AVERAGE(I${firstDataExcel}:I${lastDataExcel})`);
-    setCell(ws, totalsRow, COL.J, undefined, totalStyle, `SUBTOTAL(9,J${firstDataExcel}:J${lastDataExcel})`);
-    setCell(ws, totalsRow, COL.T, undefined, totalStyle, `AVERAGE(T${firstDataExcel}:T${lastDataExcel})`);
-    setCell(ws, totalsRow, COL.U, undefined, totalStyle, `AVERAGE(U${firstDataExcel}:U${lastDataExcel})`);
-    setCell(ws, totalsRow, COL.V, undefined, totalStyle, `SUBTOTAL(9,V${firstDataExcel}:V${lastDataExcel})`);
-    setCell(ws, totalsRow, COL.W, undefined, totalStyle, `SUBTOTAL(9,W${firstDataExcel}:W${lastDataExcel})`);
-    setCell(ws, totalsRow, COL.X, undefined, totalStyle, `AVERAGE(X${firstDataExcel}:X${lastDataExcel})`);
-    setCell(ws, totalsRow, COL.AB, undefined, totalStyle, `SUM(AB${firstDataExcel}:AB${lastDataExcel})`);
-    setCell(ws, totalsRow, COL.AC, undefined, totalStyle, `SUM(AC${firstDataExcel}:AC${lastDataExcel})`);
-    setCell(ws, totalsRow, COL.AD, undefined, totalStyle, `AD${lastDataExcel}`);
+    const totalFirstExcel = hasSummaryRange ? summaryFirstExcel : firstDataExcel;
+    setCell(ws, totalsRow, COL.H, undefined, totalStyle, `AVERAGE(H${totalFirstExcel}:H${lastDataExcel})`);
+    setCell(ws, totalsRow, COL.I, undefined, totalStyle, `AVERAGE(I${totalFirstExcel}:I${lastDataExcel})`);
+    setCell(ws, totalsRow, COL.J, undefined, totalStyle, `SUBTOTAL(9,J${totalFirstExcel}:J${lastDataExcel})`);
+    setCell(ws, totalsRow, COL.T, undefined, totalStyle, `AVERAGE(T${totalFirstExcel}:T${lastDataExcel})`);
+    setCell(ws, totalsRow, COL.U, undefined, totalStyle, `AVERAGE(U${totalFirstExcel}:U${lastDataExcel})`);
+    setCell(ws, totalsRow, COL.V, undefined, totalStyle, `SUBTOTAL(9,V${totalFirstExcel}:V${lastDataExcel})`);
+    setCell(ws, totalsRow, COL.W, undefined, totalStyle, `SUBTOTAL(9,W${totalFirstExcel}:W${lastDataExcel})`);
+    setCell(ws, totalsRow, COL.X, undefined, totalStyle, `AVERAGE(X${totalFirstExcel}:X${lastDataExcel})`);
+    setCell(ws, totalsRow, COL.AB, undefined, totalStyle, `SUM(AB${totalFirstExcel}:AB${lastDataExcel})`);
+    setCell(ws, totalsRow, COL.AC, undefined, totalStyle, `SUM(AC${totalFirstExcel}:AC${lastDataExcel})`);
+    setCell(ws, totalsRow, COL.AD, undefined, totalStyle, `AB${totalsExcel}-AC${totalsExcel}`);
   }
 
   // Fill row 2 G2:J2 total formula
@@ -385,7 +396,7 @@ function addDamSheet(wb: XLSX.WorkBook, dam: Dam, movements: Movement[], damInde
   ws["!merges"] = merges;
   ws["!freeze"] = { xSplit: 0, ySplit: 4 };
 
-  XLSX.utils.book_append_sheet(wb, ws, sanitizeSheet(dam.name));
+  XLSX.utils.book_append_sheet(wb, ws, getSheetNameForDam(dam));
   return { totalsExcel, hasData: events.length > 0, summaryFirstExcel, lastDataExcel, hasSummaryRange };
 }
 
