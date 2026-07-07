@@ -514,15 +514,15 @@ function addSummarySheet(
     const excelRow = r + 1;
     const sheet = `'${row.sheetName}'`;
     setCell(ws, r, 0, row.dam.name, labelStyle);
-    setCell(ws, r, 1, row.sourceMill, linkedCellStyle, `${sheet}!J${row.totalsExcel}`);
-    setCell(ws, r, 2, row.inZsm, linkedCellStyle, `${sheet}!AB${row.totalsExcel}`);
-    setCell(ws, r, 3, "", blankOutAnchorStyle);
-    setCell(ws, r, 4, row.outZsm, linkedCellStyle, `${sheet}!AC${row.totalsExcel}`);
-    setCell(ws, r, 5, row.balanceAnchor, linkedCellStyle, `B${excelRow}-D${excelRow}`);
-    setCell(ws, r, 6, row.balanceZsm, linkedCellStyle, `C${excelRow}-E${excelRow}`);
-    setCell(ws, r, 7, row.varianceIn, cellStyle, `B${excelRow}-C${excelRow}`);
-    setCell(ws, r, 8, row.varianceOut, cellStyle, `D${excelRow}-E${excelRow}`);
-    setCell(ws, r, 9, row.allowableVariance, cellStyle, `C${excelRow}*0.005`);
+    setCell(ws, r, 1, row.sourceMill, linkedCellStyle, `IFERROR(${sheet}!J${row.totalsExcel},0)`);
+    setCell(ws, r, 2, row.inZsm, linkedCellStyle, `IFERROR(${sheet}!AB${row.totalsExcel},0)`);
+    setCell(ws, r, 3, 0, blankOutAnchorStyle);
+    setCell(ws, r, 4, row.outZsm, linkedCellStyle, `IFERROR(${sheet}!AC${row.totalsExcel},0)`);
+    setCell(ws, r, 5, row.balanceAnchor, linkedCellStyle, `IFERROR(B${excelRow}-D${excelRow},0)`);
+    setCell(ws, r, 6, row.balanceZsm, linkedCellStyle, `IFERROR(C${excelRow}-E${excelRow},0)`);
+    setCell(ws, r, 7, row.varianceIn, cellStyle, `IFERROR(B${excelRow}-C${excelRow},0)`);
+    setCell(ws, r, 8, row.varianceOut, cellStyle, `IFERROR(D${excelRow}-E${excelRow},0)`);
+    setCell(ws, r, 9, row.allowableVariance, cellStyle, `IFERROR(C${excelRow}*0.005,0)`);
   });
 
   const tRow = rows.length + 1;
@@ -542,11 +542,11 @@ function addSummarySheet(
   [round2(totals.sourceMill), round2(totals.inZsm), round2(totals.outAnchor), round2(totals.outZsm), round2(totals.balanceAnchor), round2(totals.balanceZsm)]
     .forEach((value, i) => {
       const col = String.fromCharCode("B".charCodeAt(0) + i);
-      setCell(ws, tRow, i + 1, value, linkedCellStyle, `SUM(${col}${firstExcel}:${col}${lastExcel})`);
+      setCell(ws, tRow, i + 1, value, linkedCellStyle, `IFERROR(SUM(${col}${firstExcel}:${col}${lastExcel}),0)`);
     });
-  setCell(ws, tRow, 7, round2(totals.sourceMill - totals.inZsm), cellStyle, `B${tExcel}-C${tExcel}`);
-  setCell(ws, tRow, 8, round2(totals.outAnchor - totals.outZsm), cellStyle, `D${tExcel}-E${tExcel}`);
-  setCell(ws, tRow, 9, round2(totals.inZsm * 0.005), cellStyle, `C${tExcel}*0.005`);
+  setCell(ws, tRow, 7, round2(totals.sourceMill - totals.inZsm), cellStyle, `IFERROR(B${tExcel}-C${tExcel},0)`);
+  setCell(ws, tRow, 8, round2(totals.outAnchor - totals.outZsm), cellStyle, `IFERROR(D${tExcel}-E${tExcel},0)`);
+  setCell(ws, tRow, 9, round2(totals.inZsm * 0.005), cellStyle, `IFERROR(C${tExcel}*0.005,0)`);
 
   // Variance row
   const vRow = tRow + 1;
@@ -556,10 +556,10 @@ function addSummarySheet(
   const varianceOutAnchor = round2(totals.outAnchor - totals.outZsm);
   const varianceOutZsm = round2(totals.outZsm - totals.outAnchor);
   setCell(ws, vRow, 0, "Varience", labelStyle);
-  setCell(ws, vRow, 1, varianceSourceMill, cellStyle, `C${tExcel}-B${tExcel}`);
-  setCell(ws, vRow, 2, variancePercentage, { ...cellStyle, numFmt: "0.000%" }, `B${vExcel}/B${tExcel}`);
-  setCell(ws, vRow, 3, varianceOutAnchor, cellStyle, `D${tExcel}-E${tExcel}`);
-  setCell(ws, vRow, 4, varianceOutZsm, cellStyle, `E${tExcel}-D${tExcel}`);
+  setCell(ws, vRow, 1, varianceSourceMill, cellStyle, `IFERROR(C${tExcel}-B${tExcel},0)`);
+  setCell(ws, vRow, 2, variancePercentage, { ...cellStyle, numFmt: "0.000%" }, `IFERROR(B${vExcel}/B${tExcel},0)`);
+  setCell(ws, vRow, 3, varianceOutAnchor, cellStyle, `IFERROR(D${tExcel}-E${tExcel},0)`);
+  setCell(ws, vRow, 4, varianceOutZsm, cellStyle, `IFERROR(E${tExcel}-D${tExcel},0)`);
 
   ws["!ref"] = "A1:M12";
   ws["!cols"] = [
