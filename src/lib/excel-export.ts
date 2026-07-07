@@ -126,8 +126,10 @@ const normalizeTons = (value: unknown): number => {
 
 const isOpeningAdjustment = (adjustment: ReportAdjustment) => {
   const reason = String(adjustment.reason ?? "").trim().toLowerCase();
-  return reason === "starting" || reason === "start" || reason === "opening";
+  return reason === "start" || reason === "opening" || reason.startsWith("starting") || reason.startsWith("opening balance");
 };
+
+const isZeroingAdjustment = (adjustment: ReportAdjustment) => !isOpeningAdjustment(adjustment) && normalizeTons(adjustment.new_volume_tons) === 0;
 
 function addDamSheet(wb: XLSX.WorkBook, dam: Dam, movements: Movement[], damIndex: number, adjustments: ReportAdjustment[] = []) {
   const ws: XLSX.WorkSheet = {};
@@ -302,8 +304,13 @@ function addDamSheet(wb: XLSX.WorkBook, dam: Dam, movements: Movement[], damInde
   const firstDataExcel = dataStart + 1;
   const lastDataExcel = events.length === 0 ? firstDataExcel : lastDataRow + 1;
 
-  const summaryFirstExcel = firstDataExcel;
-  const hasSummaryRange = events.length > 0;
+  const latestZeroingAdjustmentIdx = events.reduce(
+    (latestIdx, event, idx) => (event.kind === "adjustment" && isZeroingAdjustment(event.adjustment) ? idx : latestIdx),
+    -1,
+  );
+  const summaryStartIdx = latestZeroingAdjustmentIdx >= 0 ? latestZeroingAdjustmentIdx + 1 : 0;
+  const summaryFirstExcel = dataStart + summaryStartIdx + 1;
+  const hasSummaryRange = events.length > 0 && summaryStartIdx < events.length;
 
   // ---------- Totals row (AVERAGE / SUBTOTAL / SUM) ----------
   const totalStyle = {
