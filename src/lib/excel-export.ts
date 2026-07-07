@@ -435,11 +435,6 @@ const calculatedNet = (gross: unknown, tare: unknown, storedNet: unknown, fallba
   return safeNum(fallback);
 };
 
-const movementDirection = (movement: Movement) => {
-  const label = String(movement.fgc_in_out || (movement.movement_type === "incoming" ? "In" : "Out")).trim().toLowerCase();
-  return label === "out" || movement.movement_type === "outgoing" ? "out" : "in";
-};
-
 function calculateWeighbridgeDamSummary(
   dams: Dam[],
   movements: Movement[],
