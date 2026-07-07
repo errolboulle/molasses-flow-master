@@ -500,14 +500,17 @@ function addSummarySheet(
     "Balance Anc.", "Balance ZSM", "Varience in", "Varience out", "Allowable varience",
   ];
   const ws: XLSX.WorkSheet = {};
-  const headerStyle = { font: { sz: 11 }, alignment: { horizontal: "left", vertical: "center" } };
+  const thin = { style: "thin", color: { rgb: "000000" } };
+  const border = { top: thin, bottom: thin, left: thin, right: thin };
+  const headerStyle = { font: { sz: 11, bold: true }, alignment: { horizontal: "left", vertical: "center" }, border };
   headers.forEach((h, i) => setCell(ws, 0, i, h, headerStyle));
 
   const numberFormat = '_-* #,##0.00_-;\\-* #,##0.00_-;_-* "-"??_-;_-@_-';
-  const cellStyle = { font: { sz: 11 }, alignment: { horizontal: "right" }, numFmt: numberFormat };
+  const cellStyle = { font: { sz: 11 }, alignment: { horizontal: "right" }, numFmt: numberFormat, border };
   const linkedCellStyle = { ...cellStyle, fill: { patternType: "solid", fgColor: { rgb: "FFFFFF" } } };
-  const labelStyle = { font: { sz: 11 }, alignment: { horizontal: "left" } };
+  const labelStyle = { font: { sz: 11 }, alignment: { horizontal: "left" }, border };
   const blankOutAnchorStyle = { ...cellStyle, numFmt: "#,##0.00", fill: { patternType: "solid", fgColor: { rgb: "FFFFFF" } } };
+
 
   rows.forEach((row, idx) => {
     const r = idx + 1;
