@@ -17,6 +17,14 @@ import { PaginationControls } from "@/components/pagination-controls";
 import { RouteError } from "@/components/route-error";
 
 export const Route = createFileRoute("/history")({
+  head: () => ({ meta: [
+    { title: "History | Flow Ops" },
+    { name: "description", content: "Flow Ops history for molasses storage and operations." },
+    { property: "og:title", content: "History | Flow Ops" },
+    { property: "og:description", content: "Flow Ops history for molasses storage and operations." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ] }),
   component: () => <ProtectedLayout><HistoryPage /></ProtectedLayout>,
   errorComponent: RouteError,
 });

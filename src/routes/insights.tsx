@@ -14,6 +14,14 @@ import { RouteError } from "@/components/route-error";
 import { computeCurrentTons } from "@/lib/report-layout";
 
 export const Route = createFileRoute("/insights")({
+  head: () => ({ meta: [
+    { title: "Insights | Flow Ops" },
+    { name: "description", content: "Flow Ops insights for molasses storage and operations." },
+    { property: "og:title", content: "Insights | Flow Ops" },
+    { property: "og:description", content: "Flow Ops insights for molasses storage and operations." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ] }),
   component: () => <ProtectedLayout><InsightsPage /></ProtectedLayout>,
   errorComponent: RouteError,
 });

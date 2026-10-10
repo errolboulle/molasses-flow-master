@@ -37,8 +37,6 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
       { name: "twitter:title", content: "Flow Ops" },
       { property: "og:description", content: "Industrial molasses storage tracking across dams: deliveries, dispatch, audits, reports." },
       { name: "twitter:description", content: "Industrial molasses storage tracking across dams: deliveries, dispatch, audits, reports." },
-      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/N28fxg7z4xeuT5u3KB5b9cMekSp1/social-images/social-1776859692749-a53cdb62-15b3-471a-aaeb-12f744ffac41.webp" },
-      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/N28fxg7z4xeuT5u3KB5b9cMekSp1/social-images/social-1776859692749-a53cdb62-15b3-471a-aaeb-12f744ffac41.webp" },
       { name: "twitter:card", content: "summary_large_image" },
       { property: "og:type", content: "website" },
     ],

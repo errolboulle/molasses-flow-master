@@ -19,7 +19,15 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 export const Route = createFileRoute("/users")({
-  component: () => <ProtectedLayout requireAdmin><UsersPage /></ProtectedLayout>,
+  head: () => ({ meta: [
+    { title: "Users | Flow Ops" },
+    { name: "description", content: "Flow Ops users for molasses storage and operations." },
+    { property: "og:title", content: "Users | Flow Ops" },
+    { property: "og:description", content: "Flow Ops users for molasses storage and operations." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ] }),
+  component: () => <ProtectedLayout requireAdmin allowSupervisor><UsersPage /></ProtectedLayout>,
   errorComponent: RouteError,
 });
 
@@ -124,12 +132,12 @@ function UsersPage() {
           <h1 className="mt-1 text-3xl font-black lg:text-4xl">Users</h1>
           <p className="text-sm text-muted-foreground mt-1">Add users, manage roles, edit details, and deactivate access.</p>
         </div>
-        <Button disabled={!isAdmin} onClick={() => { setCreating(true); setEditing(null); setForm({ fullName: "", email: "", password: "", role: "operator" }); }}>
+        {isAdmin && <Button disabled={!isAdmin} onClick={() => { setCreating(true); setEditing(null); setForm({ fullName: "", email: "", password: "", role: "operator" }); }}>
           <UserPlus className="h-4 w-4" /> Add user
-        </Button>
+        </Button>}
       </div>
 
-      {(creating || editing) && (
+      {isAdmin && (creating || editing) && (
         <Card className="p-5">
           <form onSubmit={creating ? createUser : (e) => { e.preventDefault(); if (editing) updateUser({ userId: editing.id, fullName: form.fullName, email: form.email, role: form.role }); }} className="grid grid-cols-1 md:grid-cols-5 gap-3 items-end">
             <div className="space-y-1 md:col-span-1"><Label className="text-xs">Full name</Label><Input required value={form.fullName} onChange={(e) => setForm((f) => ({ ...f, fullName: e.target.value }))} /></div>
@@ -142,7 +150,7 @@ function UsersPage() {
       )}
 
       <Table>
-        <TableHeader><TableRow><TableHead>User</TableHead><TableHead>Roles</TableHead><TableHead>Status</TableHead><TableHead>Joined</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
+        <TableHeader><TableRow><TableHead>User</TableHead><TableHead>Roles</TableHead><TableHead>Status</TableHead><TableHead>Joined</TableHead>{isAdmin && <TableHead className="text-right">Actions</TableHead>}</TableRow></TableHeader>
         <TableBody>
           {users.map((u) => (
             <TableRow key={u.id}>
@@ -150,7 +158,7 @@ function UsersPage() {
               <TableCell><div className="flex gap-1 flex-wrap">{u.roles.length === 0 && <Badge variant="outline">no role</Badge>}{u.roles.map((r) => <Badge key={r} variant={r === "admin" ? "default" : "secondary"}>{r}</Badge>)}</div></TableCell>
               <TableCell><Badge variant={u.status === "active" ? "outline" : "destructive"}>{u.status === "active" ? "active" : "inactive"}</Badge></TableCell>
               <TableCell className="text-muted-foreground">{fmtDateTime(u.created_at)}</TableCell>
-              <TableCell><div className="flex justify-end gap-2 flex-wrap"><Button disabled={!isAdmin} size="sm" variant="outline" onClick={() => startEdit(u as UserRow)}><Edit3 className="h-4 w-4" /> Edit</Button><Button disabled={!isAdmin} size="sm" variant={u.status === "active" ? "destructive" : "default"} onClick={() => updateUser({ userId: u.id, status: u.status === "active" ? "disabled" : "active" })}>{u.status === "active" ? "Deactivate" : "Restore"}</Button> {currentUser?.id !== u.id && <Button disabled={!isAdmin} size="sm" variant="destructive" onClick={() => startDelete(u as UserRow)}><Trash2 className="h-4 w-4" /> Delete</Button>}</div></TableCell>
+              {isAdmin && <TableCell><div className="flex justify-end gap-2 flex-wrap"><Button disabled={!isAdmin} size="sm" variant="outline" onClick={() => startEdit(u as UserRow)}><Edit3 className="h-4 w-4" /> Edit</Button><Button disabled={!isAdmin} size="sm" variant={u.status === "active" ? "destructive" : "default"} onClick={() => updateUser({ userId: u.id, status: u.status === "active" ? "disabled" : "active" })}>{u.status === "active" ? "Deactivate" : "Restore"}</Button> {currentUser?.id !== u.id && <Button disabled={!isAdmin} size="sm" variant="destructive" onClick={() => startDelete(u as UserRow)}><Trash2 className="h-4 w-4" /> Delete</Button>}</div></TableCell>}
             </TableRow>
           ))}
         </TableBody>

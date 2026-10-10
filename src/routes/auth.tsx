@@ -10,6 +10,14 @@ import { toast } from "sonner";
 import { RouteError } from "@/components/route-error";
 
 export const Route = createFileRoute("/auth")({
+  head: () => ({ meta: [
+    { title: "Sign in | Flow Ops" },
+    { name: "description", content: "Flow Ops sign in for molasses storage and operations." },
+    { property: "og:title", content: "Sign in | Flow Ops" },
+    { property: "og:description", content: "Flow Ops sign in for molasses storage and operations." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ] }),
   component: AuthPage,
   errorComponent: RouteError,
 });

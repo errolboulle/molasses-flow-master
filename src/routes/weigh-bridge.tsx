@@ -71,6 +71,14 @@ const uppercaseFields = new Set(["src_vehicle_registration", "fgc_vehicle_regist
 const normalizeFieldValue = (key: string, value: string) => (uppercaseFields.has(key) ? value.toUpperCase() : value);
 
 export const Route = createFileRoute("/weigh-bridge")({
+  head: () => ({ meta: [
+    { title: "Weigh Bridge | Flow Ops" },
+    { name: "description", content: "Flow Ops weigh bridge for molasses storage and operations." },
+    { property: "og:title", content: "Weigh Bridge | Flow Ops" },
+    { property: "og:description", content: "Flow Ops weigh bridge for molasses storage and operations." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ] }),
   component: () => <ProtectedLayout><WeighBridgeModePage /></ProtectedLayout>,
   errorComponent: RouteError,
 });
