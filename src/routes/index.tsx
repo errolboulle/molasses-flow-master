@@ -11,6 +11,14 @@ import { toast } from "sonner";
 import { RouteError } from "@/components/route-error";
 
 export const Route = createFileRoute("/")({
+  head: () => ({ meta: [
+    { title: "Welcome | Flow Ops" },
+    { name: "description", content: "Flow Ops welcome for molasses storage and operations." },
+    { property: "og:title", content: "Welcome | Flow Ops" },
+    { property: "og:description", content: "Flow Ops welcome for molasses storage and operations." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ] }),
   component: Index,
   errorComponent: RouteError,
 });

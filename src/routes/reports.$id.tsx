@@ -15,6 +15,14 @@ import { fmtDateTime } from "@/lib/types";
 import { RouteError } from "@/components/route-error";
 
 export const Route = createFileRoute("/reports/$id")({
+  head: () => ({ meta: [
+    { title: "Report details | Flow Ops" },
+    { name: "description", content: "Flow Ops report details for molasses storage and operations." },
+    { property: "og:title", content: "Report details | Flow Ops" },
+    { property: "og:description", content: "Flow Ops report details for molasses storage and operations." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ] }),
   component: () => <ProtectedLayout><ReportDetailPage /></ProtectedLayout>,
   errorComponent: RouteError,
 });

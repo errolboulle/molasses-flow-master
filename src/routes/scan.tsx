@@ -17,6 +17,14 @@ import { findDuplicateMovementReference, formatDuplicateMessage, forceInsertMove
 import { RouteError } from "@/components/route-error";
 
 export const Route = createFileRoute("/scan")({
+  head: () => ({ meta: [
+    { title: "Scan documents | Flow Ops" },
+    { name: "description", content: "Flow Ops scan documents for molasses storage and operations." },
+    { property: "og:title", content: "Scan documents | Flow Ops" },
+    { property: "og:description", content: "Flow Ops scan documents for molasses storage and operations." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ] }),
   component: () => (
     <ProtectedLayout>
       <ScanPage />
@@ -332,6 +340,7 @@ function ScanPage() {
                     <Label className="text-xs">{f.label}</Label>
                     <Input
                       type={f.type}
+                      disabled={isSupervisorOnly}
                       step={f.type === "number" ? "0.001" : undefined}
                       value={fields[f.key] ?? ""}
                       onChange={(e) => setField(f.key, f.type === "number" ? (e.target.value === "" ? "" : Number(e.target.value)) : e.target.value)}

@@ -13,7 +13,15 @@ import { toast } from "sonner";
 import { RouteError } from "@/components/route-error";
 
 export const Route = createFileRoute("/settings")({
-  component: () => <ProtectedLayout requireAdmin><SettingsPage /></ProtectedLayout>,
+  head: () => ({ meta: [
+    { title: "Settings | Flow Ops" },
+    { name: "description", content: "Flow Ops settings for molasses storage and operations." },
+    { property: "og:title", content: "Settings | Flow Ops" },
+    { property: "og:description", content: "Flow Ops settings for molasses storage and operations." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ] }),
+  component: () => <ProtectedLayout requireAdmin allowSupervisor><SettingsPage /></ProtectedLayout>,
   errorComponent: RouteError,
 });
 

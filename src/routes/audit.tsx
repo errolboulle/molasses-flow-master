@@ -16,6 +16,14 @@ import { PaginationControls } from "@/components/pagination-controls";
 import { RouteError } from "@/components/route-error";
 
 export const Route = createFileRoute("/audit")({
+  head: () => ({ meta: [
+    { title: "Audit logs | Flow Ops" },
+    { name: "description", content: "Flow Ops audit logs for molasses storage and operations." },
+    { property: "og:title", content: "Audit logs | Flow Ops" },
+    { property: "og:description", content: "Flow Ops audit logs for molasses storage and operations." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ] }),
   component: () => <ProtectedLayout><AuditPage /></ProtectedLayout>,
   errorComponent: RouteError,
 });
@@ -115,7 +123,7 @@ function searchHaystack(row: AuditRow): string {
 }
 
 function AuditPage() {
-  const { isAdmin } = useAuth();
+  const { isAdmin, isSupervisor } = useAuth();
   const { data: logs = [], isLoading, error } = useAuditLogs();
   const [tab, setTab] = useState<LogType>("all");
   const [from, setFrom] = useState("");
@@ -160,7 +168,7 @@ function AuditPage() {
     system_error: logs.filter((l) => l.log_type === "system_error").length,
   }), [logs]);
 
-  if (!isAdmin) {
+  if (!isAdmin && !isSupervisor) {
     return (
       <Card className="p-8 text-center">
         <Lock className="h-8 w-8 mx-auto text-muted-foreground mb-2" />

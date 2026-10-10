@@ -19,6 +19,14 @@ import { Progress } from "@/components/ui/progress";
 import { RouteError } from "@/components/route-error";
 
 export const Route = createFileRoute("/dams")({
+  head: () => ({ meta: [
+    { title: "Dams | Flow Ops" },
+    { name: "description", content: "Flow Ops dams for molasses storage and operations." },
+    { property: "og:title", content: "Dams | Flow Ops" },
+    { property: "og:description", content: "Flow Ops dams for molasses storage and operations." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ] }),
   component: () => <ProtectedLayout><DamsPage /></ProtectedLayout>,
   errorComponent: RouteError,
 });

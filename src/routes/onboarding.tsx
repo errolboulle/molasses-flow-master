@@ -12,6 +12,14 @@ import { useQueryClient } from "@tanstack/react-query";
 import { RouteError } from "@/components/route-error";
 
 export const Route = createFileRoute("/onboarding")({
+  head: () => ({ meta: [
+    { title: "Setup | Flow Ops" },
+    { name: "description", content: "Flow Ops setup for molasses storage and operations." },
+    { property: "og:title", content: "Setup | Flow Ops" },
+    { property: "og:description", content: "Flow Ops setup for molasses storage and operations." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ] }),
   component: Onboarding,
   errorComponent: RouteError,
 });

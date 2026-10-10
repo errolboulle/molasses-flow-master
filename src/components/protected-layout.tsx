@@ -5,7 +5,7 @@ import { AppShell } from "./app-shell";
 import { TermsAcceptanceDialog } from "./terms-acceptance-dialog";
 import type { ReactNode } from "react";
 
-export function ProtectedLayout({ requireAdmin = false, children }: { requireAdmin?: boolean; children: ReactNode }) {
+export function ProtectedLayout({ requireAdmin = false, allowSupervisor = false, children }: { requireAdmin?: boolean; allowSupervisor?: boolean; children: ReactNode }) {
   const { user, loading, isAdmin, isSupervisor, roles, termsAcceptedAt, refreshProfile } = useAuth();
   const { data: settings, isLoading: settingsLoading } = useSettings();
 
@@ -35,7 +35,7 @@ export function ProtectedLayout({ requireAdmin = false, children }: { requireAdm
     return <Navigate to="/onboarding" />;
   }
 
-  if (requireAdmin && !isAdmin && !isSupervisor) {
+  if (requireAdmin && !isAdmin && !(allowSupervisor && isSupervisor)) {
     return (
       <AppShell>
         <div className="text-center py-16">

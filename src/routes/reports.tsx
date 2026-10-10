@@ -13,6 +13,14 @@ import { RouteError } from "@/components/route-error";
 import { computeCurrentTons } from "@/lib/report-layout";
 
 export const Route = createFileRoute("/reports")({
+  head: () => ({ meta: [
+    { title: "Reports | Flow Ops" },
+    { name: "description", content: "Flow Ops reports for molasses storage and operations." },
+    { property: "og:title", content: "Reports | Flow Ops" },
+    { property: "og:description", content: "Flow Ops reports for molasses storage and operations." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ] }),
   component: () => <ProtectedLayout><ReportsPage /></ProtectedLayout>,
   errorComponent: RouteError,
 });
