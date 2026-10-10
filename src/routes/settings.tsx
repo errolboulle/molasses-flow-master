@@ -19,7 +19,7 @@ export const Route = createFileRoute("/settings")({
 
 function SettingsPage() {
   const { data: settings } = useSettings();
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const qc = useQueryClient();
   const [density, setDensity] = useState("");
   const [saving, setSaving] = useState(false);
@@ -53,10 +53,10 @@ function SettingsPage() {
         <h2 className="font-semibold">Conversion factor</h2>
         <div className="space-y-2">
           <Label>Molasses density (kg / litre)</Label>
-          <Input type="number" step="0.01" min="0.1" value={density} onChange={(e) => setDensity(e.target.value)} />
+          <Input disabled={!isAdmin} type="number" step="0.01" min="0.1" value={density} onChange={(e) => setDensity(e.target.value)} />
           <p className="text-xs text-muted-foreground">Used to convert tons ↔ litres throughout the app.</p>
         </div>
-        <Button onClick={save} disabled={saving}>{saving ? "Saving…" : "Save"}</Button>
+        <Button disabled={saving || !isAdmin} onClick={save} disabled={saving}>{saving ? "Saving…" : "Save"}</Button>
       </Card>
     </div>
   );

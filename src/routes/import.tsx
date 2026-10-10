@@ -45,7 +45,7 @@ async function fetchAllMovementRefs() {
 }
 
 function ImportPage() {
-  const { user } = useAuth();
+  const { user, isSupervisorOnly } = useAuth();
   const qc = useQueryClient();
   const { data: dams = [] } = useDams();
   const fileRef = useRef<HTMLInputElement>(null);
@@ -261,7 +261,7 @@ function ImportPage() {
                 if (f) handleFile(f);
               }}
             />
-            <Button onClick={() => fileRef.current?.click()} disabled={parsing || importing}>
+            <Button onClick={() => fileRef.current?.click()} disabled={parsing || importing || isSupervisorOnly}>
               {parsing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
               {fileName ? "Choose another file" : "Select file"}
             </Button>
@@ -306,7 +306,7 @@ function ImportPage() {
           <Card className="overflow-hidden">
             <div className="flex flex-col gap-3 border-b border-border p-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="font-semibold">Preview</div>
-              <Button onClick={handleImport} disabled={importing || totalToImport === 0}>
+              <Button onClick={handleImport} disabled={importing || totalToImport === 0 || isSupervisorOnly}>
                 {importing ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
                 Import {totalToImport} movement{totalToImport === 1 ? "" : "s"}
                 {approvedRows.length > 0 ? ` (${approvedRows.length} approved dup)` : ""}

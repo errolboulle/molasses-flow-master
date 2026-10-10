@@ -85,7 +85,7 @@ const emptySlip: SlipState = { file: null, previewUrl: null, isPdf: false };
 
 function ScanPage() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, isSupervisorOnly } = useAuth();
   const { data: dams = [] } = useDams();
 
   const millCamRef = useRef<HTMLInputElement>(null);
@@ -223,8 +223,8 @@ function ScanPage() {
         <div className="flex flex-col items-center gap-3 py-8 border border-dashed rounded-lg">
           <p className="text-xs text-muted-foreground">No photo yet</p>
           <div className="flex gap-2">
-            <Button size="sm" onClick={() => camRef.current?.click()}><Camera className="h-4 w-4" /> Take photo</Button>
-            <Button size="sm" variant="outline" onClick={() => fileRef.current?.click()}><Upload className="h-4 w-4" /> Upload</Button>
+            <Button disabled={isSupervisorOnly} size="sm" onClick={() => camRef.current?.click()}><Camera className="h-4 w-4" /> Take photo</Button>
+            <Button disabled={isSupervisorOnly} size="sm" variant="outline" onClick={() => fileRef.current?.click()}><Upload className="h-4 w-4" /> Upload</Button>
           </div>
         </div>
       ) : (
@@ -237,7 +237,7 @@ function ScanPage() {
             )}
           </div>
           <div className="flex justify-end">
-            <Button size="sm" variant="outline" onClick={() => clearSlip(which)}>Replace</Button>
+            <Button disabled={isSupervisorOnly} size="sm" variant="outline" onClick={() => clearSlip(which)}>Replace</Button>
           </div>
         </div>
       )}
@@ -261,7 +261,7 @@ function ScanPage() {
             {renderSlipCard("fgc", "FGC slip", "FGC weighbridge / arrival document", fgc, fgcCamRef, fgcFileRef)}
           </div>
           <div className="flex justify-end">
-            <Button onClick={handleExtract} disabled={!hasAny || extracting}>
+            <Button onClick={handleExtract} disabled={!hasAny || extracting || isSupervisorOnly}>
               {extracting ? <><Loader2 className="h-4 w-4 animate-spin" /> Extracting…</> : <>Extract data from {mill.file && fgc.file ? "both slips" : "slip"}</>}
             </Button>
           </div>
@@ -310,14 +310,14 @@ function ScanPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <Label className="text-xs">Movement type *</Label>
-                  <select className="flex h-11 w-full rounded-xl border border-input bg-secondary/35 px-3 text-sm" value={movementType} onChange={(e) => setMovementType(e.target.value as any)}>
+                  <select disabled={isSupervisorOnly} className="flex h-11 w-full rounded-xl border border-input bg-secondary/35 px-3 text-sm" value={movementType} onChange={(e) => setMovementType(e.target.value as any)}>
                     <option value="incoming">Incoming (IN)</option>
                     <option value="outgoing">Outgoing (OUT)</option>
                   </select>
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-xs">Dam *</Label>
-                  <select className="flex h-11 w-full rounded-xl border border-input bg-secondary/35 px-3 text-sm" value={damId} onChange={(e) => setDamId(e.target.value)}>
+                  <select disabled={isSupervisorOnly} className="flex h-11 w-full rounded-xl border border-input bg-secondary/35 px-3 text-sm" value={damId} onChange={(e) => setDamId(e.target.value)}>
                     <option value="">Select dam…</option>
                     {dams.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
                   </select>
@@ -340,7 +340,7 @@ function ScanPage() {
 
               <div className="space-y-1.5">
                 <Label className="text-xs">Notes</Label>
-                <Textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} />
+                <Textarea disabled={isSupervisorOnly} rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} />
               </div>
 
               {fields.raw_text && (
@@ -355,7 +355,7 @@ function ScanPage() {
               <Button variant="outline" onClick={() => { setFields(null); }} disabled={saving}>
                 <X className="h-4 w-4" /> Back
               </Button>
-              <Button onClick={handleSave} disabled={saving}>
+              <Button onClick={handleSave} disabled={saving || isSupervisorOnly}>
                 {saving ? <><Loader2 className="h-4 w-4 animate-spin" /> Saving…</> : <><Check className="h-4 w-4" /> Confirm & Save</>}
               </Button>
             </div>
