@@ -9,8 +9,17 @@ import { Progress } from "@/components/ui/progress";
 import { computeCurrentTons } from "@/lib/report-layout";
 import type { ReactNode } from "react";
 import { RouteError } from "@/components/route-error";
+import { calculateStockOut } from "@/lib/stock-out";
 
 export const Route = createFileRoute("/dashboard")({
+  head: () => ({ meta: [
+    { title: "Dashboard | Flow Ops" },
+    { name: "description", content: "Flow Ops stock levels, outgoing stock across all dams, and operational insights." },
+    { property: "og:title", content: "Dashboard | Flow Ops" },
+    { property: "og:description", content: "Monitor dam stock and operations in Flow Ops." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ] }),
   component: () => <ProtectedLayout><DashboardPage /></ProtectedLayout>,
   errorComponent: RouteError,
 });
@@ -44,7 +53,7 @@ function DashboardPage() {
 
   const totalCurrent = damStats.reduce((s, d) => s + d.reportNett, 0);
   const totalIn = damStats.reduce((s, d) => s + d.totalIn, 0);
-  const totalOut = damStats.reduce((s, d) => s + d.totalOut, 0);
+  const totalOut = calculateStockOut(movements);
 
   const varianceFor = (start: Date, end?: Date) => movements.filter((m) => {
     const at = new Date(m.occurred_at);
@@ -79,7 +88,7 @@ function DashboardPage() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <SummaryCard label="Total stock" value={fmtTons(totalCurrent)} sub={fmtLitres(tonsToLitres(totalCurrent, density))} icon={<Database className="h-5 w-5" />} accent="primary" />
             <SummaryCard label="Received this month" value={fmtTons(totalIn)} icon={<ArrowDownToLine className="h-5 w-5" />} accent="success" />
-            <SummaryCard label="Dispatched this month" value={fmtTons(totalOut)} icon={<ArrowUpFromLine className="h-5 w-5" />} accent="purple" />
+            <SummaryCard label="Stock out" value={fmtTons(totalOut)} icon={<ArrowUpFromLine className="h-5 w-5" />} accent="purple" />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
             {damStats.map(({ dam, totalIn, totalOut, reportNett }) => {
