@@ -18,7 +18,6 @@ interface AuthContextValue {
   termsAcceptedAt: string | null;
   signOut: () => Promise<void>;
   refreshRoles: () => Promise<void>;
-  isSupervisorOnly: boolean;
   refreshProfile: () => Promise<void>;
 }
 
@@ -81,8 +80,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isOperator,
     isSupervisor,
     isViewer,
-    canEntry: isAdmin || isOperator,
     isSupervisorOnly: isSupervisor && !isAdmin && !isOperator,
+    canEntry: isAdmin || isOperator,
     termsAcceptedAt,
     signOut: async () => { await supabase.auth.signOut(); },
     refreshRoles: async () => { if (session?.user) await fetchRoles(session.user.id); },

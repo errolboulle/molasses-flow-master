@@ -37,14 +37,14 @@ const navItems = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["admin", "operator", "supervisor", "viewer", "demo"] },
   { to: "/dams", label: "Dams", icon: Database, roles: ["admin", "operator", "supervisor", "viewer", "demo"] },
   { to: "/weigh-bridge", label: "Weigh Bridge Mode", icon: Gauge, roles: ["admin", "operator", "supervisor"] },
-  { to: "/scan", label: "Scan Document", icon: ScanLine, roles: ["admin", "operator"] },
+  { to: "/scan", label: "Scan Document", icon: ScanLine, roles: ["admin", "operator", "supervisor"] },
   { to: "/history", label: "History", icon: History, roles: ["admin", "operator", "supervisor", "viewer", "demo"] },
   { to: "/insights", label: "Insights", icon: TrendingUp, roles: ["admin", "operator", "supervisor", "viewer", "demo"] },
   { to: "/reports", label: "Reports", icon: BarChart3, roles: ["admin", "operator", "supervisor", "viewer", "demo"] },
-  { to: "/import", label: "Import Excel", icon: Upload, roles: ["admin", "operator"] },
+  { to: "/import", label: "Import Excel", icon: Upload, roles: ["admin", "operator", "supervisor"] },
   { to: "/audit", label: "Audit Log", icon: ScrollText, roles: ["admin", "operator", "supervisor", "viewer", "demo"] },
-  { to: "/users", label: "Users", icon: Users, roles: ["admin"] },
-  { to: "/settings", label: "Settings", icon: Settings, roles: ["admin"] },
+  { to: "/users", label: "Users", icon: Users, roles: ["admin", "supervisor"] },
+  { to: "/settings", label: "Settings", icon: Settings, roles: ["admin", "supervisor"] },
 ] as const;
 
 export function AppShell({ children }: { children: ReactNode }) {

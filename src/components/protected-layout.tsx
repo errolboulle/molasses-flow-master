@@ -6,7 +6,7 @@ import { TermsAcceptanceDialog } from "./terms-acceptance-dialog";
 import type { ReactNode } from "react";
 
 export function ProtectedLayout({ requireAdmin = false, children }: { requireAdmin?: boolean; children: ReactNode }) {
-  const { user, loading, isAdmin, roles, termsAcceptedAt, refreshProfile } = useAuth();
+  const { user, loading, isAdmin, isSupervisor, roles, termsAcceptedAt, refreshProfile } = useAuth();
   const { data: settings, isLoading: settingsLoading } = useSettings();
 
   if (loading || settingsLoading) {
@@ -35,7 +35,7 @@ export function ProtectedLayout({ requireAdmin = false, children }: { requireAdm
     return <Navigate to="/onboarding" />;
   }
 
-  if (requireAdmin && !isAdmin) {
+  if (requireAdmin && !isAdmin && !isSupervisor) {
     return (
       <AppShell>
         <div className="text-center py-16">
