@@ -7,9 +7,11 @@ import { fmtTons, fmtLitres, fmtDateTime, tonsToLitres } from "@/lib/types";
 import { ArrowDownToLine, ArrowUpFromLine, BarChart3, Database, Droplet, Truck } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { computeCurrentTons } from "@/lib/report-layout";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { RouteError } from "@/components/route-error";
 import { calculateStockOut } from "@/lib/stock-out";
+import { calculateDamPeriodTotals, type DamPeriod } from "@/lib/dam-period-totals";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export const Route = createFileRoute("/dashboard")({
   head: () => ({ meta: [
@@ -40,6 +42,7 @@ function DashboardPage() {
   const { data: adjustments = [] } = useAdjustments();
   const { data: settings } = useSettings();
   const density = settings?.density_kg_per_l ?? 1.4;
+  const [damPeriods, setDamPeriods] = useState<Record<string, DamPeriod>>({});
 
   const monthStart = periodStart("month");
   const damStats = dams.map((dam) => {
@@ -91,7 +94,9 @@ function DashboardPage() {
             <SummaryCard label="Stock out" value={fmtTons(totalOut)} icon={<ArrowUpFromLine className="h-5 w-5" />} accent="purple" />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-            {damStats.map(({ dam, totalIn, totalOut, reportNett }) => {
+            {damStats.map(({ dam, reportNett }) => {
+              const period = damPeriods[dam.id] ?? "month";
+              const { totalIn, totalOut } = calculateDamPeriodTotals(movements, dam.id, period);
               const cap = Number(dam.capacity_tons ?? 0);
               const cur = reportNett;
               const pct = cap > 0 ? Math.min(100, (cur / cap) * 100) : 0;
@@ -100,7 +105,22 @@ function DashboardPage() {
                   <div className="flex items-start justify-between"><div><div className="text-xs text-muted-foreground uppercase tracking-wider">Dam overview</div><h3 className="text-xl font-bold">{dam.name}</h3></div><div className="h-10 w-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center"><Droplet className="h-5 w-5" /></div></div>
                   <div className="mt-4"><div className="text-3xl font-bold tabular-nums">{fmtTons(cur)}</div><div className="text-sm text-muted-foreground">{fmtLitres(tonsToLitres(cur, density))}</div></div>
                   {cap > 0 && <div className="mt-4"><div className="flex justify-between text-xs text-muted-foreground mb-1"><span>Capacity</span><span>{pct.toFixed(0)}%</span></div><Progress value={pct} /><div className="text-xs text-muted-foreground mt-1">{fmtTons(cap)} max</div></div>}
-                  <div className="mt-4 grid grid-cols-2 gap-3 pt-4 border-t border-border"><div><div className="text-xs text-muted-foreground flex items-center gap-1"><ArrowDownToLine className="h-3 w-3" /> In (mo)</div><div className="font-semibold text-success tabular-nums">{fmtTons(totalIn)}</div></div><div><div className="text-xs text-muted-foreground flex items-center gap-1"><ArrowUpFromLine className="h-3 w-3" /> Out (mo)</div><div className="font-semibold text-purple tabular-nums">{fmtTons(totalOut)}</div></div></div>
+                  <div className="mt-4 border-t border-border pt-4">
+                    <Select value={period} onValueChange={(value) => {
+                      if (value === "week" || value === "month" || value === "year") setDamPeriods((previous) => ({ ...previous, [dam.id]: value }));
+                    }}>
+                      <SelectTrigger aria-label={`${dam.name} stock period`} className="mb-3 w-full"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="week">This week</SelectItem>
+                        <SelectItem value="month">This month</SelectItem>
+                        <SelectItem value="year">This year</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div><div className="text-xs text-muted-foreground flex items-center gap-1"><ArrowDownToLine className="h-3 w-3" /> Stock in</div><div className="font-semibold text-success tabular-nums">{fmtTons(totalIn)}</div></div>
+                      <div><div className="text-xs text-muted-foreground flex items-center gap-1"><ArrowUpFromLine className="h-3 w-3" /> Stock out</div><div className="font-semibold text-purple tabular-nums">{fmtTons(totalOut)}</div></div>
+                    </div>
+                  </div>
                   <div className="mt-3 text-xs text-muted-foreground">Updated {fmtDateTime(dam.updated_at)}</div>
                 </Card>
               );
