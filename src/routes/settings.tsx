@@ -29,11 +29,12 @@ function SettingsPage() {
   }, [settings]);
 
   const save = async () => {
+    if (!isAdmin || !user) return;
     setSaving(true);
     const d = parseFloat(density);
     if (!d || d <= 0) { toast.error("Density must be > 0"); setSaving(false); return; }
     const { error } = await supabase.from("settings")
-      .update({ density_kg_per_l: d, updated_by: user!.id })
+      .update({ density_kg_per_l: d, updated_by: user.id })
       .eq("id", 1);
     setSaving(false);
     if (error) { toast.error(error.message); return; }
@@ -56,7 +57,7 @@ function SettingsPage() {
           <Input disabled={!isAdmin} type="number" step="0.01" min="0.1" value={density} onChange={(e) => setDensity(e.target.value)} />
           <p className="text-xs text-muted-foreground">Used to convert tons ↔ litres throughout the app.</p>
         </div>
-        <Button disabled={saving || !isAdmin} onClick={save} disabled={saving}>{saving ? "Saving…" : "Save"}</Button>
+        <Button disabled={saving || !isAdmin} onClick={save}>{saving ? "Saving…" : "Save"}</Button>
       </Card>
     </div>
   );

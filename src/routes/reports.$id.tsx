@@ -61,7 +61,7 @@ const versionSchema = z.object({
 
 function ReportDetailPage() {
   const { id } = Route.useParams();
-  const { session } = useAuth();
+  const { session, isSupervisorOnly } = useAuth();
   const [report, setReport] = useState<Report | null>(null);
   const [versions, setVersions] = useState<ReportVersion[]>([]);
   const [audit, setAudit] = useState<AuditEntry[]>([]);
@@ -111,6 +111,7 @@ function ReportDetailPage() {
   };
 
   const runAction = async (action: "delete" | "restore", versionId?: string) => {
+    if (isSupervisorOnly) return;
     setWorking(true);
     try {
       const response = await fetch(`/api/reports/${id}`, {
@@ -130,6 +131,7 @@ function ReportDetailPage() {
   };
 
   const uploadVersion = async (event: React.FormEvent) => {
+    if (isSupervisorOnly) { event.preventDefault(); return; }
     event.preventDefault();
     const parsed = versionSchema.safeParse({ title, description, file });
     if (!parsed.success) { toast.error(parsed.error.errors[0]?.message ?? "Invalid report version"); return; }
@@ -171,9 +173,9 @@ function ReportDetailPage() {
         <div className="flex flex-wrap gap-2">
           <Button onClick={() => downloadVersion(currentVersion?.id)} disabled={working || !currentVersion}><Download /> Download</Button>
           {report.is_deleted ? (
-            <Button variant="outline" onClick={() => runAction("restore")} disabled={working}><RotateCcw /> Restore</Button>
+            <Button variant="outline" onClick={() => runAction("restore")} disabled={working || isSupervisorOnly}><RotateCcw /> Restore</Button>
           ) : (
-            <Button variant="destructive" onClick={() => runAction("delete")} disabled={working}><Trash2 /> Soft delete</Button>
+            <Button variant="destructive" onClick={() => runAction("delete")} disabled={working || isSupervisorOnly}><Trash2 /> Soft delete</Button>
           )}
         </div>
       </div>
@@ -190,9 +192,11 @@ function ReportDetailPage() {
 
       <Card className="p-5">
         <form onSubmit={uploadVersion} className="grid gap-4 lg:grid-cols-[1fr_1fr_auto] lg:items-end">
+          <fieldset disabled={isSupervisorOnly} className="contents">
           <div className="space-y-2"><Label>Title</Label><Input value={title} onChange={(event) => setTitle(event.target.value)} /></div>
           <div className="space-y-2"><Label>Description</Label><Textarea value={description} onChange={(event) => setDescription(event.target.value)} /></div>
           <div className="space-y-2"><Label>New file version</Label><Input type="file" accept=".pdf,.xlsx,.docx" onChange={(event) => setFile(event.target.files?.[0] ?? null)} /><Button type="submit" className="w-full" disabled={working}>{working ? <Loader2 className="animate-spin" /> : <Upload />} Save version</Button></div>
+          </fieldset>
         </form>
       </Card>
 
@@ -203,7 +207,7 @@ function ReportDetailPage() {
             {versions.map((version) => (
               <div key={version.id} className="flex flex-col gap-3 rounded-md border border-input p-3 sm:flex-row sm:items-center sm:justify-between">
                 <div><p className="font-semibold">Version {version.version_number} {version.id === report.current_version_id && <Badge variant="secondary">Current</Badge>}</p><p className="text-xs text-muted-foreground">{version.file_type.toUpperCase()} • {formatBytes(version.file_size)} • {fmtDateTime(version.created_at)}</p></div>
-                <div className="flex gap-2"><Button size="sm" variant="outline" onClick={() => downloadVersion(version.id)} disabled={working}>Download</Button><Button size="sm" variant="outline" onClick={() => runAction("restore", version.id)} disabled={working}>Restore version</Button></div>
+                <div className="flex gap-2"><Button size="sm" variant="outline" onClick={() => downloadVersion(version.id)} disabled={working}>Download</Button><Button size="sm" variant="outline" onClick={() => runAction("restore", version.id)} disabled={working || isSupervisorOnly}>Restore version</Button></div>
               </div>
             ))}
           </div>

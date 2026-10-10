@@ -63,6 +63,7 @@ function ImportPage() {
   const totalToImport = newRows.length + approvedRows.length;
 
   const handleFile = async (file: File) => {
+    if (isSupervisorOnly) return;
     setParsing(true);
     setFileName(file.name);
     try {
@@ -105,6 +106,7 @@ function ImportPage() {
   };
 
   const handleImport = async () => {
+    if (isSupervisorOnly) return;
     if (!user) {
       toast.error("You must be signed in");
       return;

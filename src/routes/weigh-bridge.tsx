@@ -17,6 +17,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { supabase } from "@/integrations/supabase/client";
 import { withRetry } from "@/lib/retry";
 import { type Tables } from "@/integrations/supabase/types";
+import { ProtectedLayout } from "@/components/protected-layout";
 import { RouteError } from "@/components/route-error";
 
 type MovementType = "incoming" | "outgoing";
@@ -70,7 +71,7 @@ const uppercaseFields = new Set(["src_vehicle_registration", "fgc_vehicle_regist
 const normalizeFieldValue = (key: string, value: string) => (uppercaseFields.has(key) ? value.toUpperCase() : value);
 
 export const Route = createFileRoute("/weigh-bridge")({
-  component: WeighBridgeModePage,
+  component: () => <ProtectedLayout><WeighBridgeModePage /></ProtectedLayout>,
   errorComponent: RouteError,
 });
 
@@ -352,6 +353,7 @@ function WeighBridgeModePage() {
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
+    if (!canEntry) return;
     if (!user) {
       toast.error("You must be signed in");
       return;
@@ -455,7 +457,7 @@ function WeighBridgeModePage() {
   };
 
   const approveDuplicate = async () => {
-    if (!pendingDuplicate) return;
+    if (!canEntry || !pendingDuplicate) return;
     setSaving(true);
     try {
       await forceInsertMovement(pendingDuplicate.payload);
@@ -482,6 +484,7 @@ function WeighBridgeModePage() {
 
   return (
     <form ref={formRef} onSubmit={handleSubmit} onKeyDown={handleKeyDown} className="space-y-4">
+      <fieldset disabled={!canEntry} className="space-y-4">
       <datalist id="weigh-bridge-dams">
         {dams.map((dam) => <option key={dam.id} value={dam.name} />)}
       </datalist>
@@ -627,6 +630,7 @@ function WeighBridgeModePage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      </fieldset>
     </form>
   );
 }
@@ -668,7 +672,7 @@ function FastInput({
   return (
     <FastField label={label} name={name} activeField={activeField} className={duplicate ? "border-destructive bg-destructive/10" : undefined}>
       <div className="relative">
-        <Input type={type} step={step} readOnly={readOnly || isSupervisorOnly} className={cn("fast-control", duplicate && "border-destructive focus-visible:ring-destructive/30")} value={value} onFocus={(event) => onFocus(event, name)} onBlur={onBlur} onChange={(event) => onChange?.(event.target.value)} />
+        <Input type={type} step={step} readOnly={readOnly} className={cn("fast-control", duplicate && "border-destructive focus-visible:ring-destructive/30")} value={value} onFocus={(event) => onFocus(event, name)} onBlur={onBlur} onChange={(event) => onChange?.(event.target.value)} />
         {duplicate && <div className="absolute left-2 top-full z-40 mt-1 rounded-md border border-destructive bg-destructive px-2 py-1 text-xs font-bold text-destructive-foreground shadow-[var(--shadow-elevated)]">Duplicate: {duplicateFieldLabels[name as DuplicateFieldName]} already exists</div>}
       </div>
     </FastField>
@@ -694,7 +698,7 @@ function FastAutocomplete({
 }) {
   return (
     <FastField label={label} name={name} activeField={activeField}>
-      <SmartAutocompleteInput disabled={isSupervisorOnly} className="fast-control" value={value} suggestions={suggestions} onFocus={(event) => onFocus(event, name)} onChange={onChange} />
+      <SmartAutocompleteInput className="fast-control" value={value} suggestions={suggestions} onFocus={(event) => onFocus(event, name)} onChange={onChange} />
     </FastField>
   );
 }

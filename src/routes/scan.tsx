@@ -115,6 +115,7 @@ function ScanPage() {
   const hasAny = !!(mill.file || fgc.file);
 
   const handleExtract = async () => {
+    if (isSupervisorOnly) return;
     if (!hasAny) return;
     if (mill.isPdf || fgc.isPdf) {
       toast.error("PDF detected — OCR works best on images. Please upload photos/screenshots.");
@@ -149,6 +150,7 @@ function ScanPage() {
   const setField = (k: string, v: any) => setFields((p) => ({ ...(p || {}), [k]: v }));
 
   const handleSave = async () => {
+    if (isSupervisorOnly || !user) return;
     if (!fields) return;
     if (!damId) { toast.error("Select a dam"); return; }
     const qty = Number(fields.fgc_net_mass);

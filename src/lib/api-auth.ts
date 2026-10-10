@@ -34,6 +34,7 @@ export async function requireApiAuth(request: Request, allowedRoles?: AppRole[])
     .eq("user_id", userData.user.id);
 
   const roles = ((rolesData ?? []).map((row: { role: AppRole }) => row.role)) as AppRole[];
+  if (roles.includes("supervisor") && !["GET", "HEAD", "OPTIONS"].includes(request.method.toUpperCase())) return { error: jsonError("Supervisors have read-only access", 403) } as const;
   if (allowedRoles?.length && !roles.some((role) => allowedRoles.includes(role))) {
     return { error: jsonError("Forbidden", 403) } as const;
   }
