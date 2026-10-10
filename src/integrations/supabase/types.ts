@@ -759,6 +759,7 @@ export type Database = {
       }
       is_active: { Args: { _user_id: string }; Returns: boolean }
       is_demo_user: { Args: never; Returns: boolean }
+      is_read_only_supervisor: { Args: never; Returns: boolean }
       log_audit_event: {
         Args: {
           _action: string

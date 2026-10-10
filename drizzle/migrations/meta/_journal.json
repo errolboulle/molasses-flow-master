@@ -1,0 +1,20 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1791641857285,
+      "tag": "0000_supervisor_read_only_access",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1791641970416,
+      "tag": "0001_supervisor_rpc_and_file_guards",
+      "breakpoints": true
+    }
+  ]
+}

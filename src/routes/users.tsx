@@ -31,7 +31,7 @@ type UserRow = { id: string; full_name: string | null; email: string; status: st
 function UsersPage() {
   const { data: users = [] } = useUsersAdmin();
   const qc = useQueryClient();
-  const { user: currentUser } = useAuth();
+  const { user: currentUser, isAdmin } = useAuth();
   const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState<UserRow | null>(null);
   const [deleting, setDeleting] = useState<UserRow | null>(null);
@@ -124,7 +124,7 @@ function UsersPage() {
           <h1 className="mt-1 text-3xl font-black lg:text-4xl">Users</h1>
           <p className="text-sm text-muted-foreground mt-1">Add users, manage roles, edit details, and deactivate access.</p>
         </div>
-        <Button onClick={() => { setCreating(true); setEditing(null); setForm({ fullName: "", email: "", password: "", role: "operator" }); }}>
+        <Button disabled={!isAdmin} onClick={() => { setCreating(true); setEditing(null); setForm({ fullName: "", email: "", password: "", role: "operator" }); }}>
           <UserPlus className="h-4 w-4" /> Add user
         </Button>
       </div>
@@ -150,7 +150,7 @@ function UsersPage() {
               <TableCell><div className="flex gap-1 flex-wrap">{u.roles.length === 0 && <Badge variant="outline">no role</Badge>}{u.roles.map((r) => <Badge key={r} variant={r === "admin" ? "default" : "secondary"}>{r}</Badge>)}</div></TableCell>
               <TableCell><Badge variant={u.status === "active" ? "outline" : "destructive"}>{u.status === "active" ? "active" : "inactive"}</Badge></TableCell>
               <TableCell className="text-muted-foreground">{fmtDateTime(u.created_at)}</TableCell>
-              <TableCell><div className="flex justify-end gap-2 flex-wrap"><Button size="sm" variant="outline" onClick={() => startEdit(u as UserRow)}><Edit3 className="h-4 w-4" /> Edit</Button><Button size="sm" variant={u.status === "active" ? "destructive" : "default"} onClick={() => updateUser({ userId: u.id, status: u.status === "active" ? "disabled" : "active" })}>{u.status === "active" ? "Deactivate" : "Restore"}</Button>{currentUser?.id !== u.id && <Button size="sm" variant="destructive" onClick={() => startDelete(u as UserRow)}><Trash2 className="h-4 w-4" /> Delete</Button>}</div></TableCell>
+              <TableCell><div className="flex justify-end gap-2 flex-wrap"><Button disabled={!isAdmin} size="sm" variant="outline" onClick={() => startEdit(u as UserRow)}><Edit3 className="h-4 w-4" /> Edit</Button><Button disabled={!isAdmin} size="sm" variant={u.status === "active" ? "destructive" : "default"} onClick={() => updateUser({ userId: u.id, status: u.status === "active" ? "disabled" : "active" })}>{u.status === "active" ? "Deactivate" : "Restore"}</Button> {currentUser?.id !== u.id && <Button disabled={!isAdmin} size="sm" variant="destructive" onClick={() => startDelete(u as UserRow)}><Trash2 className="h-4 w-4" /> Delete</Button>}</div></TableCell>
             </TableRow>
           ))}
         </TableBody>

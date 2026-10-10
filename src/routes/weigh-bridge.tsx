@@ -17,6 +17,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { supabase } from "@/integrations/supabase/client";
 import { withRetry } from "@/lib/retry";
 import { type Tables } from "@/integrations/supabase/types";
+import { ProtectedLayout } from "@/components/protected-layout";
 import { RouteError } from "@/components/route-error";
 
 type MovementType = "incoming" | "outgoing";
@@ -70,12 +71,12 @@ const uppercaseFields = new Set(["src_vehicle_registration", "fgc_vehicle_regist
 const normalizeFieldValue = (key: string, value: string) => (uppercaseFields.has(key) ? value.toUpperCase() : value);
 
 export const Route = createFileRoute("/weigh-bridge")({
-  component: WeighBridgeModePage,
+  component: () => <ProtectedLayout><WeighBridgeModePage /></ProtectedLayout>,
   errorComponent: RouteError,
 });
 
 function WeighBridgeModePage() {
-  const { canEntry, user } = useAuth();
+  const { canEntry, user, isSupervisorOnly } = useAuth();
   const { data: dams = [] } = useDams();
   const { data: autocompleteOptions } = useMovementAutocompleteOptions();
   const { data: trucks = [] } = useQuery({
@@ -352,6 +353,7 @@ function WeighBridgeModePage() {
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
+    if (!canEntry) return;
     if (!user) {
       toast.error("You must be signed in");
       return;
@@ -455,7 +457,7 @@ function WeighBridgeModePage() {
   };
 
   const approveDuplicate = async () => {
-    if (!pendingDuplicate) return;
+    if (!canEntry || !pendingDuplicate) return;
     setSaving(true);
     try {
       await forceInsertMovement(pendingDuplicate.payload);
@@ -474,7 +476,7 @@ function WeighBridgeModePage() {
     toast.info("Movement was not saved");
   };
 
-  if (!canEntry) {
+  if (!canEntry && !isSupervisorOnly) {
     return <div className="py-16 text-center text-muted-foreground">You don't have permission to add entries.</div>;
   }
 
@@ -482,6 +484,7 @@ function WeighBridgeModePage() {
 
   return (
     <form ref={formRef} onSubmit={handleSubmit} onKeyDown={handleKeyDown} className="space-y-4">
+      <fieldset disabled={!canEntry} className="space-y-4">
       <datalist id="weigh-bridge-dams">
         {dams.map((dam) => <option key={dam.id} value={dam.name} />)}
       </datalist>
@@ -515,7 +518,7 @@ function WeighBridgeModePage() {
       <section className="rounded-lg border border-border bg-card p-4 shadow-sm">
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
           <FastField label="Movement Type" name="movement_type" activeField={activeField} className="xl:col-span-1">
-            <select ref={firstFieldRef} className="fast-control" value={movementType} onFocus={(event) => handleFocus(event, "movement_type")} onChange={(event) => setType(event.target.value as MovementType)}>
+            <select disabled={isSupervisorOnly} ref={firstFieldRef} className="fast-control" value={movementType} onFocus={(event) => handleFocus(event, "movement_type")} onChange={(event) => setType(event.target.value as MovementType)}>
               <option value="incoming">Incoming</option>
               <option value="outgoing">Outgoing</option>
             </select>
@@ -538,7 +541,7 @@ function WeighBridgeModePage() {
             />
           </FastField>
           <FastField label="Truck / Driver" name="truck" activeField={activeField} className="xl:col-span-1">
-            <Input list="weigh-bridge-trucks" className="fast-control" value={truckSearch} onFocus={(event) => handleFocus(event, "truck")} onChange={(event) => applyTruck(event.target.value)} placeholder="Type truck" />
+            <Input disabled={isSupervisorOnly} list="weigh-bridge-trucks" className="fast-control" value={truckSearch} onFocus={(event) => handleFocus(event, "truck")} onChange={(event) => applyTruck(event.target.value)} placeholder="Type truck" />
           </FastField>
           <FastField label="Volume (tons, auto from FGC net)" name="quantity_tons" activeField={activeField} className="xl:col-span-1">
             <Input readOnly type="number" step="0.001" className="fast-control" value={!isNaN(fgcNet) ? fgcNet.toString() : ""} onFocus={(event) => handleFocus(event, "quantity_tons")} />
@@ -584,7 +587,7 @@ function WeighBridgeModePage() {
               <FastInput label="Brix" name="fgc_brix" type="number" step="0.01" value={form.fgc_brix} activeField={activeField} onFocus={handleFocus} onChange={(value) => set("fgc_brix", value)} />
             )}
             <FastField label="In/Out" name="fgc_in_out" activeField={activeField}>
-              <select className="fast-control" value={form.fgc_in_out} onFocus={(event) => handleFocus(event, "fgc_in_out")} onChange={(event) => set("fgc_in_out", event.target.value)}>
+              <select disabled={isSupervisorOnly} className="fast-control" value={form.fgc_in_out} onFocus={(event) => handleFocus(event, "fgc_in_out")} onChange={(event) => set("fgc_in_out", event.target.value)}>
                 <option value="In">In</option>
                 <option value="Out">Out</option>
               </select>
@@ -596,15 +599,15 @@ function WeighBridgeModePage() {
 
       <section className="rounded-lg border border-border bg-card p-4 shadow-sm">
         <FastField label="Reference / notes" name="notes" activeField={activeField}>
-          <Textarea rows={2} className="fast-control min-h-16" value={form.notes} onFocus={(event) => handleFocus(event, "notes")} onChange={(event) => set("notes", event.target.value)} placeholder="Optional reference, note, or explanation" />
+          <Textarea disabled={isSupervisorOnly} rows={2} className="fast-control min-h-16" value={form.notes} onFocus={(event) => handleFocus(event, "notes")} onChange={(event) => set("notes", event.target.value)} placeholder="Optional reference, note, or explanation" />
         </FastField>
       </section>
 
       <div className="sticky bottom-0 z-10 -mx-4 flex items-center gap-3 border-t border-border bg-background/95 px-4 py-3 backdrop-blur lg:static lg:mx-0 lg:border-0 lg:bg-transparent lg:px-0">
-        <Button type="button" variant="outline" onClick={resetForNextTruck} className="gap-2">
+        <Button disabled={isSupervisorOnly} type="button" variant="outline" onClick={resetForNextTruck} className="gap-2">
           <RotateCcw className="h-4 w-4" /> Clear truck fields
         </Button>
-        <Button type="submit" disabled={saving || dams.length === 0} className="min-w-48 gap-2 text-base">
+        <Button type="submit" disabled={saving || dams.length === 0 || isSupervisorOnly} className="min-w-48 gap-2 text-base">
           {saving ? "Saving…" : "Enter · Save movement"}
         </Button>
       </div>
@@ -627,6 +630,7 @@ function WeighBridgeModePage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      </fieldset>
     </form>
   );
 }

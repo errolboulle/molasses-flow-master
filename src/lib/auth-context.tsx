@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { rolePermissions } from "@/lib/role-permissions";
 import type { Session, User } from "@supabase/supabase-js";
 
 export type AppRole = "admin" | "operator" | "supervisor" | "viewer" | "demo";
@@ -13,6 +14,7 @@ interface AuthContextValue {
   isOperator: boolean;
   isSupervisor: boolean;
   isViewer: boolean;
+  isSupervisorOnly: boolean;
   canEntry: boolean;
   termsAcceptedAt: string | null;
   signOut: () => Promise<void>;
@@ -63,9 +65,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  const isAdmin = roles.includes("admin");
-  const isOperator = roles.includes("operator");
-  const isSupervisor = roles.includes("supervisor");
+  const { isAdmin, isOperator, isSupervisor, canEntry } = rolePermissions(roles);
   const isViewer = roles.includes("viewer");
 
   const disabled = status !== "active";
@@ -79,7 +79,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isOperator,
     isSupervisor,
     isViewer,
-    canEntry: isAdmin || isOperator,
+    isSupervisorOnly: isSupervisor,
+    canEntry,
     termsAcceptedAt,
     signOut: async () => { await supabase.auth.signOut(); },
     refreshRoles: async () => { if (session?.user) await fetchRoles(session.user.id); },

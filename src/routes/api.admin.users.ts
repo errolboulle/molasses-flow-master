@@ -2,13 +2,15 @@ import { createFileRoute } from "@tanstack/react-router";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
-import { logAndJsonError } from "@/lib/api-auth";
+import { logAndJsonError, requireApiAuth } from "@/lib/api-auth";
 import { z } from "zod";
 
 const roleSchema = z.enum(["admin", "operator", "supervisor", "viewer"]);
 type ProfileUpdate = Database["public"]["Tables"]["profiles"]["Update"];
 
 async function requireAdmin(request: Request) {
+  const access = await requireApiAuth(request, ["admin"]);
+  if (access.error) return { error: access.error };
   const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
   if (!token) return { error: Response.json({ error: "Unauthorized" }, { status: 401 }) };
   const { data: userData, error } = await supabaseAdmin.auth.getUser(token);
@@ -112,7 +114,10 @@ export const Route = createFileRoute("/api/admin/users")({
 
         // Re-verify admin's password
         if (!auth.email) return Response.json({ error: "Admin email missing" }, { status: 400 });
-        const verifier = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_PUBLISHABLE_KEY!, {
+        const url = process.env.SUPABASE_URL;
+        const key = process.env.SUPABASE_PUBLISHABLE_KEY;
+        if (!url || !key) return Response.json({ error: "Missing backend configuration" }, { status: 500 });
+        const verifier = createClient(url, key, {
           auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
         });
         const { error: pwError } = await verifier.auth.signInWithPassword({ email: auth.email, password });
