@@ -7,7 +7,7 @@ import { fmtTons, fmtLitres, fmtDateTime, tonsToLitres } from "@/lib/types";
 import { ArrowDownToLine, ArrowUpFromLine, BarChart3, Database, Droplet, Truck } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { computeCurrentTons } from "@/lib/report-layout";
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { RouteError } from "@/components/route-error";
 import { calculateStockOut } from "@/lib/stock-out";
 import { calculateDamPeriodTotals, type DamPeriod } from "@/lib/dam-period-totals";
@@ -43,6 +43,34 @@ function DashboardPage() {
   const { data: settings } = useSettings();
   const density = settings?.density_kg_per_l ?? 1.4;
   const [damPeriods, setDamPeriods] = useState<Record<string, DamPeriod>>({});
+
+  // Remember each dam's selected period until the user changes it, even after reloading or leaving the page.
+  useEffect(() => {
+    try {
+      const saved = window.localStorage.getItem("flowops:dam-periods");
+      if (saved) {
+        const parsed = JSON.parse(saved) as Record<string, DamPeriod>;
+        const valid = Object.fromEntries(
+          Object.entries(parsed).filter(([, value]) => value === "week" || value === "month" || value === "year"),
+        ) as Record<string, DamPeriod>;
+        if (Object.keys(valid).length) setDamPeriods(valid);
+      }
+    } catch {
+      // Ignore unreadable or corrupt saved preferences.
+    }
+  }, []);
+
+  const setDamPeriod = (damId: string, period: DamPeriod) => {
+    setDamPeriods((previous) => {
+      const next = { ...previous, [damId]: period };
+      try {
+        window.localStorage.setItem("flowops:dam-periods", JSON.stringify(next));
+      } catch {
+        // Storage unavailable; selection still applies for this session.
+      }
+      return next;
+    });
+  };
 
   const monthStart = periodStart("month");
   const damStats = dams.map((dam) => {
@@ -107,7 +135,7 @@ function DashboardPage() {
                   {cap > 0 && <div className="mt-4"><div className="flex justify-between text-xs text-muted-foreground mb-1"><span>Capacity</span><span>{pct.toFixed(0)}%</span></div><Progress value={pct} /><div className="text-xs text-muted-foreground mt-1">{fmtTons(cap)} max</div></div>}
                   <div className="mt-4 border-t border-border pt-4">
                     <Select value={period} onValueChange={(value) => {
-                      if (value === "week" || value === "month" || value === "year") setDamPeriods((previous) => ({ ...previous, [dam.id]: value }));
+                      if (value === "week" || value === "month" || value === "year") setDamPeriod(dam.id, value);
                     }}>
                       <SelectTrigger aria-label={`${dam.name} stock period`} className="mb-3 w-full"><SelectValue /></SelectTrigger>
                       <SelectContent>
