@@ -9,94 +9,39 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as WeighBridgeRouteImport } from './routes/weigh-bridge'
-import { Route as UsersRouteImport } from './routes/users'
-import { Route as SettingsRouteImport } from './routes/settings'
-import { Route as ScanRouteImport } from './routes/scan'
-import { Route as ReportsRouteImport } from './routes/reports'
-import { Route as OnboardingRouteImport } from './routes/onboarding'
-import { Route as InsightsRouteImport } from './routes/insights'
-import { Route as ImportRouteImport } from './routes/import'
-import { Route as HistoryRouteImport } from './routes/history'
-import { Route as DashboardRouteImport } from './routes/dashboard'
-import { Route as DamsRouteImport } from './routes/dams'
-import { Route as AuthRouteImport } from './routes/auth'
-import { Route as AuditRouteImport } from './routes/audit'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as ReportsIdRouteImport } from './routes/reports.$id'
-import { Route as ApiTrucksRouteImport } from './routes/api.trucks'
-import { Route as ApiReportsRouteImport } from './routes/api.reports'
-import { Route as ApiLoadsRouteImport } from './routes/api.loads'
-import { Route as ApiDamsRouteImport } from './routes/api.dams'
+import { Route as AuditRouteImport } from './routes/audit'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as DamsRouteImport } from './routes/dams'
+import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as HistoryRouteImport } from './routes/history'
+import { Route as ImportRouteImport } from './routes/import'
+import { Route as InsightsRouteImport } from './routes/insights'
+import { Route as OnboardingRouteImport } from './routes/onboarding'
+import { Route as ReportsRouteImport } from './routes/reports'
+import { Route as ScanRouteImport } from './routes/scan'
+import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as UsersRouteImport } from './routes/users'
+import { Route as WeighBridgeRouteImport } from './routes/weigh-bridge'
 import { Route as ApiAuditLogsRouteImport } from './routes/api.audit-logs'
-import { Route as ApiTrucksIdRouteImport } from './routes/api.trucks.$id'
-import { Route as ApiReportsIdRouteImport } from './routes/api.reports.$id'
-import { Route as ApiDashboardSummaryRouteImport } from './routes/api.dashboard.summary'
-import { Route as ApiDamsIdRouteImport } from './routes/api.dams.$id'
-import { Route as ApiAuthRegisterRouteImport } from './routes/api.auth.register'
-import { Route as ApiAuthLoginRouteImport } from './routes/api.auth.login'
+import { Route as ApiDamsRouteImport } from './routes/api.dams'
+import { Route as ApiLoadsRouteImport } from './routes/api.loads'
+import { Route as ApiReportsRouteImport } from './routes/api.reports'
+import { Route as ApiTrucksRouteImport } from './routes/api.trucks'
+import { Route as ReportsIdRouteImport } from './routes/reports.$id'
 import { Route as ApiAdminUsersRouteImport } from './routes/api.admin.users'
-import { Route as ApiReportsIdVersionsRouteImport } from './routes/api.reports.$id.versions'
+import { Route as ApiAuthLoginRouteImport } from './routes/api.auth.login'
+import { Route as ApiAuthRegisterRouteImport } from './routes/api.auth.register'
+import { Route as ApiDamsIdRouteImport } from './routes/api.dams.$id'
+import { Route as ApiDashboardSummaryRouteImport } from './routes/api.dashboard.summary'
+import { Route as ApiReportsIdRouteImport } from './routes/api.reports.$id'
+import { Route as ApiTrucksIdRouteImport } from './routes/api.trucks.$id'
 import { Route as ApiReportsIdDownloadRouteImport } from './routes/api.reports.$id.download'
+import { Route as ApiReportsIdVersionsRouteImport } from './routes/api.reports.$id.versions'
 
-const WeighBridgeRoute = WeighBridgeRouteImport.update({
-  id: '/weigh-bridge',
-  path: '/weigh-bridge',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const UsersRoute = UsersRouteImport.update({
-  id: '/users',
-  path: '/users',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SettingsRoute = SettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ScanRoute = ScanRouteImport.update({
-  id: '/scan',
-  path: '/scan',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ReportsRoute = ReportsRouteImport.update({
-  id: '/reports',
-  path: '/reports',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const OnboardingRoute = OnboardingRouteImport.update({
-  id: '/onboarding',
-  path: '/onboarding',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const InsightsRoute = InsightsRouteImport.update({
-  id: '/insights',
-  path: '/insights',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ImportRoute = ImportRouteImport.update({
-  id: '/import',
-  path: '/import',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const HistoryRoute = HistoryRouteImport.update({
-  id: '/history',
-  path: '/history',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DashboardRoute = DashboardRouteImport.update({
-  id: '/dashboard',
-  path: '/dashboard',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DamsRoute = DamsRouteImport.update({
-  id: '/dams',
-  path: '/dams',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthRoute = AuthRouteImport.update({
-  id: '/auth',
-  path: '/auth',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuditRoute = AuditRouteImport.update({
@@ -104,34 +49,64 @@ const AuditRoute = AuditRouteImport.update({
   path: '/audit',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ReportsIdRoute = ReportsIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => ReportsRoute,
-} as any)
-const ApiTrucksRoute = ApiTrucksRouteImport.update({
-  id: '/api/trucks',
-  path: '/api/trucks',
+const DamsRoute = DamsRouteImport.update({
+  id: '/dams',
+  path: '/dams',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiReportsRoute = ApiReportsRouteImport.update({
-  id: '/api/reports',
-  path: '/api/reports',
+const DashboardRoute = DashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiLoadsRoute = ApiLoadsRouteImport.update({
-  id: '/api/loads',
-  path: '/api/loads',
+const HistoryRoute = HistoryRouteImport.update({
+  id: '/history',
+  path: '/history',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiDamsRoute = ApiDamsRouteImport.update({
-  id: '/api/dams',
-  path: '/api/dams',
+const ImportRoute = ImportRouteImport.update({
+  id: '/import',
+  path: '/import',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InsightsRoute = InsightsRouteImport.update({
+  id: '/insights',
+  path: '/insights',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OnboardingRoute = OnboardingRouteImport.update({
+  id: '/onboarding',
+  path: '/onboarding',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReportsRoute = ReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ScanRoute = ScanRouteImport.update({
+  id: '/scan',
+  path: '/scan',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const UsersRoute = UsersRouteImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WeighBridgeRoute = WeighBridgeRouteImport.update({
+  id: '/weigh-bridge',
+  path: '/weigh-bridge',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiAuditLogsRoute = ApiAuditLogsRouteImport.update({
@@ -139,29 +114,34 @@ const ApiAuditLogsRoute = ApiAuditLogsRouteImport.update({
   path: '/api/audit-logs',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiTrucksIdRoute = ApiTrucksIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => ApiTrucksRoute,
-} as any)
-const ApiReportsIdRoute = ApiReportsIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => ApiReportsRoute,
-} as any)
-const ApiDashboardSummaryRoute = ApiDashboardSummaryRouteImport.update({
-  id: '/api/dashboard/summary',
-  path: '/api/dashboard/summary',
+const ApiDamsRoute = ApiDamsRouteImport.update({
+  id: '/api/dams',
+  path: '/api/dams',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiDamsIdRoute = ApiDamsIdRouteImport.update({
+const ApiLoadsRoute = ApiLoadsRouteImport.update({
+  id: '/api/loads',
+  path: '/api/loads',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiReportsRoute = ApiReportsRouteImport.update({
+  id: '/api/reports',
+  path: '/api/reports',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiTrucksRoute = ApiTrucksRouteImport.update({
+  id: '/api/trucks',
+  path: '/api/trucks',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReportsIdRoute = ReportsIdRouteImport.update({
   id: '/$id',
   path: '/$id',
-  getParentRoute: () => ApiDamsRoute,
+  getParentRoute: () => ReportsRoute,
 } as any)
-const ApiAuthRegisterRoute = ApiAuthRegisterRouteImport.update({
-  id: '/api/auth/register',
-  path: '/api/auth/register',
+const ApiAdminUsersRoute = ApiAdminUsersRouteImport.update({
+  id: '/api/admin/users',
+  path: '/api/admin/users',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiAuthLoginRoute = ApiAuthLoginRouteImport.update({
@@ -169,19 +149,39 @@ const ApiAuthLoginRoute = ApiAuthLoginRouteImport.update({
   path: '/api/auth/login',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiAdminUsersRoute = ApiAdminUsersRouteImport.update({
-  id: '/api/admin/users',
-  path: '/api/admin/users',
+const ApiAuthRegisterRoute = ApiAuthRegisterRouteImport.update({
+  id: '/api/auth/register',
+  path: '/api/auth/register',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiReportsIdVersionsRoute = ApiReportsIdVersionsRouteImport.update({
-  id: '/versions',
-  path: '/versions',
-  getParentRoute: () => ApiReportsIdRoute,
+const ApiDamsIdRoute = ApiDamsIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => ApiDamsRoute,
+} as any)
+const ApiDashboardSummaryRoute = ApiDashboardSummaryRouteImport.update({
+  id: '/api/dashboard/summary',
+  path: '/api/dashboard/summary',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiReportsIdRoute = ApiReportsIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => ApiReportsRoute,
+} as any)
+const ApiTrucksIdRoute = ApiTrucksIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => ApiTrucksRoute,
 } as any)
 const ApiReportsIdDownloadRoute = ApiReportsIdDownloadRouteImport.update({
   id: '/download',
   path: '/download',
+  getParentRoute: () => ApiReportsIdRoute,
+} as any)
+const ApiReportsIdVersionsRoute = ApiReportsIdVersionsRouteImport.update({
+  id: '/versions',
+  path: '/versions',
   getParentRoute: () => ApiReportsIdRoute,
 } as any)
 
@@ -403,88 +403,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/weigh-bridge': {
-      id: '/weigh-bridge'
-      path: '/weigh-bridge'
-      fullPath: '/weigh-bridge'
-      preLoaderRoute: typeof WeighBridgeRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/users': {
-      id: '/users'
-      path: '/users'
-      fullPath: '/users'
-      preLoaderRoute: typeof UsersRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/settings': {
-      id: '/settings'
-      path: '/settings'
-      fullPath: '/settings'
-      preLoaderRoute: typeof SettingsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/scan': {
-      id: '/scan'
-      path: '/scan'
-      fullPath: '/scan'
-      preLoaderRoute: typeof ScanRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/reports': {
-      id: '/reports'
-      path: '/reports'
-      fullPath: '/reports'
-      preLoaderRoute: typeof ReportsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/onboarding': {
-      id: '/onboarding'
-      path: '/onboarding'
-      fullPath: '/onboarding'
-      preLoaderRoute: typeof OnboardingRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/insights': {
-      id: '/insights'
-      path: '/insights'
-      fullPath: '/insights'
-      preLoaderRoute: typeof InsightsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/import': {
-      id: '/import'
-      path: '/import'
-      fullPath: '/import'
-      preLoaderRoute: typeof ImportRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/history': {
-      id: '/history'
-      path: '/history'
-      fullPath: '/history'
-      preLoaderRoute: typeof HistoryRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/dashboard': {
-      id: '/dashboard'
-      path: '/dashboard'
-      fullPath: '/dashboard'
-      preLoaderRoute: typeof DashboardRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/dams': {
-      id: '/dams'
-      path: '/dams'
-      fullPath: '/dams'
-      preLoaderRoute: typeof DamsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/auth': {
-      id: '/auth'
-      path: '/auth'
-      fullPath: '/auth'
-      preLoaderRoute: typeof AuthRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/audit': {
@@ -494,46 +417,88 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuditRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/reports/$id': {
-      id: '/reports/$id'
-      path: '/$id'
-      fullPath: '/reports/$id'
-      preLoaderRoute: typeof ReportsIdRouteImport
-      parentRoute: typeof ReportsRoute
-    }
-    '/api/trucks': {
-      id: '/api/trucks'
-      path: '/api/trucks'
-      fullPath: '/api/trucks'
-      preLoaderRoute: typeof ApiTrucksRouteImport
+    '/dams': {
+      id: '/dams'
+      path: '/dams'
+      fullPath: '/dams'
+      preLoaderRoute: typeof DamsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/reports': {
-      id: '/api/reports'
-      path: '/api/reports'
-      fullPath: '/api/reports'
-      preLoaderRoute: typeof ApiReportsRouteImport
+    '/dashboard': {
+      id: '/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof DashboardRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/loads': {
-      id: '/api/loads'
-      path: '/api/loads'
-      fullPath: '/api/loads'
-      preLoaderRoute: typeof ApiLoadsRouteImport
+    '/history': {
+      id: '/history'
+      path: '/history'
+      fullPath: '/history'
+      preLoaderRoute: typeof HistoryRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/dams': {
-      id: '/api/dams'
-      path: '/api/dams'
-      fullPath: '/api/dams'
-      preLoaderRoute: typeof ApiDamsRouteImport
+    '/import': {
+      id: '/import'
+      path: '/import'
+      fullPath: '/import'
+      preLoaderRoute: typeof ImportRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/insights': {
+      id: '/insights'
+      path: '/insights'
+      fullPath: '/insights'
+      preLoaderRoute: typeof InsightsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/onboarding': {
+      id: '/onboarding'
+      path: '/onboarding'
+      fullPath: '/onboarding'
+      preLoaderRoute: typeof OnboardingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reports': {
+      id: '/reports'
+      path: '/reports'
+      fullPath: '/reports'
+      preLoaderRoute: typeof ReportsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/scan': {
+      id: '/scan'
+      path: '/scan'
+      fullPath: '/scan'
+      preLoaderRoute: typeof ScanRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/users': {
+      id: '/users'
+      path: '/users'
+      fullPath: '/users'
+      preLoaderRoute: typeof UsersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/weigh-bridge': {
+      id: '/weigh-bridge'
+      path: '/weigh-bridge'
+      fullPath: '/weigh-bridge'
+      preLoaderRoute: typeof WeighBridgeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/audit-logs': {
@@ -543,39 +508,46 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuditLogsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/trucks/$id': {
-      id: '/api/trucks/$id'
-      path: '/$id'
-      fullPath: '/api/trucks/$id'
-      preLoaderRoute: typeof ApiTrucksIdRouteImport
-      parentRoute: typeof ApiTrucksRoute
-    }
-    '/api/reports/$id': {
-      id: '/api/reports/$id'
-      path: '/$id'
-      fullPath: '/api/reports/$id'
-      preLoaderRoute: typeof ApiReportsIdRouteImport
-      parentRoute: typeof ApiReportsRoute
-    }
-    '/api/dashboard/summary': {
-      id: '/api/dashboard/summary'
-      path: '/api/dashboard/summary'
-      fullPath: '/api/dashboard/summary'
-      preLoaderRoute: typeof ApiDashboardSummaryRouteImport
+    '/api/dams': {
+      id: '/api/dams'
+      path: '/api/dams'
+      fullPath: '/api/dams'
+      preLoaderRoute: typeof ApiDamsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/dams/$id': {
-      id: '/api/dams/$id'
-      path: '/$id'
-      fullPath: '/api/dams/$id'
-      preLoaderRoute: typeof ApiDamsIdRouteImport
-      parentRoute: typeof ApiDamsRoute
+    '/api/loads': {
+      id: '/api/loads'
+      path: '/api/loads'
+      fullPath: '/api/loads'
+      preLoaderRoute: typeof ApiLoadsRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/api/auth/register': {
-      id: '/api/auth/register'
-      path: '/api/auth/register'
-      fullPath: '/api/auth/register'
-      preLoaderRoute: typeof ApiAuthRegisterRouteImport
+    '/api/reports': {
+      id: '/api/reports'
+      path: '/api/reports'
+      fullPath: '/api/reports'
+      preLoaderRoute: typeof ApiReportsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/trucks': {
+      id: '/api/trucks'
+      path: '/api/trucks'
+      fullPath: '/api/trucks'
+      preLoaderRoute: typeof ApiTrucksRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reports/$id': {
+      id: '/reports/$id'
+      path: '/$id'
+      fullPath: '/reports/$id'
+      preLoaderRoute: typeof ReportsIdRouteImport
+      parentRoute: typeof ReportsRoute
+    }
+    '/api/admin/users': {
+      id: '/api/admin/users'
+      path: '/api/admin/users'
+      fullPath: '/api/admin/users'
+      preLoaderRoute: typeof ApiAdminUsersRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/auth/login': {
@@ -585,25 +557,53 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthLoginRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/admin/users': {
-      id: '/api/admin/users'
-      path: '/api/admin/users'
-      fullPath: '/api/admin/users'
-      preLoaderRoute: typeof ApiAdminUsersRouteImport
+    '/api/auth/register': {
+      id: '/api/auth/register'
+      path: '/api/auth/register'
+      fullPath: '/api/auth/register'
+      preLoaderRoute: typeof ApiAuthRegisterRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/reports/$id/versions': {
-      id: '/api/reports/$id/versions'
-      path: '/versions'
-      fullPath: '/api/reports/$id/versions'
-      preLoaderRoute: typeof ApiReportsIdVersionsRouteImport
-      parentRoute: typeof ApiReportsIdRoute
+    '/api/dams/$id': {
+      id: '/api/dams/$id'
+      path: '/$id'
+      fullPath: '/api/dams/$id'
+      preLoaderRoute: typeof ApiDamsIdRouteImport
+      parentRoute: typeof ApiDamsRoute
+    }
+    '/api/dashboard/summary': {
+      id: '/api/dashboard/summary'
+      path: '/api/dashboard/summary'
+      fullPath: '/api/dashboard/summary'
+      preLoaderRoute: typeof ApiDashboardSummaryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/reports/$id': {
+      id: '/api/reports/$id'
+      path: '/$id'
+      fullPath: '/api/reports/$id'
+      preLoaderRoute: typeof ApiReportsIdRouteImport
+      parentRoute: typeof ApiReportsRoute
+    }
+    '/api/trucks/$id': {
+      id: '/api/trucks/$id'
+      path: '/$id'
+      fullPath: '/api/trucks/$id'
+      preLoaderRoute: typeof ApiTrucksIdRouteImport
+      parentRoute: typeof ApiTrucksRoute
     }
     '/api/reports/$id/download': {
       id: '/api/reports/$id/download'
       path: '/download'
       fullPath: '/api/reports/$id/download'
       preLoaderRoute: typeof ApiReportsIdDownloadRouteImport
+      parentRoute: typeof ApiReportsIdRoute
+    }
+    '/api/reports/$id/versions': {
+      id: '/api/reports/$id/versions'
+      path: '/versions'
+      fullPath: '/api/reports/$id/versions'
+      preLoaderRoute: typeof ApiReportsIdVersionsRouteImport
       parentRoute: typeof ApiReportsIdRoute
     }
   }
