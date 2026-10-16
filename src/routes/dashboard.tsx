@@ -124,7 +124,7 @@ function DashboardPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
             {damStats.map(({ dam, reportNett }) => {
               const period = damPeriods[dam.id] ?? "month";
-              const { totalIn, totalOut } = calculateDamPeriodTotals(movements, dam.id, period);
+              const { totalIn, totalOut } = calculateDamPeriodTotals(movements, dam.id, period, new Date(), (adjustments as any[]).filter((a) => a.dam_id === dam.id).map((a) => a.created_at as string).sort().at(-1));
               const cap = Number(dam.capacity_tons ?? 0);
               const cur = reportNett;
               const pct = cap > 0 ? Math.min(100, (cur / cap) * 100) : 0;

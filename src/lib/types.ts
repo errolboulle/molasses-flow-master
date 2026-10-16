@@ -12,7 +12,7 @@ export const litresToTons = (litres: number, density: number) =>
   (litres * density) / 1000;
 
 export const fmtTons = (n: number | null | undefined) =>
-  n == null ? "—" : `${Number(n).toLocaleString(undefined, { maximumFractionDigits: 3 })} t`;
+  n == null ? "—" : `${Number(n).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} t`;
 export const fmtLitres = (n: number | null | undefined) =>
   n == null ? "—" : `${Math.round(Number(n)).toLocaleString()} L`;
 export const fmtNum = (n: number | null | undefined, digits = 3) =>

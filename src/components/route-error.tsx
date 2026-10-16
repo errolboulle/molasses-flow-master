@@ -1,11 +1,12 @@
-import { useRouter } from "@tanstack/react-router";
+import { useRouter, type ErrorComponentProps } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { AlertTriangle } from "lucide-react";
 import { logSystemError } from "@/lib/audit";
 
-export function RouteError({ error, reset }: { error: Error; reset: () => void }) {
+export function RouteError({ error: rawError, reset }: ErrorComponentProps) {
+  const error = rawError as Error;
   const router = useRouter();
   useEffect(() => {
     void logSystemError({ source: "route.error", message: error?.message ?? "unknown", stack: error?.stack ?? null });
