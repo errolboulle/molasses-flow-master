@@ -136,7 +136,7 @@ const movementDirection = (movement: Movement) => {
   return label === "out" || movement.movement_type === "outgoing" ? "out" : "in";
 };
 
-const coreDamOrder = new Map([["dam 1", 0], ["dam 2", 1], ["dam 3", 2]]);
+const coreDamOrder = new Map([["dam 1", 0], ["dam 2", 1], ["dam 3", 2], ["dam 4", 3]]);
 const isCoreDam = (dam: Dam) => coreDamOrder.has(dam.name.trim().toLowerCase());
 const coreDamSort = (a: Dam, b: Dam) => coreDamOrder.get(a.name.trim().toLowerCase())! - coreDamOrder.get(b.name.trim().toLowerCase())!;
 const getSheetNameForDam = (dam: Dam) => isCoreDam(dam) ? dam.name.trim().toUpperCase() : sanitizeSheet(dam.name);
@@ -442,7 +442,7 @@ function calculateWeighbridgeDamSummary(
   adjustments: ReportAdjustment[],
   sheetInfoByDamId: Map<string, DamSheetInfo>,
 ): WeighbridgeDamSummary[] {
-  const summaryOrder = new Map([["dam 1", 0], ["dam 2", 1], ["dam 3", 2]]);
+  const summaryOrder = new Map([["dam 1", 0], ["dam 2", 1], ["dam 3", 2], ["dam 4", 3]]);
   return dams
     .filter((dam) => summaryOrder.has(dam.name.trim().toLowerCase()))
     .sort((a, b) => summaryOrder.get(a.name.trim().toLowerCase())! - summaryOrder.get(b.name.trim().toLowerCase())!)
